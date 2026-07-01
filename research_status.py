@@ -135,12 +135,36 @@ def inspect_project(project: Path) -> dict[str, Any]:
         "project_name": state.get("project_name", project.name),
         "research_mode": state.get("research_mode", ""),
         "view_type": state.get("view_type", ""),
-        "status": state.get("status", ""),
+        "status": infer_status(project, state, validator),
         "missing_steps": missing_steps,
         "content": content,
         "validation": validator,
         "next_required_action": NEXT_ACTION_BY_STEP[next_step],
     }
+
+
+def infer_status(project: Path, state: dict[str, Any], validator: dict[str, Any] | None = None) -> str:
+    """Infer project status from file existence + validator result.
+
+    State machine:
+      planned     — just created, no execution plan yet
+      in_progress — plan exists, HTML not built yet
+      completed   — HTML built and validator reports 0 FAIL
+      failed      — HTML built but validator reports FAIL
+    """
+    if not state:
+        return "planned"
+    if not (project / "01-plan" / "research-execution-plan.md").exists():
+        return "planned"
+    html_built = (project / "08-html" / "index.html").exists()
+    if not html_built:
+        return "in_progress"
+    if validator is None:
+        validator = run_validator(project)
+    fails = validator.get("fails")
+    if fails:
+        return "failed"
+    return "completed"
 
 
 def main() -> int:

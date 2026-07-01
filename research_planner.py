@@ -258,6 +258,10 @@ def update_state(project: Path, state: dict[str, Any]) -> None:
         quality_gates.setdefault("trace_manifest_required", True)
         quality_gates.setdefault("strong_claims_must_trace", True)
     state["next_required_action"] = infer_next_required_action(project, state)
+    # Upgrade status: planned → in_progress once plan exists. HTML build's
+    # _sync_state_after_build further upgrades to completed/failed.
+    if state.get("status") == "planned" and (project / "01-plan" / "research-execution-plan.md").exists():
+        state["status"] = "in_progress"
     state["last_updated"] = date.today().isoformat()
     outputs = state.setdefault("outputs", [])
     for item in ["01-plan/research-execution-plan.md", "02-sources/candidate_pool.json", "03-evidence/hypothesis_ledger.json", "07-output/trace-manifest.json"]:

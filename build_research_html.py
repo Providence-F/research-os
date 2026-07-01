@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from research_planner import update_state
+from research_status import infer_status
 
 
 APPENDIX_KEYWORDS = [
@@ -67,7 +68,15 @@ blockquote { margin: 18px 0; padding: 12px 18px; border-left: 3px solid var(--fg
 code { font-family: "JetBrains Mono", Consolas, monospace; font-size: 13px; background: var(--soft); padding: 2px 6px; border: 1px solid var(--line); }
 pre { overflow: auto; background: var(--soft); border: 1px solid var(--line); padding: 14px; }
 pre code { border: 0; padding: 0; background: transparent; }
+pre.mermaid { background: #fff; border: 1px solid var(--line); padding: 18px; text-align: center; margin: 22px 0; overflow: visible; }
 hr { border: 0; border-top: 1px dashed var(--line); margin: 28px 0; }
+.analogy-card { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: center; margin: 18px 0; padding: 16px 20px; border: 1px solid var(--line); background: var(--soft2); }
+.analogy-x { font-weight: 650; }
+.analogy-arrow { color: var(--muted); font-size: 22px; }
+.analogy-y { color: var(--muted); font-style: italic; }
+.code-snippet-card { margin: 18px 0; border: 1px solid var(--line); }
+.code-snippet-meta { background: var(--soft); padding: 8px 14px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); font-family: monospace; }
+.code-snippet-card pre { margin: 0; border: 0; background: #fff; }
 table { border-collapse: collapse; width: 100%; margin: 18px 0; font-size: 14px; }
 th, td { border: 1px solid var(--line); padding: 9px 10px; text-align: left; vertical-align: top; }
 th { background: var(--soft); font-weight: 650; }
@@ -602,6 +611,9 @@ def _sync_state_after_build(project: Path) -> None:
     Without this, state.json keeps next_required_action="build_html" even after
     index.html exists. update_state() recomputes next_required_action by checking
     file existence, so it will correctly return "none" once HTML is built.
+
+    Also upgrades status: planned/in_progress → completed (if 0 FAIL) or failed
+    (if FAIL). Without this, status stays "planned" forever even after build.
     """
     state_path = project / "research_state.json"
     if not state_path.exists():
@@ -614,6 +626,13 @@ def _sync_state_after_build(project: Path) -> None:
     if "08-html/index.html" not in outputs:
         outputs.append("08-html/index.html")
     update_state(project, state)
+    # update_state rewrote state.json; reload and stamp status on top.
+    try:
+        state = json.loads(state_path.read_text(encoding="utf-8-sig"))
+    except json.JSONDecodeError:
+        return
+    state["status"] = infer_status(project, state)
+    state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def build(project: Path, copy_desktop: bool = False) -> Path:
@@ -643,6 +662,7 @@ def build(project: Path, copy_desktop: bool = False) -> Path:
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{html.escape(clean_emoji(title))}</title>
   <style>{CSS}</style>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 </head>
 <body data-source="final-report.md" data-view-type="{html.escape(str(state.get('view_type', '')))}">
   <div class="layout">
@@ -671,6 +691,7 @@ def build(project: Path, copy_desktop: bool = False) -> Path:
   </div>
   {modal}
   {script_for_model(view_model)}
+  <script>mermaid.initialize({{startOnLoad: true, theme: 'neutral', securityLevel: 'loose'}});</script>
 </body>
 </html>
 """
