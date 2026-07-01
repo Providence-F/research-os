@@ -152,8 +152,13 @@ def build_state(name: str, rtype: str, depth: str) -> dict:
     }
 
 
-def copy_templates(project_root: Path, depth: str) -> list:
-    """复制模板到项目目录。返回 (template_src, dest) 列表，供日志打印。"""
+def copy_templates(project_root: Path, depth: str, project_name: str = "") -> list:
+    """复制模板到项目目录。返回 (template_src, dest) 列表，供日志打印。
+
+    如果模板含 {项目名} 占位符且 project_name 非空，会自动替换。
+    这是为了让 final-report.md 首行 # 标题自动个性化——build_research_html.py
+    用首行 # 标题作为 HTML <title> 和桌面文件名，写死"调研报告"会导致所有项目 HTML 同名。
+    """
     copied = []
     mapping = dict(TEMPLATE_MAP)
     if depth in ("R2", "R3"):
@@ -166,8 +171,13 @@ def copy_templates(project_root: Path, depth: str) -> list:
         dest_dir = project_root / subdir
         dest_dir.mkdir(parents=True, exist_ok=True)
         dest = dest_dir / dest_name
-        shutil.copyfile(src, dest)
-        copied.append((src_name, str(dest)))
+        text = src.read_text(encoding="utf-8-sig")
+        if project_name and "{项目名}" in text:
+            text = text.replace("{项目名}", project_name)
+            copied.append((src_name, str(dest) + " (替换占位符)"))
+        else:
+            copied.append((src_name, str(dest)))
+        dest.write_text(text, encoding="utf-8")
     return copied
 
 
@@ -275,8 +285,8 @@ def create_project(
     project_root.mkdir(parents=True)
 
     created_dirs = create_dirs(project_root, depth)
-    copied = copy_templates(project_root, depth)
     state = build_state(name, rtype, depth)
+    copied = copy_templates(project_root, depth, state["project_name"])
     state_file = write_state(project_root, state)
     view_model_file = write_view_model(project_root, state)
     trace_manifest_file = write_trace_manifest(project_root, state)

@@ -431,6 +431,20 @@ def validate_project(project: Path) -> list[Check]:
             add(checks, "FAIL", "HTML reader-first", f"HTML appears to paste process files ({marker_count} process markers found)")
         else:
             add(checks, "PASS", "HTML reader-first", "HTML does not look like process-file paste")
+
+        title_match = re.search(r"<title>(.+?)</title>", htm, re.S)
+        if title_match:
+            html_title = title_match.group(1).strip()
+            appendix_in_title = any(k in html_title for k in APPENDIX_SECTIONS)
+            if appendix_in_title:
+                add(checks, "FAIL", "HTML title is appendix keyword", f"<title>='{html_title}' matches appendix keyword—build_research_html.py split_sections bug may have regressed")
+            elif html_title in ("调研报告", "最终报告", "报告"):
+                add(checks, "WARN", "HTML title is generic", f"<title>='{html_title}' is generic; replace final-report.md first heading with project name")
+            else:
+                add(checks, "PASS", "HTML title is specific", f"<title>='{html_title}'")
+        else:
+            add(checks, "WARN", "HTML title tag", "no <title> tag found in index.html")
+
         if "data-source=\"final-report.md\"" in htm or "final-report.md" in htm:
             add(checks, "PASS", "HTML source marker", "HTML identifies final-report.md as source")
         else:

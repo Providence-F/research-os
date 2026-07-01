@@ -11,6 +11,8 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+from research_planner import update_state
+
 
 APPENDIX_KEYWORDS = [
     "附录",
@@ -147,7 +149,7 @@ def slug(text: str) -> str:
 
 def split_sections(md: str):
     lines = md.splitlines()
-    title = "调研报告"
+    title = None
     intro = []
     sections = []
     current_title = None
@@ -156,7 +158,7 @@ def split_sections(md: str):
     for line in lines:
         h1 = re.match(r"^#\s+(.+)$", line)
         h2 = re.match(r"^##\s+(.+)$", line)
-        if h1 and title == "调研报告":
+        if h1 and title is None:
             title = h1.group(1).strip()
             continue
         if h2:
@@ -184,6 +186,8 @@ def md_block_to_html(md: str) -> str:
     in_table = False
     in_code = False
     code_lines = []
+    is_mermaid = False
+    code_lang = ""
 
     def flush_para():
         nonlocal para
@@ -212,9 +216,16 @@ def md_block_to_html(md: str) -> str:
             if not in_code:
                 in_code = True
                 code_lines = []
+                code_lang = stripped[3:].strip().lower()
+                is_mermaid = code_lang == "mermaid"
             else:
-                out.append("<pre><code>" + html.escape("\n".join(code_lines)) + "</code></pre>")
+                if is_mermaid:
+                    out.append('<pre class="mermaid">' + "\n".join(code_lines) + '</pre>')
+                else:
+                    out.append("<pre><code>" + html.escape("\n".join(code_lines)) + "</code></pre>")
                 in_code = False
+                is_mermaid = False
+                code_lang = ""
             continue
         if in_code:
             code_lines.append(line)
@@ -585,6 +596,26 @@ document.addEventListener('DOMContentLoaded',()=>{{
 """
 
 
+def _sync_state_after_build(project: Path) -> None:
+    """Sync research_state.json after HTML build.
+
+    Without this, state.json keeps next_required_action="build_html" even after
+    index.html exists. update_state() recomputes next_required_action by checking
+    file existence, so it will correctly return "none" once HTML is built.
+    """
+    state_path = project / "research_state.json"
+    if not state_path.exists():
+        return
+    try:
+        state = json.loads(state_path.read_text(encoding="utf-8-sig"))
+    except json.JSONDecodeError:
+        return
+    outputs = state.setdefault("outputs", [])
+    if "08-html/index.html" not in outputs:
+        outputs.append("08-html/index.html")
+    update_state(project, state)
+
+
 def build(project: Path, copy_desktop: bool = False) -> Path:
     report = project / "07-output" / "final-report.md"
     if not report.exists():
@@ -644,6 +675,8 @@ def build(project: Path, copy_desktop: bool = False) -> Path:
 </html>
 """
     out.write_text(html_doc, encoding="utf-8")
+
+    _sync_state_after_build(project)
 
     if copy_desktop:
         desktop = Path.home() / "Desktop" / f"{title}.html"
