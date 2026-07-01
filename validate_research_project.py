@@ -1,0 +1,591 @@
+#!/usr/bin/env python3
+"""Research OS project validator.
+
+Checks whether a research project has moved beyond internal evidence files into
+reader-first delivery: final-report.md + HTML generated from it.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+
+
+READER_SECTIONS = [
+    "一句话结论",
+    "最重要的三个发现",
+    "调研对象到底是什么",
+    "核心机制",
+    "用户、场景与需求",
+    "差异化与竞争位置",
+    "风险、盲区与反方观点",
+    "决策建议",
+]
+
+DECISION_READER_SECTIONS = [
+    "元问题",
+    "投入策略",
+    "机会成本",
+    "就业影响",
+    "用户模型",
+    "约束地图",
+    "选项逐个拆解",
+    "策略组合",
+]
+
+APPENDIX_SECTIONS = [
+    "证据标准",
+    "信息淘汰说明",
+    "核心事实表",
+    "结论溯源表",
+    "反方审计摘要",
+    "来源与附录",
+    "最终置信度",
+]
+
+PROCESS_FILE_MARKERS = [
+    "# 调研任务卡",
+    "# 调研方案",
+    "# 候选来源清单",
+    "# 被丢弃的来源",
+    "# 证据矩阵",
+    "# 冲突信息",
+    "# 反方审计",
+]
+
+DECISION_RESEARCH_TYPES = {"topic", "portfolio", "mixed"}
+
+THINKING_DEPTH_MARKERS = {
+    "meta question": ["元问题", "值不值得", "是否值得", "问题是否问错", "要不要做"],
+    "opportunity cost": ["机会成本", "挤占", "时间", "精力", "窗口期"],
+    "input-output": ["投入产出", "投入策略", "做深", "做浅", "最低成本", "控制成本"],
+    "employment impact": ["就业影响", "就业", "岗位", "面试", "秋招"],
+    "user model": ["用户模型", "个人变量", "真实约束", "长期战略", "偏好"],
+    "constraint map": ["约束地图", "制度", "评价标准", "资源", "流程", "协作"],
+    "option decomposition": ["逐个拆解", "最小可行版本", "升级版本", "不适合", "成本", "风险"],
+}
+
+META_RED_TEAM_MARKERS = ["问题框架", "问题是否", "是否值得", "值不值得", "自我合理化", "投入产出", "机会成本"]
+
+VISUAL_MODULE_MARKERS = {
+    "summary_cards": ["summary-card"],
+    "object_cards": ["object-card", "advisor-card"],
+    "tabs": ["strategy-tabs", "tab-panel"],
+    "modal": ["modal-backdrop", "objectModal"],
+    "matrix": ["comparison-matrix"],
+    "filter": ["filterCards", "filterTable", "filterableTable"],
+}
+
+NON_NARRATIVE_VIEW_TYPES = {
+    "card_dashboard",
+    "ranked_map",
+    "comparison_matrix",
+    "decision_board",
+    "product_teardown_view",
+}
+
+
+@dataclass
+class Check:
+    level: str
+    name: str
+    message: str
+
+
+def read_text(path: Path) -> str:
+    if not path.exists():
+        return ""
+    return path.read_text(encoding="utf-8-sig")
+
+
+def heading_pos(md: str, heading: str) -> int:
+    match = re.search(rf"^#+\s*(?:\d+\.\s*)?{re.escape(heading)}", md, re.M)
+    return match.start() if match else -1
+
+
+def add(checks: list[Check], level: str, name: str, message: str) -> None:
+    checks.append(Check(level, name, message))
+
+
+def read_json(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
+    except json.JSONDecodeError:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def list_json(path: Path) -> list:
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
+    except json.JSONDecodeError:
+        return []
+    return data if isinstance(data, list) else []
+
+
+def candidate_items(model: dict) -> list[dict]:
+    items = model.get("items") or []
+    return [item for item in items if isinstance(item, dict)]
+
+
+def hypothesis_items(model: dict) -> list[dict]:
+    items = model.get("hypotheses") or []
+    return [item for item in items if isinstance(item, dict)]
+
+
+def has_hypothesis_revision(hypotheses: list[dict]) -> bool:
+    for item in hypotheses:
+        if item.get("status") in {"downgraded", "rejected"}:
+            return True
+        if item.get("revision_history"):
+            return True
+    return False
+
+
+def trace_claim_items(model: dict) -> list[dict]:
+    items = model.get("claims") or []
+    return [item for item in items if isinstance(item, dict)]
+
+
+def evidence_ids_from_text(text: str) -> set[str]:
+    return set(re.findall(r"\bE\d{2,4}\b", text))
+
+
+def claim_is_present_in_report(claim: dict, md: str) -> bool:
+    text = str(claim.get("claim", "")).strip()
+    section = str(claim.get("report_section", "")).strip()
+    if section and section in md:
+        return True
+    if text and text in md:
+        return True
+    return False
+
+def visual_modules_present(html_text: str) -> list[str]:
+    present = []
+    for name, markers in VISUAL_MODULE_MARKERS.items():
+        if any(marker in html_text for marker in markers):
+            present.append(name)
+    return present
+
+
+def view_model_has_content(model: dict) -> bool:
+    if not model:
+        return False
+    hero = model.get("hero") or {}
+    if hero.get("verdict") or hero.get("summary"):
+        return True
+    for key in ("summary_cards", "object_cards", "advisor_cards", "strategy_tabs", "tabs"):
+        if model.get(key):
+            return True
+    for key in ("comparison_matrix", "filterable_table"):
+        value = model.get(key) or {}
+        if isinstance(value, dict) and value.get("rows"):
+            return True
+    return False
+
+
+def has_any(text: str, markers: list[str]) -> bool:
+    return any(marker in text for marker in markers)
+
+
+def count_heading_like_options(md: str) -> int:
+    option_keywords = ["方向", "选题", "候选", "方案", "策略", "选项", "对象", "机会"]
+    count = 0
+    for line in md.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("#"):
+            continue
+        if any(keyword in stripped for keyword in option_keywords):
+            count += 1
+    return count
+
+
+def validate_project(project: Path) -> list[Check]:
+    checks: list[Check] = []
+
+    report = project / "07-output" / "final-report.md"
+    html = project / "08-html" / "index.html"
+    evidence = project / "03-evidence" / "evidence_matrix.md"
+    plan = project / "01-plan" / "research-plan.md"
+    red_team = project / "06-review" / "red_team.md"
+    state = project / "research_state.json"
+
+    smd = read_text(state)
+    research_type = ""
+    research_mode = ""
+    view_type = ""
+    depth = ""
+    visual_modules = []
+    state_data = read_json(state)
+    if state_data:
+        research_type = state_data.get("research_type", "")
+        research_mode = state_data.get("research_mode", "")
+        view_type = state_data.get("view_type", "")
+        depth = state_data.get("depth", "")
+        visual_modules = state_data.get("visual_modules", []) or []
+    is_decision_project = research_type in DECISION_RESEARCH_TYPES or research_mode in {"thinking_decision", "career_strategy"}
+
+    if report.exists():
+        add(checks, "PASS", "final-report exists", f"found {report}")
+    else:
+        add(checks, "FAIL", "final-report exists", "missing 07-output/final-report.md")
+
+    if html.exists():
+        add(checks, "PASS", "index.html exists", f"found {html}")
+    else:
+        add(checks, "WARN", "index.html exists", "missing 08-html/index.html")
+
+    md = read_text(report)
+    if md:
+        required_sections = DECISION_READER_SECTIONS if is_decision_project else READER_SECTIONS
+        section_label = "decision reader section" if is_decision_project else "reader section"
+        for section in required_sections:
+            if heading_pos(md, section) >= 0 or section in md:
+                add(checks, "PASS", f"{section_label}: {section}", "present")
+            else:
+                add(checks, "FAIL", f"{section_label}: {section}", "missing from final-report.md")
+
+        appendix_positions = [heading_pos(md, s) for s in APPENDIX_SECTIONS]
+        appendix_positions = [p for p in appendix_positions if p >= 0]
+        first_appendix = min(appendix_positions) if appendix_positions else -1
+        half = len(md) // 2
+        if first_appendix == -1:
+            add(checks, "WARN", "appendix placement", "no audit/source appendix headings found")
+        elif first_appendix > half:
+            add(checks, "PASS", "appendix placement", "audit/source material is in latter half")
+        else:
+            add(checks, "WARN", "appendix placement", "audit/source material appears too early; reader content may be buried")
+
+        first_evidence_id = md.find("evidence_id")
+        if first_evidence_id == -1 or (first_appendix != -1 and first_evidence_id >= first_appendix):
+            add(checks, "PASS", "evidence IDs placement", "evidence_id details absent or appendix-only")
+        else:
+            add(checks, "WARN", "evidence IDs placement", "evidence_id appears before appendix; may interrupt reader path")
+
+    emd = read_text(evidence)
+    if emd:
+        if "来源独立性" in emd:
+            add(checks, "PASS", "evidence source independence", "来源独立性 field/rule present")
+        else:
+            add(checks, "FAIL", "evidence source independence", "evidence_matrix.md missing 来源独立性")
+        if "MiMo" in emd and "默认" in emd and "C" in emd:
+            add(checks, "PASS", "MiMo downgrade rule", "MiMo/search summary default C rule present")
+        else:
+            add(checks, "WARN", "MiMo downgrade rule", "MiMo/search summary default C rule not found")
+    else:
+        add(checks, "FAIL", "evidence matrix", "missing 03-evidence/evidence_matrix.md")
+
+    pmd = read_text(plan)
+    if pmd:
+        if "SSR" in pmd and "登录墙" in pmd:
+            add(checks, "PASS", "SSR/login-wall plan", "plan includes SSR/login-wall handling")
+        else:
+            add(checks, "FAIL", "SSR/login-wall plan", "research-plan.md missing SSR/login-wall handling")
+        if "读者交付验收" in pmd or "final-report.md" in pmd and "独立阅读" in pmd:
+            add(checks, "PASS", "reader-delivery acceptance", "plan includes reader delivery acceptance")
+        else:
+            add(checks, "WARN", "reader-delivery acceptance", "reader delivery acceptance not found")
+    else:
+        add(checks, "FAIL", "research plan", "missing 01-plan/research-plan.md")
+
+    rmd = read_text(red_team)
+    if rmd:
+        if "最终报告" in rmd and "回写" in rmd:
+            add(checks, "PASS", "red-team report writeback", "red_team requires final-report writeback")
+        else:
+            add(checks, "FAIL", "red-team report writeback", "red_team.md missing final-report writeback requirement")
+        if "需要降级的结论" in rmd:
+            add(checks, "PASS", "red-team downgrade section", "downgrade section present")
+        else:
+            add(checks, "FAIL", "red-team downgrade section", "missing 需要降级的结论")
+    else:
+        add(checks, "FAIL", "red team", "missing 06-review/red_team.md")
+
+    execution_plan = project / "01-plan" / "research-execution-plan.md"
+    epmd = read_text(execution_plan)
+    if depth in ("R2", "R3"):
+        if execution_plan.exists():
+            add(checks, "PASS", "execution plan exists", f"found {execution_plan}")
+            if "子问题矩阵" in epmd and "初始假设" in epmd:
+                add(checks, "PASS", "execution plan content", "execution plan includes sub-question matrix and initial hypotheses")
+            else:
+                add(checks, "WARN", "execution plan content", "execution plan missing sub-question matrix or initial hypotheses")
+        else:
+            add(checks, "WARN", "execution plan exists", "R2/R3 project has no 01-plan/research-execution-plan.md; run research_planner.py")
+
+    candidate_pool_path = project / "02-sources" / "candidate_pool.json"
+    candidate_pool = read_json(candidate_pool_path)
+    candidates = candidate_items(candidate_pool)
+    protocol_required = depth in ("R2", "R3")
+    if candidate_pool_path.exists():
+        add(checks, "PASS", "candidate pool exists", f"found {candidate_pool_path}")
+        if candidates:
+            statuses = {str(item.get("status", "")) for item in candidates}
+            add(checks, "PASS", "candidate pool items", f"{len(candidates)} candidate items; statuses: {', '.join(sorted(statuses))}")
+            if any(item.get("status") == "discarded" for item in candidates):
+                add(checks, "PASS", "candidate pool discard", "at least one candidate was explicitly discarded")
+            else:
+                add(checks, "WARN", "candidate pool discard", "no discarded candidate; filtering may be too weak")
+            bad_discards = [item.get("id", "?") for item in candidates if item.get("status") == "discarded" and not item.get("discard_reason")]
+            if bad_discards:
+                add(checks, "WARN", "candidate discard reasons", f"discarded items missing reasons: {', '.join(bad_discards)}")
+            else:
+                add(checks, "PASS", "candidate discard reasons", "discarded candidates include reasons or none were discarded")
+        elif protocol_required:
+            add(checks, "FAIL", "candidate pool items", "R2/R3 project has empty candidate_pool.json")
+        else:
+            add(checks, "WARN", "candidate pool items", "candidate_pool.json is empty")
+    elif protocol_required:
+        add(checks, "FAIL", "candidate pool exists", "R2/R3 project requires 02-sources/candidate_pool.json")
+
+    hypothesis_path = project / "03-evidence" / "hypothesis_ledger.json"
+    hypothesis_ledger = read_json(hypothesis_path)
+    hypotheses = hypothesis_items(hypothesis_ledger)
+    hypothesis_ids = {str(item.get("id", "")) for item in hypotheses if item.get("id")}
+    evidence_ids = evidence_ids_from_text(emd)
+    if hypothesis_path.exists():
+        add(checks, "PASS", "hypothesis ledger exists", f"found {hypothesis_path}")
+        if len(hypotheses) >= 3:
+            add(checks, "PASS", "hypothesis count", f"{len(hypotheses)} hypotheses tracked")
+        elif protocol_required:
+            add(checks, "FAIL", "hypothesis count", f"only {len(hypotheses)} hypotheses tracked; R2/R3 needs at least 3")
+        else:
+            add(checks, "WARN", "hypothesis count", f"only {len(hypotheses)} hypotheses tracked")
+        if has_hypothesis_revision(hypotheses):
+            add(checks, "PASS", "hypothesis revision", "at least one hypothesis was revised/downgraded/rejected")
+        elif protocol_required:
+            add(checks, "FAIL", "hypothesis revision", "R2/R3 needs at least one revised/downgraded/rejected hypothesis")
+        if hypotheses and all(item.get("supporting_evidence") or item.get("contradicting_evidence") for item in hypotheses):
+            add(checks, "PASS", "hypothesis evidence links", "all hypotheses link to supporting or contradicting evidence")
+        elif hypotheses:
+            add(checks, "WARN", "hypothesis evidence links", "some hypotheses have no evidence links")
+    elif protocol_required:
+        add(checks, "FAIL", "hypothesis ledger exists", "R2/R3 project requires 03-evidence/hypothesis_ledger.json")
+
+    trace_path = project / "07-output" / "trace-manifest.json"
+    trace_manifest = read_json(trace_path)
+    trace_claims = trace_claim_items(trace_manifest)
+    if trace_path.exists():
+        add(checks, "PASS", "trace manifest exists", f"found {trace_path}")
+        if trace_claims:
+            add(checks, "PASS", "trace claims", f"{len(trace_claims)} claims traced")
+            bad_hypothesis_links = []
+            missing_strong_support = []
+            missing_report_links = []
+            unknown_evidence_links = []
+            for claim in trace_claims:
+                claim_id = str(claim.get("id", "?"))
+                strength = str(claim.get("claim_strength", "")).lower()
+                claim_hypotheses = [str(item) for item in claim.get("hypothesis_ids", []) if str(item)]
+                claim_evidence = [str(item) for item in claim.get("evidence_ids", []) if str(item)]
+                limitations = str(claim.get("limitations", "")).strip()
+                if strength == "strong":
+                    if not claim_hypotheses:
+                        missing_strong_support.append(f"{claim_id}: missing hypothesis_ids")
+                    if not claim_evidence and not limitations:
+                        missing_strong_support.append(f"{claim_id}: missing evidence_ids or limitations")
+                for hypothesis_id in claim_hypotheses:
+                    if hypothesis_id not in hypothesis_ids:
+                        bad_hypothesis_links.append(f"{claim_id}->{hypothesis_id}")
+                if evidence_ids:
+                    for evidence_id in claim_evidence:
+                        if evidence_id not in evidence_ids:
+                            unknown_evidence_links.append(f"{claim_id}->{evidence_id}")
+                if md and not claim_is_present_in_report(claim, md):
+                    missing_report_links.append(claim_id)
+            if missing_strong_support:
+                add(checks, "FAIL", "trace strong claim support", "; ".join(missing_strong_support))
+            else:
+                add(checks, "PASS", "trace strong claim support", "strong claims link to hypotheses and evidence or limitations")
+            if bad_hypothesis_links:
+                add(checks, "FAIL", "trace hypothesis links", f"unknown hypothesis links: {', '.join(bad_hypothesis_links)}")
+            else:
+                add(checks, "PASS", "trace hypothesis links", "claim hypothesis_ids exist in hypothesis ledger")
+            if unknown_evidence_links:
+                add(checks, "WARN", "trace evidence links", f"evidence ids not found in evidence matrix: {', '.join(unknown_evidence_links)}")
+            elif evidence_ids:
+                add(checks, "PASS", "trace evidence links", "claim evidence_ids are present in evidence matrix")
+            else:
+                add(checks, "WARN", "trace evidence links", "evidence matrix has no explicit E-id markers to verify")
+            if missing_report_links:
+                add(checks, "WARN", "trace report links", f"claims not directly found by text or section: {', '.join(missing_report_links)}")
+            else:
+                add(checks, "PASS", "trace report links", "claims link back to final-report text or sections")
+        elif protocol_required:
+            add(checks, "WARN", "trace claims", "trace-manifest.json has no claims yet")
+    elif protocol_required:
+        add(checks, "WARN", "trace manifest exists", "R2/R3 project should add 07-output/trace-manifest.json")
+
+    htm = read_text(html)
+    if htm:
+        marker_count = sum(1 for marker in PROCESS_FILE_MARKERS if marker in htm)
+        if marker_count >= 3:
+            add(checks, "FAIL", "HTML reader-first", f"HTML appears to paste process files ({marker_count} process markers found)")
+        else:
+            add(checks, "PASS", "HTML reader-first", "HTML does not look like process-file paste")
+        if "data-source=\"final-report.md\"" in htm or "final-report.md" in htm:
+            add(checks, "PASS", "HTML source marker", "HTML identifies final-report.md as source")
+        else:
+            add(checks, "WARN", "HTML source marker", "HTML does not identify final-report.md as source")
+        if re.search(r"[\U0001F300-\U0001FAFF☀-➿]", htm):
+            add(checks, "WARN", "HTML emoji", "emoji-like characters detected")
+        else:
+            add(checks, "PASS", "HTML emoji", "no emoji detected")
+
+        present_visual_modules = visual_modules_present(htm)
+        if present_visual_modules:
+            add(checks, "PASS", "HTML visual modules", f"found: {', '.join(present_visual_modules)}")
+        elif view_type in NON_NARRATIVE_VIEW_TYPES:
+            add(checks, "FAIL", "HTML visual modules", "non-narrative view has no card/tab/modal/matrix/filter module")
+        else:
+            add(checks, "WARN", "HTML visual modules", "no visual module detected; narrative fallback only")
+
+        if len(md) > 12000 and not present_visual_modules:
+            add(checks, "WARN", "long-report visualization", "long report has no dashboard/card module; likely reads as a flat scroll")
+        elif len(md) > 12000:
+            add(checks, "PASS", "long-report visualization", "long report has visual entry modules before full text")
+
+    view_model_path = project / "07-output" / "view-model.json"
+    view_model = read_json(view_model_path)
+    non_narrative_required = depth in ("R2", "R3") and view_type in NON_NARRATIVE_VIEW_TYPES
+    if view_model_path.exists():
+        add(checks, "PASS", "view-model exists", f"found {view_model_path}")
+        if view_model_has_content(view_model):
+            add(checks, "PASS", "view-model content", "view model contains hero/cards/tabs/matrix/table content")
+        elif non_narrative_required:
+            add(checks, "FAIL", "view-model content", "non-narrative R2/R3 project has empty view-model.json")
+        else:
+            add(checks, "WARN", "view-model content", "view-model.json exists but has no visual content yet")
+    elif non_narrative_required:
+        add(checks, "FAIL", "view-model exists", "non-narrative R2/R3 project requires 07-output/view-model.json")
+    elif depth in ("R2", "R3"):
+        add(checks, "WARN", "view-model exists", "R2/R3 project has no view-model.json; HTML will be narrative fallback")
+
+    if research_mode in {"thinking_decision", "career_strategy"}:
+        if "strategy_tabs" in visual_modules or "decision_board" == view_type:
+            add(checks, "PASS", "decision visual route", "decision project is routed to strategy tabs or decision board")
+        else:
+            add(checks, "WARN", "decision visual route", "decision project lacks strategy_tabs/decision_board route")
+        if htm and ("strategy-tabs" in htm or "summary-card" in htm):
+            add(checks, "PASS", "decision visual module", "decision HTML includes strategy tabs or summary cards")
+        elif non_narrative_required:
+            add(checks, "FAIL", "decision visual module", "decision HTML lacks strategy tabs or summary cards")
+
+    if research_mode == "opportunity_map":
+        if htm and ("filterableTable" in htm or "object-card" in htm):
+            add(checks, "PASS", "opportunity visual module", "opportunity map includes ranked/filterable modules")
+        else:
+            add(checks, "WARN", "opportunity visual module", "opportunity map lacks ranked cards or filterable table")
+
+    if research_mode == "product_teardown":
+        if htm and ("object-card" in htm or "tab-panel" in htm or "comparison-matrix" in htm):
+            add(checks, "PASS", "product visual module", "product teardown includes mechanism cards/tabs/matrix")
+        else:
+            add(checks, "WARN", "product visual module", "product teardown lacks mechanism cards/tabs/matrix")
+
+    if state_data:
+        try:
+            data = state_data
+            research_type = data.get("research_type", "")
+            if data.get("final_report_mode") == "reader_first":
+                add(checks, "PASS", "state reader mode", "final_report_mode=reader_first")
+            else:
+                add(checks, "WARN", "state reader mode", "research_state.json missing final_report_mode=reader_first")
+            if data.get("html_source") == "07-output/final-report.md":
+                add(checks, "PASS", "state html source", "html_source points to final-report.md")
+            else:
+                add(checks, "WARN", "state html source", "research_state.json html_source not set to final-report.md")
+            if data.get("research_mode") and data.get("view_type"):
+                add(checks, "PASS", "state route", f"{data.get('research_mode')} / {data.get('view_type')}")
+            else:
+                add(checks, "WARN", "state route", "research_state.json missing research_mode/view_type")
+            if data.get("next_required_action"):
+                add(checks, "PASS", "state next action", f"next_required_action={data.get('next_required_action')}")
+            elif depth in ("R2", "R3"):
+                add(checks, "WARN", "state next action", "research_state.json missing next_required_action")
+            if data.get("research_plan_source"):
+                add(checks, "PASS", "state execution plan source", f"research_plan_source={data.get('research_plan_source')}")
+            elif depth in ("R2", "R3"):
+                add(checks, "WARN", "state execution plan source", "research_state.json missing research_plan_source")
+            if data.get("trace_manifest_source"):
+                add(checks, "PASS", "state trace manifest source", f"trace_manifest_source={data.get('trace_manifest_source')}")
+            elif depth in ("R2", "R3"):
+                add(checks, "WARN", "state trace manifest source", "research_state.json missing trace_manifest_source")
+            if isinstance(data.get("visual_modules"), list) and data.get("visual_modules"):
+                add(checks, "PASS", "state visual modules", f"{len(data.get('visual_modules'))} modules declared")
+            else:
+                add(checks, "WARN", "state visual modules", "research_state.json missing visual_modules")
+        except Exception as exc:
+            add(checks, "FAIL", "research_state parse", f"invalid state: {exc}")
+    else:
+        add(checks, "WARN", "research_state", "missing or invalid research_state.json")
+
+    is_decision_project = research_type in DECISION_RESEARCH_TYPES or research_mode in {"thinking_decision", "career_strategy"}
+
+    if is_decision_project:
+        present_depth_markers = [name for name, markers in THINKING_DEPTH_MARKERS.items() if has_any(md, markers)]
+        if len(present_depth_markers) >= 5:
+            add(checks, "PASS", "decision depth markers", f"found {len(present_depth_markers)}/7: {', '.join(present_depth_markers)}")
+        else:
+            add(checks, "FAIL", "decision depth markers", f"found {len(present_depth_markers)}/7; needs at least 5 of meta question, opportunity cost, input-output, employment impact, user model, constraint map, option decomposition")
+
+        if md:
+            first_third = md[: max(1, len(md) // 3)]
+            if has_any(first_third, THINKING_DEPTH_MARKERS["meta question"]) and has_any(first_third, THINKING_DEPTH_MARKERS["opportunity cost"]):
+                add(checks, "PASS", "decision front-loaded analysis", "meta question and opportunity cost appear in first third")
+            else:
+                add(checks, "FAIL", "decision front-loaded analysis", "meta question/opportunity cost not front-loaded; report may jump to recommendation too early")
+
+            option_heading_count = count_heading_like_options(md)
+            if option_heading_count >= 5 or "逐个拆解" in md:
+                add(checks, "PASS", "option-by-option decomposition", f"found {option_heading_count} option-like headings or explicit decomposition marker")
+            else:
+                add(checks, "WARN", "option-by-option decomposition", f"only found {option_heading_count} option-like headings; may be grouped too coarsely")
+
+        if has_any(rmd, META_RED_TEAM_MARKERS):
+            add(checks, "PASS", "meta red-team", "red_team attacks problem framing/input-output/self-justification")
+        else:
+            add(checks, "FAIL", "meta red-team", "red_team does not attack problem framing or whether the task is worth doing")
+
+        if pmd and "思考型决策" in pmd and "机会成本" in pmd:
+            add(checks, "PASS", "decision research plan", "plan includes thinking-type decision requirements")
+        else:
+            add(checks, "WARN", "decision research plan", "plan does not explicitly include thinking-type decision requirements")
+
+    return checks
+
+
+def print_checks(checks: list[Check]) -> int:
+    order = {"FAIL": 0, "WARN": 1, "PASS": 2}
+    for c in sorted(checks, key=lambda x: (order.get(x.level, 9), x.name)):
+        print(f"[{c.level}] {c.name}: {c.message}")
+    fails = sum(1 for c in checks if c.level == "FAIL")
+    warns = sum(1 for c in checks if c.level == "WARN")
+    passes = sum(1 for c in checks if c.level == "PASS")
+    print(f"\nSummary: {passes} PASS, {warns} WARN, {fails} FAIL")
+    return 1 if fails else 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Validate a Research OS project")
+    parser.add_argument("project", help="Path to research project directory")
+    args = parser.parse_args()
+
+    project = Path(args.project).resolve()
+    if not project.exists():
+        print(f"[FAIL] project path does not exist: {project}", file=sys.stderr)
+        return 1
+
+    return print_checks(validate_project(project))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

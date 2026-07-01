@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "research-os"
+version = "0.4.0"
+description = "Depth research workflow toolkit with evidence-graded, reader-first HTML reports"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "Kai"},
+]
+readme = "README.md"
+keywords = ["research", "deep-research", "evidence", "report", "workflow", "agent"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Text Processing :: Markup :: Markdown",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+ros = "ros:main"
+
+[tool.setuptools]
+py-modules = [
+    "ros",
+    "config",
+    "create_research_project",
+    "research_planner",
+    "research_status",
+    "research_run_step",
+    "research_router",
+    "build_research_html",
+    "validate_research_project",
+]
+
+[tool.setuptools.package-data]
+"*" = ["templates/*.md", ".env.example"]
