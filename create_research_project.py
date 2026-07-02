@@ -23,6 +23,7 @@ from pathlib import Path
 
 import config
 from research_router import build_empty_view_model, route_research
+from intent_discovery import discover as discover_intent
 
 TEMPLATE_DIR = config.TEMPLATES
 DEFAULT_TARGET = config.PROJECTS_DIR
@@ -304,6 +305,18 @@ def create_project(
         print(f"[ok] 协议文件: {protocol_file}")
     print(f"[ok] 初始状态: {state['status']}")
     print(f"[ok] 路由: {state['research_mode']} / {state['view_type']}")
+    print()
+
+    # Trigger intent discovery (pre-research phase). Non-fatal - if API key
+    # is missing or LLM call fails, the project is still usable; user can
+    # run `ros discover` later after filling the task card.
+    try:
+        discover_intent(project_root)
+        print(f"[ok] 意图文档已生成 (基于项目名+历史画像)")
+        print(f"[hint] 填完 task-card.md 后再跑一次: ros discover \"{project_root}\"")
+    except Exception as exc:
+        print(f"[warn] 意图挖掘跳过: {exc}", file=sys.stderr)
+        print(f"[hint] 填完 task-card.md 后可手动跑: ros discover \"{project_root}\"", file=sys.stderr)
     print()
     print("下一步:")
     print(f"  1. 填 {project_root / '00-task' / 'task-card.md'}")

@@ -270,13 +270,46 @@ def update_state(project: Path, state: dict[str, Any]) -> None:
     write_json(project / "research_state.json", state)
 
 
+def read_intent_doc(project: Path) -> dict[str, Any] | None:
+    """Read 00-task/intent_doc.json if present. Returns None if missing or
+    invalid so the caller can fall back to MODE_PLANS."""
+    path = project / "00-task" / "intent_doc.json"
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
+        return data if isinstance(data, dict) else None
+    except json.JSONDecodeError:
+        return None
+
+
 def plan_project(project: Path) -> Path:
     project = project.resolve()
     state = read_json(project / "research_state.json")
     if not state:
         raise FileNotFoundError(f"missing or invalid {project / 'research_state.json'}")
     mode = state.get("research_mode") or "evidence_intelligence"
-    plan = MODE_PLANS.get(mode, MODE_PLANS["evidence_intelligence"])
+
+    # Prefer intent_doc (from intent_discovery) over hardcoded MODE_PLANS.
+    # Falls back to MODE_PLANS for projects created before intent_discovery
+    # existed, or when intent_discovery fails / is skipped.
+    intent_doc = read_intent_doc(project)
+    if intent_doc and (
+        intent_doc.get("suggested_sub_questions")
+        or intent_doc.get("suggested_hypotheses")
+    ):
+        fallback = MODE_PLANS.get(mode, MODE_PLANS["evidence_intelligence"])
+        plan = {
+            "questions": intent_doc.get("suggested_sub_questions")
+            or fallback["questions"],
+            "hypotheses": intent_doc.get("suggested_hypotheses")
+            or fallback["hypotheses"],
+        }
+        state["plan_source"] = "00-task/intent_doc.json"
+    else:
+        plan = MODE_PLANS.get(mode, MODE_PLANS["evidence_intelligence"])
+        state["plan_source"] = "MODE_PLANS (hardcoded fallback)"
+
     out = project / "01-plan" / "research-execution-plan.md"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(build_plan_markdown(state, plan), encoding="utf-8")

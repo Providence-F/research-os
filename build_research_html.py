@@ -68,7 +68,9 @@ blockquote { margin: 18px 0; padding: 12px 18px; border-left: 3px solid var(--fg
 code { font-family: "JetBrains Mono", Consolas, monospace; font-size: 13px; background: var(--soft); padding: 2px 6px; border: 1px solid var(--line); }
 pre { overflow: auto; background: var(--soft); border: 1px solid var(--line); padding: 14px; }
 pre code { border: 0; padding: 0; background: transparent; }
-pre.mermaid { background: #fff; border: 1px solid var(--line); padding: 18px; text-align: center; margin: 22px 0; overflow: visible; }
+pre.mermaid { background: #fff; border: 1px solid var(--line); padding: 18px; text-align: center; margin: 22px 0; overflow: auto; max-height: 80vh; }
+pre.mermaid svg { max-width: none; height: auto; display: inline-block; }
+pre.mermaid svg.flowchart { background: #fff; }
 hr { border: 0; border-top: 1px dashed var(--line); margin: 28px 0; }
 .analogy-card { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: center; margin: 18px 0; padding: 16px 20px; border: 1px solid var(--line); background: var(--soft2); }
 .analogy-x { font-weight: 650; }
@@ -691,13 +693,30 @@ def build(project: Path, copy_desktop: bool = False) -> Path:
   </div>
   {modal}
   {script_for_model(view_model)}
-  <script>mermaid.initialize({{startOnLoad: true, theme: 'neutral', securityLevel: 'loose'}});</script>
+  <script>mermaid.initialize({{startOnLoad: true, theme: 'neutral', securityLevel: 'loose', flowchart: {{useMaxWidth: false, htmlLabels: true, curve: 'basis'}}, themeVariables: {{fontSize: '15px', fontFamily: 'inherit'}}}});</script>
 </body>
 </html>
 """
     out.write_text(html_doc, encoding="utf-8")
 
     _sync_state_after_build(project)
+
+    # Post-research profile write-back: if validator passed (status=completed),
+    # capture what the user actually resolved, judgment patterns, and
+    # unresolved seeds for future projects. Non-fatal - failure here doesn't
+    # break the build. Lazy import to avoid loading LLM client at module
+    # import time.
+    try:
+        state_after = json.loads(
+            (project / "research_state.json").read_text(encoding="utf-8-sig")
+        )
+        if state_after.get("status") == "completed":
+            from profile_updater import write_back as write_back_profile
+            profile_result = write_back_profile(project)
+            print(profile_result["aha_summary"])
+    except Exception as exc:
+        # Profile write-back is best-effort. Don't fail the build.
+        print(f"[warn] profile write-back skipped: {exc}", file=sys.stderr)
 
     if copy_desktop:
         desktop = Path.home() / "Desktop" / f"{title}.html"

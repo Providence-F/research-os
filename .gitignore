@@ -31,5 +31,15 @@ desktop.ini
 .mimo_search_key
 _mimo_payload.json
 
-# Generated research projects (uncomment to ignore)
-# projects/
+# Temp/debug output files (underscore prefix = scratch)
+_*.txt
+_*.md
+_*.py
+_*.json
+
+# Generated research projects (per-user, may contain sensitive research content)
+projects/
+
+# Global profile directory (cross-project memory, never commit)
+# This is at ~/.research-os/ by default - listed here for safety.
+.research-os/
