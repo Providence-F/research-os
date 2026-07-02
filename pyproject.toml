@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "research-os"
-version = "0.4.0"
+version = "0.5.1"
 description = "Depth research workflow toolkit with evidence-graded, reader-first HTML reports"
 requires-python = ">=3.10"
 license = {text = "Apache-2.0"}
@@ -45,6 +45,12 @@ py-modules = [
     "research_router",
     "build_research_html",
     "validate_research_project",
+    "llm_client",
+    "profile_store",
+    "profile_updater",
+    "identity_extractor",
+    "intent_discovery",
+    "intent_tracker",
 ]
 
 [tool.setuptools.package-data]
