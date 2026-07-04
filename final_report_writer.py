@@ -1,287 +1,324 @@
-"""final_report_writer.py - Research OS v0.5 模块 (原 v0.10 模块，v0.5 重构后归并版本号)
+#!/usr/bin/env python3
+"""Research OS v0.7 - Final Report Writer
 
-带写-读-改循环的报告生成器。替换一次成稿模式。
+写-读-改闭环的"改"那一半。
+接收 reader_diagnosis.json，输出结构化重写指令给 Agent。
 
-核心思想：人类作者写完一段会自己读一遍，感到不通顺就改。
-LLM 也应该这样：写完 → reader_simulation 读 → 不通过就重写 → 再读 → 通过才交付。
+v0.7 升级（从 v0.6）：
+  1. 输出格式从纯文本改为结构化 JSON（rewrite_instructions.json）
+  2. 增加段落定位（章节 + 段落索引 + 预览）
+  3. 增加重写优先级排序（按 score 升序）
+  4. 增加"卡点"和"术语缺口"分类
+  5. 增加迭代状态追踪（iteration_state.json）
+  6. 增加门禁检查（达到 max_iterations 时 fail）
 
-5 幕叙事结构（替换 §1-§7 并列）：
-1. 问题 - 读者为什么要读这份报告
-2. 探索 - 你看了什么、发现了什么
-3. 冲突 - 哪些你以为对的事情被推翻了
-4. 决策 - 基于以上，选了什么、淘汰了什么
-5. 行动 - 如果只做一件事，做什么
+v0.7.1 修复（Dumb Tools 合规）：
+  - 删除 action 分类（rewrite/expand/delete）
+    原来用 score 阈值决定 action 是轻度语义判断，违反 Dumb Tools
+    工具只输出 score + stuck_points + term_gaps，由 Agent 决定 action
+  - 工具只做数据整理和排序，不做语义判断
 
-数据流：
-    证据矩阵 + 假设账本 + 反方审计 + 意图文档
-        ↓
-    compose_draft()       ← 按 5 幕结构组装初稿
-        ↓
-    reader_simulation.readability_gate()
-        ↓ pass → 写 final-report.md
-        ↓ fail → rewrite_failed_sections()
-            ↓
-            apply_diagnosis_to_rewrite() 再读一遍
-            ↓ 通过 → 写；不通过 → 最多 2 轮
+设计原则（不变）：
+- 不直接调 LLM API，定义接口 + 默认实现
+- 重写循环最多 2 轮，第 3 轮 fail 让人接手
+- 重写后的报告必须保留原文结构，只修改有问题的段落
+- 工具只准备结构化输入，由 Agent 执行实际重写
+
+用法：
+    python final_report_writer.py <project_path> [--max-iterations 2]
 """
 
 from __future__ import annotations
+
+import argparse
 import json
-from dataclasses import dataclass
+import sys
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable
-
-import reader_simulation as rs
 
 
-# =====================================================================
-# 1. 5 幕叙事模板
-# =====================================================================
-
-FIVE_ACT_TEMPLATE = """# {title}
-
-> 一句话结论：{verdict}
-
-## 1. 问题
-
-{act1_problem}
-
-## 2. 探索
-
-{act2_explore}
-
-## 3. 冲突
-
-{act3_conflict}
-
-## 4. 决策
-
-{act4_decision}
-
-## 5. 行动
-
-{act5_action}
-
----
-
-## 附录
-
-{appendix}
-"""
+def load_diagnosis(project: Path) -> dict:
+    """加载读者诊断结果。"""
+    diag_path = project / "06-review" / "reader_diagnosis.json"
+    if not diag_path.exists():
+        return {}
+    try:
+        return json.loads(diag_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
 
 
-# =====================================================================
-# 2. compose_draft - 从研究产物组装 5 幕初稿
-# =====================================================================
-
-def compose_draft(
-    title: str,
-    verdict: str,
-    act1_problem: str,
-    act2_explore: str,
-    act3_conflict: str,
-    act4_decision: str,
-    act5_action: str,
-    appendix: str = "",
-) -> str:
-    """按 5 幕结构组装初稿。
-
-    agent 在调用这个函数前，应该已经从 evidence_matrix / hypothesis_ledger /
-    red_team / intent_doc 里提炼了素材。这个函数只负责组装，不做研究判断。
-    """
-    return FIVE_ACT_TEMPLATE.format(
-        title=title,
-        verdict=verdict,
-        act1_problem=act1_problem,
-        act2_explore=act2_explore,
-        act3_conflict=act3_conflict,
-        act4_decision=act4_decision,
-        act5_action=act5_action,
-        appendix=appendix or "_（附录见可折叠区）_",
-    )
-
-
-# =====================================================================
-# 3. write_read_rewrite_loop - 写-读-改闭环
-# =====================================================================
-
-@dataclass
-class RewriteResult:
-    """写-读-改闭环的结果。"""
-    final_md: str
-    rounds: int
-    final_score: float
-    passed: bool
-    diagnosis_path: Path
-    feedback_path: Path | None = None
-
-
-def write_read_rewrite_loop(
-    project: Path,
-    draft_md: str,
-    simulate_fn: Callable = rs.llm_simulate_paragraph,
-    max_rounds: int = 2,
-) -> RewriteResult:
-    """写-读-改闭环主流程。
-
-    1. 把 draft 写到 final-report.md
-    2. 跑 reader_simulation.readability_gate
-    3. 不通过 → agent 重写失败段 → 再读
-    4. 通过或达到 max_rounds → 终止
-    """
+def load_report(project: Path) -> str:
+    """加载最终报告。"""
     report_path = project / "07-output" / "final-report.md"
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # 第 0 轮：写初稿 + 跑门禁
-    report_path.write_text(draft_md, encoding="utf-8")
-    passed, diag = rs.readability_gate(project, draft_md, simulate_fn)
-    feedback_path = None
-    rounds = 0
-
-    if not passed:
-        # 写反馈 markdown，供 agent 重写时参考
-        feedback_path = rs.write_reader_feedback_markdown(diag, project)
-        print(f"[reader_simulation] 第 0 轮门禁未通过")
-        print(f"  - 整体读懂度：{diag.overall_score:.2f}")
-        print(f"  - 通过段落：{diag.passed_paragraphs}/{diag.total_paragraphs}")
-        print(f"  - 反馈文件：{feedback_path}")
-        print(f"  - 请 agent 根据 reader_feedback.md 重写失败段后调用 apply_rewrite()")
-
-    return RewriteResult(
-        final_md=draft_md,
-        rounds=rounds,
-        final_score=diag.overall_score,
-        passed=passed,
-        diagnosis_path=project / "06-review" / "reader_diagnosis.json",
-        feedback_path=feedback_path,
-    )
+    if not report_path.exists():
+        return ""
+    return report_path.read_text(encoding="utf-8")
 
 
-def apply_rewrite(
-    project: Path,
-    rewritten_md: str,
-    round_num: int,
-    simulate_fn: Callable = rs.llm_simulate_paragraph,
-) -> RewriteResult:
-    """agent 重写完失败段后调用，把新版本写到 final-report.md 并再跑门禁。"""
+def save_report(project: Path, content: str) -> None:
+    """保存重写后的报告。"""
     report_path = project / "07-output" / "final-report.md"
-    report_path.write_text(rewritten_md, encoding="utf-8")
-
-    passed, diag = rs.apply_diagnosis_to_rewrite(
-        project, rewritten_md, round_num, simulate_fn
-    )
-    feedback_path = None
-    if not passed:
-        feedback_path = rs.write_reader_feedback_markdown(diag, project)
-        print(f"[reader_simulation] 第 {round_num} 轮重写后门禁仍未通过")
-        print(f"  - 整体读懂度：{diag.overall_score:.2f}")
-        print(f"  - 通过段落：{diag.passed_paragraphs}/{diag.total_paragraphs}")
-        if round_num >= 2:
-            print(f"  - 已达到最大重写轮数，需要人工介入")
-        else:
-            print(f"  - 反馈文件：{feedback_path}")
-    else:
-        print(f"[reader_simulation] 第 {round_num} 轮重写后门禁通过")
-        print(f"  - 整体读懂度：{diag.overall_score:.2f}")
-        print(f"  - 通过段落：{diag.passed_paragraphs}/{diag.total_paragraphs}")
-
-    return RewriteResult(
-        final_md=rewritten_md,
-        rounds=round_num,
-        final_score=diag.overall_score,
-        passed=passed,
-        diagnosis_path=project / "06-review" / "reader_diagnosis.json",
-        feedback_path=feedback_path,
-    )
+    report_path.write_text(content, encoding="utf-8")
 
 
-# =====================================================================
-# 4. agent_simulate_fn - agent 模式下的 LLM 模拟
-# =====================================================================
+def build_rewrite_instructions(diagnosis: dict) -> dict:
+    """v0.7.1: 构建结构化重写指令。
 
-def agent_simulate_paragraph(
-    paragraph: str,
-    section_title: str,
-    reader_persona: dict[str, Any],
-) -> dict[str, Any]:
-    """agent 模式：直接调 LLM（通过 agent 的对话能力），返回结构化诊断。
+    Dumb Tools 合规修复：
+    - 删除 action 分类（原来用 score 阈值决定 rewrite/expand 是语义判断）
+    - 工具只做数据整理和排序，不做语义判断
+    - Agent 根据这些数据自行决定 action
 
-    agent 在调 write_read_rewrite_loop 时，应把这个函数作为 simulate_fn 传入。
-    但因为 agent 本身就是 LLM，更常见的模式是：
-    1. agent 调 write_read_rewrite_loop 触发首轮门禁
-    2. 如果未通过，agent 自己读 reader_feedback.md
-    3. agent 根据反馈重写失败段
-    4. agent 调 apply_rewrite 把新版本写回并再跑门禁
+    输出格式：
+    {
+        "generated_at": "ISO时间",
+        "total_failed": int,
+        "instructions": [
+            {
+                "priority": 1,  # 1=最紧急（score 最低）
+                "section": "章节名",
+                "preview": "段落预览（前 100 字）",
+                "score": float,
+                "stuck_points": [...],
+                "term_gaps": [...],
+                "rewrite_suggestion": "...",
+                "data_for_agent": {
+                    "stuck_point_count": int,
+                    "term_gap_count": int,
+                    "score_below_03": bool,
+                    "score_below_05": bool
+                }
+            }
+        ],
+        "note": "工具只提供数据，action 由 Agent 决定"
+    }
     """
-    # 默认实现：返回占位诊断，agent 应替换成真实 LLM 调用
-    # 但在 reader_simulation 的 llm_simulate_paragraph 已有降级逻辑
-    return rs.llm_simulate_paragraph(paragraph, section_title, reader_persona)
+    failed_paragraphs = diagnosis.get("failed_paragraphs", [])
+    if not failed_paragraphs:
+        return {
+            "generated_at": datetime.now().isoformat(),
+            "total_failed": 0,
+            "instructions": [],
+            "status": "no_action_needed"
+        }
+
+    # 按 score 升序排序（分数最低的优先重写）
+    sorted_paras = sorted(failed_paragraphs, key=lambda p: p.get("score", 0))
+
+    instructions = []
+    for i, para in enumerate(sorted_paras, 1):
+        score = para.get("score", 0)
+        stuck_points = para.get("stuck_points", [])
+        term_gaps = para.get("term_gaps", [])
+
+        # v0.7.1: 只提供客观数据，不决定 action
+        # Agent 根据这些数据自行决定是 rewrite / expand / delete
+        data_for_agent = {
+            "stuck_point_count": len(stuck_points),
+            "term_gap_count": len(term_gaps),
+            "score_below_03": score < 0.3,
+            "score_below_05": score < 0.5,
+            "more_term_gaps_than_stuck_points": len(term_gaps) > len(stuck_points),
+        }
+
+        instructions.append({
+            "priority": i,
+            "section": para.get("section", ""),
+            "preview": para.get("preview", "")[:100],
+            "score": score,
+            "stuck_points": stuck_points,
+            "term_gaps": term_gaps,
+            "rewrite_suggestion": para.get("rewrite_suggestion", ""),
+            "data_for_agent": data_for_agent,
+        })
+
+    return {
+        "generated_at": datetime.now().isoformat(),
+        "total_failed": len(failed_paragraphs),
+        "instructions": instructions,
+        "status": "action_required",
+        "note": "v0.7.1 Dumb Tools 合规：工具只提供客观数据，action 由 Agent 决定"
+    }
 
 
-# =====================================================================
-# 5. 辅助：从研究产物提取 5 幕素材
-# =====================================================================
-
-def load_research_artifacts(project: Path) -> dict[str, Any]:
-    """加载所有研究产物，供 agent 提炼 5 幕素材。"""
-    artifacts: dict[str, Any] = {}
-
-    # 意图文档
-    intent_path = project / "00-task" / "intent_doc.json"
-    if intent_path.exists():
-        artifacts["intent"] = json.loads(intent_path.read_text(encoding="utf-8-sig"))
-
-    # 证据矩阵
-    evidence_path = project / "03-evidence" / "evidence_matrix.md"
-    if evidence_path.exists():
-        artifacts["evidence_matrix"] = evidence_path.read_text(encoding="utf-8-sig")
-
-    # 假设账本
-    hyp_path = project / "03-evidence" / "hypothesis_ledger.json"
-    if hyp_path.exists():
-        artifacts["hypothesis_ledger"] = json.loads(hyp_path.read_text(encoding="utf-8-sig"))
-
-    # 反方审计
-    red_path = project / "06-review" / "red_team.md"
-    if red_path.exists():
-        artifacts["red_team"] = red_path.read_text(encoding="utf-8-sig")
-
-    return artifacts
+def save_rewrite_instructions(project: Path, instructions: dict) -> Path:
+    """v0.7: 保存重写指令到文件，供 Agent 读取。"""
+    out_path = project / "06-review" / "rewrite_instructions.json"
+    out_path.write_text(
+        json.dumps(instructions, ensure_ascii=False, indent=2),
+        encoding="utf-8"
+    )
+    return out_path
 
 
-# =====================================================================
-# 6. CLI 入口
-# =====================================================================
+def load_iteration_state(project: Path) -> dict:
+    """v0.7: 加载迭代状态。"""
+    state_path = project / "06-review" / "iteration_state.json"
+    if not state_path.exists():
+        return {"iterations": 0, "history": []}
+    try:
+        return json.loads(state_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {"iterations": 0, "history": []}
 
-def build_report(project: Path) -> int:
-    """供 ros rewrite 调用的入口。
 
-    注意：这个函数不真正调 LLM 写报告。
-    它做的事是：
-    1. 加载研究产物
-    2. 提示 agent 需要根据这些产物按 5 幕结构写初稿
-    3. agent 写完初稿后，调 write_read_rewrite_loop 触发门禁
+def save_iteration_state(project: Path, state: dict) -> None:
+    """v0.7: 保存迭代状态。"""
+    state_path = project / "06-review" / "iteration_state.json"
+    state_path.write_text(
+        json.dumps(state, ensure_ascii=False, indent=2),
+        encoding="utf-8"
+    )
+
+
+def write_read_rewrite_loop(project: Path, max_iterations: int = 2) -> dict:
+    """v0.7 写-读-改闭环。
+
+    流程：
+    1. 加载 reader_diagnosis.json
+    2. 构建结构化重写指令（rewrite_instructions.json）
+    3. 输出指令路径，Agent 读取并执行重写
+    4. Agent 重写后，重新运行 reader_simulation.py
+    5. 重复直到通过或达到最大迭代次数
+
+    返回：
+        {
+            "iterations": int,
+            "final_passed": bool,
+            "final_score": float,
+            "rewrite_instructions_path": str,
+        }
     """
-    artifacts = load_research_artifacts(project)
-    if not artifacts:
-        print(f"[FAIL] 项目 {project} 没有研究产物")
+    results = {
+        "iterations": 0,
+        "final_passed": False,
+        "final_score": 0.0,
+        "rewrite_instructions_path": "",
+    }
+
+    iter_state = load_iteration_state(project)
+    current_iteration = iter_state.get("iterations", 0) + 1
+
+    if current_iteration > max_iterations:
+        print(f"[FAIL] 已达到最大迭代次数 {max_iterations}，仍未通过")
+        print("[ACTION] 第 3 轮 fail，让人接手")
+        results["iterations"] = max_iterations
+        return results
+
+    print(f"\n[iteration {current_iteration}/{max_iterations}] 写-读-改闭环")
+
+    diagnosis = load_diagnosis(project)
+    if not diagnosis:
+        print("[WARN] 无诊断结果，请先运行 reader_simulation.py")
+        return results
+
+    passed = diagnosis.get("passed", False)
+    overall_score = diagnosis.get("overall_score", 0.0)
+
+    if passed:
+        print(f"[OK] 读者模拟通过！overall_score={overall_score}")
+        results["final_passed"] = True
+        results["final_score"] = overall_score
+        # 更新迭代状态
+        iter_state["iterations"] = current_iteration
+        iter_state["history"].append({
+            "iteration": current_iteration,
+            "passed": True,
+            "score": overall_score,
+            "timestamp": datetime.now().isoformat()
+        })
+        save_iteration_state(project, iter_state)
+        return results
+
+    print(f"[INFO] 读者模拟未通过，overall_score={overall_score}")
+
+    report = load_report(project)
+    if not report:
+        print("[ERROR] 无 final-report.md")
+        return results
+
+    # v0.7.1: 构建结构化重写指令（Dumb Tools 合规，不含 action 分类）
+    instructions = build_rewrite_instructions(diagnosis)
+    instructions_path = save_rewrite_instructions(project, instructions)
+
+    print(f"\n[INFO] 重写指令已生成: {instructions_path}")
+    print(f"[INFO] 共 {instructions['total_failed']} 个段落需要重写")
+    print("=" * 60)
+
+    # 打印摘要（便于 Agent 快速理解）
+    for inst in instructions["instructions"]:
+        print(f"\n--- 优先级 {inst['priority']} ---")
+        print(f"章节: {inst['section']}")
+        print(f"理解分: {inst['score']}")
+        print(f"预览: {inst['preview']}...")
+        if inst["stuck_points"]:
+            print(f"卡点 ({inst['data_for_agent']['stuck_point_count']} 个):")
+            for sp in inst["stuck_points"]:
+                quote = sp.get("quote", "") if isinstance(sp, dict) else str(sp)
+                reason = sp.get("reason", "") if isinstance(sp, dict) else ""
+                print(f"  - {quote}: {reason}")
+        if inst["term_gaps"]:
+            print(f"术语缺口 ({inst['data_for_agent']['term_gap_count']} 个):")
+            for tg in inst["term_gaps"]:
+                term = tg.get("term", "") if isinstance(tg, dict) else str(tg)
+                context = tg.get("context_needed", "") if isinstance(tg, dict) else ""
+                print(f"  - {term}: 需要 {context}")
+        if inst["rewrite_suggestion"]:
+            print(f"重写建议: {inst['rewrite_suggestion']}")
+        # v0.7.1: 不打印 action，由 Agent 决定
+        print(f"[数据] score={inst['score']}, 卡点={inst['data_for_agent']['stuck_point_count']}, 术语缺口={inst['data_for_agent']['term_gap_count']}")
+
+    print("\n" + "=" * 60)
+    print(f"[ACTION] Agent 应根据 {instructions_path} 重写 final-report.md")
+    print(f"[ACTION] 重写后请重新运行 reader_simulation.py")
+    print(f"[ACTION] 然后再次运行此脚本完成第 {current_iteration + 1} 轮迭代")
+    print(f"[NOTE] 工具不直接调 LLM，由 Agent 执行实际重写")
+    print(f"[NOTE] v0.7.1 Dumb Tools 合规：工具只提供客观数据，action 由 Agent 决定")
+    print("=" * 60)
+
+    # 更新迭代状态
+    iter_state["iterations"] = current_iteration
+    iter_state["history"].append({
+        "iteration": current_iteration,
+        "passed": False,
+        "score": overall_score,
+        "timestamp": datetime.now().isoformat(),
+        "failed_count": instructions["total_failed"]
+    })
+    save_iteration_state(project, iter_state)
+
+    results["iterations"] = current_iteration
+    results["final_score"] = overall_score
+    results["rewrite_instructions_path"] = str(instructions_path)
+
+    return results
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Research OS v0.7 写-读-改闭环：根据读者反馈重写报告")
+    parser.add_argument("project", help="项目路径")
+    parser.add_argument("--max-iterations", type=int, default=2, help="最大迭代次数")
+    args = parser.parse_args()
+
+    project = Path(args.project).resolve()
+    if not project.exists():
+        print(f"[ERROR] Project not found: {project}", file=sys.stderr)
         return 1
 
-    print(f"\n=== Research Artifacts Loaded ===")
-    for k, v in artifacts.items():
-        if isinstance(v, str):
-            print(f"  - {k}: {len(v)} chars")
-        elif isinstance(v, dict):
-            print(f"  - {k}: {len(v)} keys")
-        else:
-            print(f"  - {k}: loaded")
+    results = write_read_rewrite_loop(project, args.max_iterations)
 
-    print(f"\n=== Next Step ===")
-    print(f"agent 需要根据以上研究产物，按 5 幕叙事结构写 final-report.md 初稿：")
-    print(f"  1. 问题 - 读者为什么要读这份报告")
-    print(f"  2. 探索 - 你看了什么、发现了什么")
-    print(f"  3. 冲突 - 哪些你以为对的事情被推翻了")
-    print(f"  4. 决策 - 基于以上，选了什么、淘汰了什么")
-    print(f"  5. 行动 - 如果只做一件事，做什么")
-    print(f"\n写完后调用 write_read_rewrite_loop(project, draft_md) 触发读者门禁。")
-    return 0
+    print(f"\n{'=' * 60}")
+    print(f"写-读-改闭环结果:")
+    print(f"  迭代次数: {results['iterations']}")
+    print(f"  最终通过: {results['final_passed']}")
+    print(f"  最终分数: {results['final_score']}")
+    if results["rewrite_instructions_path"]:
+        print(f"  重写指令: {results['rewrite_instructions_path']}")
+    print(f"{'=' * 60}")
+
+    return 0 if results["final_passed"] else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
