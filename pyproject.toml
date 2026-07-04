@@ -51,6 +51,17 @@ py-modules = [
     "identity_extractor",
     "intent_discovery",
     "intent_tracker",
+    "build_dashboard",
+    "chart_selector",
+    "concept_ladder_helper",
+    "final_report_writer",
+    "goal_tracker",
+    "iteration_log",
+    "mermaid_flow_helper",
+    "plain_glossary",
+    "reader_simulation",
+    "red_team_agent",
+    "web_capture",
 ]
 
 [tool.setuptools.package-data]

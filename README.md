@@ -1,105 +1,67 @@
+<!-- ros-version: v0.5 | last-updated: 2026-07-04 | status: current -->
+
 # Research OS
 
-Depth research workflow toolkit. Goes from a research question to an evidence-graded, reader-first HTML report.
+**深度调研工作流系统**。给定一个研究主题，引导走完"任务定义 → 候选源采集 → 证据矩阵 → 假设账本 → 反方审计 → 最终报告 → HTML 可视化"的完整链路，产出有信任度保证的深度报告。
 
-## What it does
+**当前版本**：v0.5（2026-07-04）
 
-Research OS turns a research question into a structured, evidence-graded, reader-first HTML report. It is built around four principles:
+## 快速开始
 
-1. **Evidence grading first** — every claim must trace back to a source with explicit grade (A/B/C/D) and independence marker.
-2. **Reader-first delivery** — the final HTML report serves readers, not the researcher. Audit trails, evidence matrices, and trace manifests are folded into appendices.
-3. **Hypothesis-driven** — every project starts with explicit hypotheses that get revised, downgraded, or rejected as evidence comes in.
-4. **Traceable conclusions** — strong claims in the final report must link to hypothesis IDs and evidence IDs in a trace manifest.
+### 1. 入口文档
 
-## Install
+**先读 [`templates/00-使用说明.md`](templates/00-使用说明.md)**——这是唯一入口，同步到 v0.5 真实状态。
 
-```bash
-git clone https://github.com/your-name/research-os.git
-cd research-os
-pip install -e .
-```
-
-Optional: configure MiMo search integration by creating a `.mimo_search_key` file with your MiMo API key, or set `MIMO_KEY_PATH` env var.
-
-## Quick start
+### 2. 创建项目
 
 ```bash
-# Create a new research project
-ros new --name "Mizzen Insight 产品深度拆解" --type product --depth R2 --html
-
-# Generate the execution plan (questions + hypotheses seed)
-ros plan "projects/Mizzen Insight 产品深度拆解"
-
-# Fill task-card.md, candidate_pool.json, evidence_matrix.md, etc.
-# Then check status to see the next required action:
-ros status "projects/Mizzen Insight 产品深度拆解"
-
-# Run the next safe mechanical step (planner / html builder / manual instructions)
-ros run "projects/Mizzen Insight 产品深度拆解"
-
-# Validate against quality gates
-ros validate "projects/Mizzen Insight 产品深度拆解"
-
-# Build the reader-first HTML from final-report.md
-ros build --project "projects/Mizzen Insight 产品深度拆解"
+python ros.py new "项目名" --type product --depth R2 --html
 ```
 
-## Depth levels
+### 3. 完整流程（15 步）
 
-| Level | Description |
-|-------|-------------|
-| R0    | Lightweight, single-question, narrative report |
-| R1    | Standard research with evidence matrix |
-| R2    | Full workflow with candidate pool, hypothesis ledger, trace manifest, and HTML |
-| R3    | Multi-stage deep research with all R2 features plus extended analysis |
+详见 [`templates/00-使用说明.md`](templates/00-使用说明.md) 第 4 节。
 
-## Research types
+### 4. 验证
 
-`company-jd`, `product`, `user-research`, `industry`, `competitor`, `topic`, `portfolio`, `mixed`
-
-Each type routes to a research mode (`evidence_intelligence`, `thinking_decision`, `opportunity_map`, `product_teardown`, `user_voice`, `career_strategy`) that determines the questions, hypotheses, and HTML view type.
-
-## Configuration
-
-All paths are configurable via environment variables (see `.env.example`):
-
-- `RESEARCH_OS_HOME` — install root (defaults to repo directory)
-- `RESEARCH_OS_TEMPLATES` — template library location (defaults to `<home>/templates`)
-- `RESEARCH_OS_PROJECTS_DIR` — where new projects are scaffolded (defaults to `<home>/projects`)
-- `MIMO_KEY_PATH` — MiMo API key file path
-- `MIMO_PAYLOAD_PATH` — temp payload file for MiMo API calls
-
-## Project structure
-
-Each research project gets scaffolded with:
-
-```
-project-name/
-├── 00-task/           # task-card.md
-├── 01-plan/           # research-plan.md, research-execution-plan.md
-├── 02-sources/        # candidate_pool.json, platform-audit.md, user-voice.md, jd-breakdown.md
-├── 03-evidence/       # evidence_matrix.md, hypothesis_ledger.json
-├── 04-captures/       # raw captures
-├── 05-analysis/       # analysis notes
-├── 06-review/         # red_team.md
-├── 07-output/         # final-report.md, view-model.json, trace-manifest.json
-├── 08-html/           # index.html (generated)
-└── 09-publish/        # published artifacts
+```bash
+python ros.py validate "项目路径"
 ```
 
-## Quality gates
+## 核心文档
 
-The validator checks for:
+| 文档 | 作用 |
+|---|---|
+| [`templates/00-使用说明.md`](templates/00-使用说明.md) | **唯一入口**，强制先读 |
+| [`templates/09-HTML美学规范.md`](templates/09-HTML美学规范.md) | HTML 视觉规格的**单一真相源** |
+| [`templates/14-研究执行状态机.md`](templates/14-研究执行状态机.md) | 15 步流程 + 写-读-改闭环 |
+| [`CHANGELOG.md`](CHANGELOG.md) | 版本变更记录 |
+| [`archive/README.md`](archive/README.md) | 历史版本归档说明 |
 
-- Final report has all required reader sections (verdict, key findings, mechanism, users, differentiation, risks, recommendations)
-- Audit material (evidence standards, source appendix) is in the latter half, not burying reader content
-- Evidence matrix has `来源独立性` and MiMo downgrade rule
-- Research plan includes SSR/login-wall handling
-- Red team requires final-report writeback and at least one downgraded conclusion
-- R2/R3: candidate pool, hypothesis ledger, trace manifest all present
-- Strong claims in trace manifest link to existing hypothesis IDs and evidence IDs
-- HTML is reader-first (not a paste of process files), has visual modules for non-narrative views
+## 版本治理
 
-## License
+- **当前版本**：v0.5
+- **版本标记**：每个文件头 `<!-- ros-version: v0.5 | status: current -->`
+- **归档规则**：旧版本移到 `archive/v0.x/`，不作为当前规范
+- **变更记录**：见 [`CHANGELOG.md`](CHANGELOG.md)
 
-Apache-2.0
+## 目录结构
+
+```
+research-os/
+├── README.md                    # 本文件
+├── CHANGELOG.md                 # 版本变更记录
+├── ros.py                       # CLI 入口
+├── *.py                         # Python 引擎（27 个脚本）
+├── templates/                   # 模板库
+├── archive/                     # 历史版本归档
+└── projects/                    # 研究项目目录
+```
+
+## 设计原则
+
+1. **单一真相源**：每个规范只有一个权威文件
+2. **强制入口**：Agent 必须先读 `00-使用说明.md`
+3. **强制验证**：每步完成后必须跑 validator
+4. **版本治理**：.bak 归档，加版本头
+5. **写-读-改闭环**：报告写完必须跑读者模拟

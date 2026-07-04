@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Research OS v0.4 safe step runner.
+"""Research OS v0.5 safe step runner (原 v0.4 模块，v0.5 重构后归并版本号).
 
 Runs only low-risk mechanical steps. Judgment-heavy research steps are surfaced as
 instructions so the system does not fabricate research work for the sake of automation.

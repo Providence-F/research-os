@@ -1,0 +1,16 @@
+import sys
+from pathlib import Path
+import llm_client
+
+prompt = Path(r"C:\Users\19932\research-os\_deep_research_prompt.txt").read_text(encoding="utf-8")
+result = llm_client.chat(
+    messages=[
+        {"role": "system", "content": "你是 AMD AI 算力生态的深度调研员。基于训练知识诚实回答，区分事实/共识/推断。"},
+        {"role": "user", "content": prompt},
+    ],
+    temperature=0.3,
+    max_tokens=6000,
+)
+out_path = Path(r"C:\Users\19932\research-os\_deep_research_result.md")
+out_path.write_text(result, encoding="utf-8")
+print(f"Wrote {len(result)} chars to {out_path}")

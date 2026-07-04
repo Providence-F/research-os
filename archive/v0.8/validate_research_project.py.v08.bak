@@ -215,49 +215,6 @@ def count_heading_like_options(md: str) -> int:
     return count
 
 
-
-
-# v0.9 新增：stop-slop 融入
-# AI 写作特征清单（内化自 stop-slop skill）
-AI_WRITING_PATTERNS = [
-    ("总而言之", "LLM 高频收尾词"),
-    ("综上所述", "模板化总结"),
-    ("值得注意的是", "LLM 高频插入语"),
-    ("需要指出的是", "模板化强调"),
-    ("具体来说", "LLM 高频过渡词"),
-    ("换句话说", "LLM 解释性填充"),
-    ("高效", "LLM 高频形容词"),
-    ("强大", "LLM 高频形容词"),
-    ("智能", "LLM 高频形容词"),
-    ("全面", "LLM 高频形容词"),
-    ("深入", "LLM 高频形容词"),
-    ("此外", "LLM 高频连接词"),
-    ("然而", "LLM 高频转折词"),
-    ("因此", "LLM 高频因果词"),
-]
-
-
-def check_ai_writing_patterns(project: Path) -> Check:
-    """v0.9: 扫描 final-report.md 的 AI 写作特征（融入 stop-slop）"""
-    import re
-    report_path = project / "07-output" / "final-report.md"
-    if not report_path.exists():
-        return Check("FAIL", "ai_writing_patterns", "final-report.md 不存在")
-    content = report_path.read_text(encoding="utf-8")
-    hits = []
-    for pattern, reason in AI_WRITING_PATTERNS:
-        matches = re.findall(pattern, content)
-        if matches:
-            hits.append(f"'{pattern}' x{len(matches)} ({reason})")
-    if hits:
-        msg = (f"AI 写作特征扫描（融入 stop-slop）：发现 {len(hits)} 类特征\n"
-               + "\n".join(f"  - {h}" for h in hits[:5])
-               + ("\n  ... 等" if len(hits) > 5 else "")
-               + "\n建议：用人话替换，具体说事实/数字，少用模板化句式")
-        return Check("WARN", "ai_writing_patterns", msg)
-    return Check("PASS", "ai_writing_patterns",
-                 "AI 写作特征扫描：通过（未发现明显 LLM 模板）")
-
 def validate_project(project: Path) -> list[Check]:
     checks: list[Check] = []
 
@@ -719,76 +676,7 @@ def validate_project(project: Path) -> list[Check]:
                 else:
                     add(checks, "WARN", "v07 layout theme", f"HTML may not honor layout_spec.theme={theme}")
 
-    # ===== v0.5 checks: version consistency + aesthetics compliance =====
-    checks.append(check_version_consistency(project))
-    if htm:
-        checks.append(check_html_aesthetics_v05(project, htm))
-
-    checks.append(check_ai_writing_patterns(project))
-
     return checks
-
-
-
-# ===== v0.5 additions =====
-
-def check_version_consistency(project: Path) -> Check:
-    """v0.5: check all JSON schema_version contains v0.5"""
-    import json as _json
-    json_files = list(project.rglob("*.json"))
-    if not json_files:
-        return Check("PASS", "v0.5 version consistency", "no JSON files to check")
-    issues = []
-    for jf in json_files:
-        try:
-            data = _json.loads(jf.read_text(encoding="utf-8"))
-        except Exception:
-            continue
-        sv = data.get("schema_version", "")
-        if not sv:
-            continue
-        if "v0.5" not in sv:
-            issues.append(f"{jf.relative_to(project).name}: {sv}")
-    if issues:
-        return Check("WARN", "v0.5 version consistency",
-                     f"schema_version not v0.5 (legacy schemas allowed during v0.5 migration): {', '.join(issues[:5])}")
-    return Check("PASS", "v0.5 version consistency", "all schema_version contain v0.5")
-
-
-def check_html_aesthetics_v05(project: Path, html_content: str) -> Check:
-    """v0.5: check HTML complies with 09-HTML美学规范.md"""
-    issues = []
-    if "#faf7f0" in html_content:
-        issues.append("bg is #faf7f0 (old v0.4), should be #faf9f5 (v0.5)")
-    elif "#faf9f5" not in html_content and "var(--bg)" not in html_content:
-        issues.append("bg not #faf9f5")
-    if "#8b5a3c" in html_content:
-        issues.append("accent is #8b5a3c (old v0.4), should be #b85b44 (v0.5)")
-    elif "#b85b44" not in html_content and "var(--accent)" not in html_content:
-        issues.append("accent not #b85b44")
-    if "Lora" not in html_content:
-        issues.append("font-serif missing Lora")
-    if "Inter" not in html_content:
-        issues.append("font-sans missing Inter")
-    if "fonts.googleapis.com" not in html_content:
-        issues.append("Google Fonts CDN not loaded")
-    if "38px" not in html_content:
-        issues.append("h1 not 38px")
-    if "30px" not in html_content and "hero-verdict" not in html_content:
-        issues.append("hero-verdict not 30px")
-    if "26px" not in html_content:
-        issues.append("h2 not 26px")
-    if "reading-progress" not in html_content:
-        issues.append("missing reading-progress bar")
-    if "border-radius: 2px" in html_content:
-        issues.append("border-radius 2px deprecated (should be 6px/4px)")
-    if "line-height: 1.75" not in html_content and "line-height:1.75" not in html_content:
-        issues.append("body line-height not 1.75")
-    if issues:
-        return Check("FAIL", "v0.5 HTML aesthetics",
-                     f"does not comply with 09-HTML美学规范.md: {'; '.join(issues[:5])}")
-    return Check("PASS", "v0.5 HTML aesthetics", "HTML complies with 09-HTML美学规范.md")
-
 
 
 def print_checks(checks: list[Check]) -> int:

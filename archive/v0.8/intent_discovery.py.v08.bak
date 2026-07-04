@@ -1,0 +1,1014 @@
+#!/usr/bin/env python3
+"""Research OS intent discovery - pre-research phase.
+
+Triggered after `ros new` (or manually via `ros discover`). Reads the task
+card, the user profile (cross-project memory), and the recent project index.
+Calls DeepSeek to surface hidden intents, unresolved seeds from past
+projects, and tailored sub-questions/hypotheses.
+
+Anti-recursion (MemOS DirectRecall analog): scope excludes the AI's own past
+intent_doc outputs and revision records - intent_discovery reads only real
+research signals (task card, profile, project index, cross-project insights
+that were extracted from completed projects), not AI's previous reflections
+on those projects.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from datetime import date
+from pathlib import Path
+from typing import Any
+
+import config
+import goal_tracker
+import iteration_log
+import llm_client
+import profile_store
+from research_router import route_research
+
+
+V07_SYSTEM_PROMPT = """你是 Research OS v0.7 的报告契约设计师。基于已经完成的意图发现结果，你要生成 8 个契约字段，决定这份报告该怎么写、给谁看、用什么结构、避免什么。
+
+## 借鉴的开源模式
+- 借鉴 dzhng/deep-research 的 `generateFeedback()`：当意图置信度不够高时，输出 clarifying_questions 让用户先回答再开调研
+- 借鉴 assafelovic/gpt-researcher 的多 agent 分工：reader/writer/visualizer/publisher 各自的输入契约
+- 借鉴 gpt-researcher `VisualizerAgent`：layout_spec 显式声明 blocks，无合适数据的块返回 None 跳过
+
+## 8 个契约字段
+
+### 1. reader_model（读者画像）
+- background: 读者的已有知识背景（来自 identity）
+- known_concepts: 读者已懂的概念（可直接使用，不用解释）
+- unknown_concepts: 读者陌生的概念（必须前置解释）
+- likely_confusions: 可能误解点
+- reading_goal: 读完要完成什么动作
+- attention_budget: 可接受阅读长度/复杂度（low/medium/high）
+- preferred_explanation_style: analogy / first_principles / case_study / decision_table
+
+### 2. intent_tree（意图树，5 层递归）
+每个 hidden_intent 必须拆 5 层：
+1. stated: 用户说了什么
+2. real_problem: 真正想解决什么问题
+3. why_now: 为什么现在问
+4. cost_of_not_solving: 不解决会损失什么
+5. next_action: 读完后要做什么决策/动作
+
+每层标 confidence (high/medium/low)、identity_link、report_implication。
+
+### 3. concept_ladder_needed (bool) + concept_ladder_seed (list)
+若 unknown_concepts >= 5，concept_ladder_needed=true，concept_ladder_seed 列出核心术语（≤10 个）。
+每个术语将按 6 阶组织：直觉比喻 → 基础定义 → 工作机制 → 行业语境 → 用户关心点 → 项目锚点。
+
+### 4. personalization_plan（真个性化 7 落点）
+- case_selection: 因为用户是谁，选哪些案例
+- analogy_strategy: 因为用户背景，用什么类比
+- depth_control: 哪些技术细节跳过 / 深挖
+- risk_filter: 哪些风险跟用户有关
+- career_story: 哪些内容可转成求职叙事
+- product_insight: 哪些内容可反馈到用户的产品
+- track_judgment: 哪些内容影响赛道判断
+
+### 5. report_contract（报告契约）
+- required_sections: 必须出现的章节标题（list）
+- narrative_angle: 叙事角度
+- tone: 基调
+- length_target: 目标长度
+
+### 6. layout_spec（布局契约）
+- theme: narrative / science / decision / comparison / field_guide / portfolio
+- blocks: 按顺序声明的视觉块 list，可选：
+  ['hero', 'summary_cards', 'object_cards', 'concept_ladder', 'causal_chain',
+   'timeline', 'comparison_matrix', 'question_bank', 'decision_path',
+   'evidence_table', 'narrative_section', 'filterable_table', 'strategy_tabs']
+- skip_blocks: 明确不使用的块及原因
+- visual_density: low / medium / high
+
+选择 theme 的指引：
+- narrative: 长文为主，少组件（科普类、参访准备）
+- science: 概念阶梯 + 因果链（第一性原理）
+- decision: 选项表 + 决策路径 + 风险框（求职匹配、选题）
+- comparison: 对比矩阵 + 评分卡（多对象比较）
+- field_guide: checklist + 问题清单（参访、面试准备）
+- portfolio: 作品集式叙事
+
+### 7. clarifying_questions (list)
+若 intent_tree 任一层 confidence=low，或 unknown_concepts>5，输出 1-3 个澄清问题。
+每个问题格式：{"question": "...", "why": "...", "blocks_plan_if_unanswered": true}
+若无澄清需要，返回空列表。
+
+### 8. iteration_strategy（迭代策略）
+- breadth: 第一轮查询广度 (3-5)
+- depth: 最大迭代深度 (1-3)
+- stop_conditions: 什么情况下停止迭代
+
+## 输出格式（JSON）
+
+```json
+{
+  "schema_version": "research-os-intent-doc-v0.2",
+  "reader_model": {
+    "background": "...",
+    "known_concepts": ["..."],
+    "unknown_concepts": ["..."],
+    "likely_confusions": ["..."],
+    "reading_goal": "...",
+    "attention_budget": "medium",
+    "preferred_explanation_style": "analogy"
+  },
+  "intent_tree": [
+    {
+      "intent_id": "IT01",
+      "stated": "...",
+      "real_problem": "...",
+      "why_now": "...",
+      "cost_of_not_solving": "...",
+      "next_action": "...",
+      "confidence": "medium",
+      "identity_link": "...",
+      "report_implication": "..."
+    }
+  ],
+  "concept_ladder_needed": true,
+  "concept_ladder_seed": ["术语1", "术语2"],
+  "personalization_plan": {
+    "case_selection": "...",
+    "analogy_strategy": "...",
+    "depth_control": "...",
+    "risk_filter": "...",
+    "career_story": "...",
+    "product_insight": "...",
+    "track_judgment": "..."
+  },
+  "report_contract": {
+    "required_sections": ["..."],
+    "narrative_angle": "...",
+    "tone": "...",
+    "length_target": "..."
+  },
+  "layout_spec": {
+    "theme": "decision",
+    "blocks": ["hero", "concept_ladder", "comparison_matrix", "decision_path", "question_bank", "evidence_table", "narrative_section"],
+    "skip_blocks": [{"block": "filterable_table", "reason": "..."}],
+    "visual_density": "medium"
+  },
+  "clarifying_questions": [
+    {"question": "...", "why": "...", "blocks_plan_if_unanswered": true}
+  ],
+  "iteration_strategy": {
+    "breadth": 4,
+    "depth": 2,
+    "stop_conditions": ["..."]
+  }
+}
+```
+
+只输出 JSON，不要加任何前后说明文字。"""
+
+
+SYSTEM_PROMPT = """你是一个长期研究教练，不是面试官，不是机械 5 why 提问机器。
+
+你的工作：基于用户的历史调研记录、用户身份画像和这次填的任务卡，挖掘他们没说出口的真实需求，甚至帮他们意识到自己埋藏在内心深处的"问题种子"，让用户看到时有 aha moment。
+
+## 核心原则
+
+1. 不要机械套话术。每条假设必须配具体证据（任务卡里的原话 / 历史项目里的具体记录 / 身份画像里的具体字段）。
+2. 如果你不确定，就直接说"我需要更多信息"，不要硬猜。
+3. 你不是在审讯用户，是在帮他们看清自己。
+4. 真需求往往是慢慢明确的——你给的 hidden_intents 是假设，不是定论。用户可以拒绝。
+5. surfaced_seeds 必须来自用户画像的 unresolved_seeds，不能编造。
+6. suggested_sub_questions 要基于意图定制，不能照搬通用模板（"产品解决什么问题"这种空话不算定制）。
+7. open_questions 要具体到能直接回答，不要"你想深入了解什么"这种空泛追问。
+
+## 三层深度挖掘（每个 hidden_intent 必须回答）
+
+每条 hidden_intent 不能只写"用户可能想 X"。必须显式回答三层：
+
+### 第 1 层：本质
+- 用户在任务卡里说 X，但 X 背后的 Y 才是真问题。Y 是什么？
+- 例：用户说"为 AMD 参访做准备"——本质是"判断 AMD 这条线值不值得深挖"。
+- 如果本质就是表层（Y = X），说明这条意图可能不重要，考虑降级。
+
+### 第 2 层：子问题
+- 把 Y 拆成 Y1 / Y2 / Y3，看哪个是真问题。
+- 例：Y = "AMD 这条线值不值得深挖" → Y1 = "技术路线是否领先" / Y2 = "市场位置是否稳固" / Y3 = "跟我个人长期价值的关系"。
+- 必须明确"哪个子问题最关键"。
+
+### 第 3 层：隐藏需求
+- 用户没说但实际在乎的。基于身份画像（employment_status / current_products / track_judgments / long_term_goals）判断。
+- 常见隐藏需求类型：
+  - 求职故事：这次调研能不能成为面试时的"我做过 X"案例？
+  - 产品启发：这次调研对用户当前产品组合有什么启发？
+  - 赛道修正：这次调研是否修正了用户对某条赛道的判断？
+  - 认知差：这次调研能不能让用户获得"别人不知道但我知道"的洞察？
+- 如果某条 hidden_intent 找不到隐藏需求层，说明这条意图可能太表面，考虑降级。
+
+## 身份贯穿（强制）
+
+每条 hidden_intent 必须显式回答三个身份关系问题：
+1. **跟求职状态的关系**：基于 identity.employment_status，这条意图跟用户的求职目标/求职故事有什么关系？如果无关，明确说"无关"。
+2. **跟产品组合的关系**：基于 identity.current_products，这条意图跟用户当前在做的产品有什么启发？如果无关，明确说"无关"。
+3. **跟赛道判断的关系**：基于 identity.track_judgments，这条意图是否修正/强化用户对某条赛道的判断？如果无关，明确说"无关"。
+
+如果某条 hidden_intent 三个关系都"无关"，说明这条意图跟用户长期价值锚定不够，考虑降级或替换。
+
+## 输出格式（JSON）
+
+```json
+{
+  "stated_intent": "表层意图（用户说的）",
+  "hidden_intents": [
+    {
+      "intent": "隐藏意图的一句话总结",
+      "essence": "本质层：X 背后的 Y 是什么",
+      "sub_questions": ["Y1", "Y2", "Y3"],
+      "key_sub_question": "最关键的子问题",
+      "hidden_need": "隐藏需求层（求职故事/产品启发/赛道修正/认知差）",
+      "identity_relations": {
+        "employment": "跟求职状态的关系（无关则写'无关'）",
+        "products": "跟产品组合的关系（无关则写'无关'）",
+        "tracks": "跟赛道判断的关系（无关则写'无关'）"
+      },
+      "evidence": ["任务卡原话1", "身份画像字段1", "历史项目记录1"],
+      "if_true_implication": "如果是真，对调研方向的影响"
+    }
+  ],
+  "surfaced_seeds": [
+    {
+      "seed": "过去调研留下的开放问题",
+      "origin_project_id": "原项目ID",
+      "why_relevant": "为什么这次调研可能正面解决"
+    }
+  ],
+  "suggested_sub_questions": ["基于意图定制的5个子问题"],
+  "suggested_hypotheses": ["基于意图定制的3个初始假设"],
+  "open_questions": [
+    {
+      "question": "需要追问用户的具体问题",
+      "why": "为什么问这个（基于任务卡里哪句模糊的话）"
+    }
+  ]
+}
+```
+
+只输出 JSON，不要加任何前后说明文字。"""
+
+
+USER_PROMPT_TEMPLATE = """## 本次调研基础信息
+- 项目名：{project_name}
+- 调研类型：{research_type}
+- 深度档位：{depth}
+- 推断的 research_mode：{research_mode}
+
+## 任务卡内容（用户填写的）
+{task_card}
+
+## 用户身份画像（就业状态 / 产品组合 / 赛道判断 / 长期目标）
+{identity_summary}
+
+## 用户行为画像（判断模式 + 未解种子 + 领域偏好）
+{user_profile_summary}
+
+## 最近 5 个历史项目
+{project_history}
+
+## 跨项目洞察（来自已完成项目，非 AI 反思）
+{insight_memory_summary}
+
+## 上次调研的意图演化（stated vs resolved 差异）
+{intent_evolution_summary}
+
+---
+
+请基于以上输入生成意图文档。**每个 hidden_intent 必须显式回答三层（本质/子问题/隐藏需求）+ 三个身份关系（就业/产品/赛道）**。
+
+输出严格 JSON 格式：
+
+```json
+{{
+  "stated_intent": "用户表面说他想要的（一句话总结）",
+  "hidden_intents": [
+    {{
+      "intent": "可能真正想问的是 X（一句话）",
+      "essence": "本质层：X 背后的 Y 是什么",
+      "sub_questions": ["Y1", "Y2", "Y3"],
+      "key_sub_question": "最关键的子问题",
+      "hidden_need": "隐藏需求层（求职故事/产品启发/赛道修正/认知差）",
+      "identity_relations": {{
+        "employment": "跟求职状态的关系（无关则写'无关'）",
+        "products": "跟产品组合的关系（无关则写'无关'）",
+        "tracks": "跟赛道判断的关系（无关则写'无关'）"
+      }},
+      "evidence": ["证据1：任务卡里写了 Y", "证据2：身份画像字段 Z", "证据3：历史项目记录 W"],
+      "if_true_implication": "如果是真，调研该往 V 方向走（具体说）"
+    }}
+  ],
+  "surfaced_seeds": [
+    {{
+      "seed": "未解种子的原文（必须来自用户画像的 unresolved_seeds）",
+      "origin_project_id": "种子来源项目 id",
+      "why_relevant": "为什么这次调研可能正面解决这个种子"
+    }}
+  ],
+  "suggested_sub_questions": [
+    "基于意图定制的子问题1（不是通用模板，要具体到这次调研对象）",
+    "子问题2",
+    "子问题3",
+    "子问题4",
+    "子问题5"
+  ],
+  "suggested_hypotheses": [
+    "基于意图定制的初始假设1（可被证据证伪的）",
+    "假设2",
+    "假设3"
+  ],
+  "open_questions": [
+    {{
+      "question": "具体追问（用户能直接回答的）",
+      "why": "为什么问这个（基于任务卡里哪句模糊的话）"
+    }}
+  ]
+}}
+```
+
+只输出 JSON，不要加任何前后说明文字。"""
+
+
+V07_USER_PROMPT_TEMPLATE = """## 项目基础
+- 项目名：{project_name}
+- 调研类型：{research_type}
+- 深度档位：{depth}
+- research_mode：{research_mode}
+
+## 任务卡
+{task_card}
+
+## 用户身份画像
+{identity_summary}
+
+## 意图发现结果（v0.5.1 hidden_intents）
+{intent_doc_json}
+
+---
+
+基于以上信息，生成 v0.7 的 8 个契约字段。
+
+注意：
+1. unknown_concepts 必须 ≥ 3 个具体术语，不能空泛
+2. personalization_plan 7 落点必须每点都因身份具体，不能写"无关"
+3. layout_spec.blocks 必须按阅读顺序排列
+4. clarifying_questions 仅当置信度低时才输出，否则空列表
+5. iteration_strategy 默认 breadth=4, depth=2，除非任务极简
+
+输出严格 JSON：
+{{
+  "schema_version": "research-os-intent-doc-v0.2",
+  "reader_model": {{...}},
+  "intent_tree": [{{...}}],
+  "concept_ladder_needed": true,
+  "concept_ladder_seed": ["..."],
+  "personalization_plan": {{...}},
+  "report_contract": {{...}},
+  "layout_spec": {{...}},
+  "clarifying_questions": [{{...}}],
+  "iteration_strategy": {{...}}
+}}
+
+只输出 JSON，不要加任何前后说明文字。"""
+
+
+def _read_task_card(project: Path) -> str:
+    path = project / "00-task" / "task-card.md"
+    if not path.exists():
+        return "(task-card.md 不存在或为空)"
+    text = path.read_text(encoding="utf-8-sig").strip()
+    return text if text else "(task-card.md 内容为空 - 用户还没填)"
+
+
+def _summarize_user_profile(profile: dict[str, Any]) -> str:
+    if not profile:
+        return "(用户画像为空 - 这是第一次调研)"
+    lines = []
+    patterns = profile.get("judgment_patterns", [])
+    if patterns:
+        lines.append("判断模式（用户做判断的稳定倾向）:")
+        for p in patterns[:5]:
+            lines.append(f"  - {p.get('pattern', '')}（首次发现: {p.get('first_seen', '')}）")
+    seeds = profile.get("unresolved_seeds", [])
+    open_seeds = [s for s in seeds if s.get("status") == "open"]
+    if open_seeds:
+        lines.append(f"\n未解种子（{len(open_seeds)} 个开放种子，可能跟这次调研相关）:")
+        for s in open_seeds[:5]:
+            lines.append(f"  - {s.get('seed', '')}")
+            lines.append(f"    来源: {s.get('origin_project_id', '')}")
+            touched = s.get("touched_again", [])
+            if touched:
+                lines.append(f"    再次触及: {', '.join(touched)}")
+    prefs = profile.get("domain_preferences", [])
+    if prefs:
+        lines.append(f"\n领域偏好:")
+        for p in prefs[:5]:
+            lines.append(f"  - {p.get('domain', '')}: 倾向 {p.get('depth_tendency', '')}, 频率 {p.get('frequency', 0)}")
+    return "\n".join(lines) if lines else "(画像字段都为空)"
+
+
+def _summarize_project_history() -> str:
+    idx = profile_store.read_project_index()
+    if not idx:
+        return "(没有历史项目)"
+    lines = []
+    for entry in idx[:5]:
+        lines.append(f"- [{entry.get('project_id', '?')}] {entry.get('title', '')}")
+        if entry.get("resolved_intent"):
+            lines.append(f"    真正解决: {entry.get('resolved_intent', '')}")
+        lines.append(f"    完成: {entry.get('completed_at', '?')}")
+    return "\n".join(lines)
+
+
+def _summarize_insight_memory() -> str:
+    items = profile_store.read_insight_memory()
+    if not items:
+        return "(没有跨项目洞察)"
+    lines = []
+    for item in items[:5]:
+        lines.append(f"- {item.get('insight', '')}")
+        lines.append(f"    来源: {item.get('origin_project_id', '?')}")
+        if item.get("applicable_domains"):
+            lines.append(f"    适用: {', '.join(item.get('applicable_domains', []))}")
+    return "\n".join(lines)
+
+
+def _summarize_identity() -> str:
+    """Read identity.json and render as summary for LLM context."""
+    identity = profile_store.read_identity()
+    if not identity:
+        return "(身份画像为空 - 用户尚未跑 ros discover-identity 并 accept)"
+    lines = []
+    emp = identity.get("employment_status", {})
+    if emp:
+        lines.append("【求职状态】")
+        lines.append(f"  当前: {emp.get('current', '?')}")
+        lines.append(f"  目标: {emp.get('target', '?')}")
+        lines.append(f"  时间线: {emp.get('timeline', '?')}")
+        intentions = emp.get("intentions", [])
+        if intentions:
+            lines.append(f"  意向公司: {', '.join(intentions[:5])}")
+        if emp.get("note"):
+            lines.append(f"  注: {emp['note']}")
+
+    products = identity.get("current_products", [])
+    if products:
+        lines.append(f"\n【当前产品组合】({len(products)} 个)")
+        for p in products:
+            lines.append(f"  - {p.get('name', '?')} [{p.get('status', '?')}] — {p.get('role', '')} ({p.get('freshness', '?')})")
+
+    tracks = identity.get("track_judgments", [])
+    if tracks:
+        lines.append(f"\n【赛道判断】({len(tracks)} 条)")
+        for t in tracks:
+            line = f"  - {t.get('track', '?')}: {t.get('judgment', '?')} ({t.get('freshness', '?')})"
+            if t.get("evidence"):
+                line += f" — {t['evidence']}"
+            if t.get("note"):
+                line += f" ⚠️ {t['note']}"
+            lines.append(line)
+
+    goals = identity.get("long_term_goals", [])
+    if goals:
+        lines.append("\n【长期目标】")
+        for g in goals:
+            lines.append(f"  - {g}")
+
+    return "\n".join(lines) if lines else "(身份画像字段都为空)"
+
+
+def _summarize_intent_evolution() -> str:
+    """Read intent_evolution list and render last 3 for LLM context."""
+    evo = profile_store.read_intent_evolution()
+    if not evo:
+        return "(没有意图演化记录 - 这是第一次调研)"
+    lines = []
+    for entry in evo[-3:]:  # last 3
+        lines.append(f"- 项目: {entry.get('project_id', '?')}")
+        lines.append(f"  声称意图: {entry.get('stated_intent', '?')}")
+        lines.append(f"  实际意图: {entry.get('resolved_intent', '?')}")
+        lines.append(f"  差距: {entry.get('gap', '?')}")
+        lines.append(f"  对下次启示: {entry.get('implication_for_next', '?')}")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def _build_intent_doc_md(result: dict[str, Any], project_name: str) -> str:
+    """Render the LLM JSON output as human-readable markdown."""
+    lines = [f"# 意图文档 — {project_name}", ""]
+    lines.append(f"_生成日期: {date.today().isoformat()}_")
+    lines.append("")
+    lines.append("## 表层意图")
+    lines.append("")
+    lines.append(result.get("stated_intent", "(空)"))
+    lines.append("")
+
+    hidden = result.get("hidden_intents", [])
+    if hidden:
+        lines.append("## 隐藏意图假设（三层深度挖掘）")
+        lines.append("")
+        lines.append("_这些是 AI 基于你的身份画像、历史和任务卡做的推断。每条意图都回答了三层：本质 / 子问题 / 隐藏需求，并显式标注跟身份的关系。你可以拒绝任何一个。_")
+        lines.append("")
+        for i, h in enumerate(hidden, 1):
+            lines.append(f"### 假设 {i}: {h.get('intent', '')}")
+            lines.append("")
+
+            essence = h.get("essence", "")
+            if essence:
+                lines.append(f"**本质层:** {essence}")
+                lines.append("")
+
+            sub_qs = h.get("sub_questions", [])
+            if sub_qs:
+                lines.append("**子问题拆解:**")
+                for sq in sub_qs:
+                    lines.append(f"  - {sq}")
+                key_sq = h.get("key_sub_question", "")
+                if key_sq:
+                    lines.append("")
+                    lines.append(f"**最关键子问题:** {key_sq}")
+                lines.append("")
+
+            hidden_need = h.get("hidden_need", "")
+            if hidden_need:
+                lines.append(f"**隐藏需求:** {hidden_need}")
+                lines.append("")
+
+            rel = h.get("identity_relations", {})
+            if rel:
+                lines.append("**跟身份的关系:**")
+                emp_rel = rel.get("employment", "")
+                if emp_rel:
+                    lines.append(f"  - 求职: {emp_rel}")
+                prod_rel = rel.get("products", "")
+                if prod_rel:
+                    lines.append(f"  - 产品: {prod_rel}")
+                track_rel = rel.get("tracks", "")
+                if track_rel:
+                    lines.append(f"  - 赛道: {track_rel}")
+                lines.append("")
+
+            evidence = h.get("evidence", [])
+            if evidence:
+                lines.append("**证据:**")
+                for e in evidence:
+                    lines.append(f"- {e}")
+                lines.append("")
+            implication = h.get("if_true_implication", "")
+            if implication:
+                lines.append(f"**如果是真:** {implication}")
+                lines.append("")
+
+    seeds = result.get("surfaced_seeds", [])
+    if seeds:
+        lines.append("## 浮现的未解种子")
+        lines.append("")
+        lines.append("_这些是你过去调研留下的开放问题，这次可能正面解决。_")
+        lines.append("")
+        for s in seeds:
+            lines.append(f"- **{s.get('seed', '')}**")
+            lines.append(f"  - 来源: {s.get('origin_project_id', '?')}")
+            why = s.get("why_relevant", "")
+            if why:
+                lines.append(f"  - 为什么相关: {why}")
+        lines.append("")
+
+    questions = result.get("suggested_sub_questions", [])
+    if questions:
+        lines.append("## 建议子问题")
+        lines.append("")
+        lines.append("_这些子问题替换了通用 MODE_PLANS 模板，基于你的意图定制。_")
+        lines.append("")
+        for i, q in enumerate(questions, 1):
+            lines.append(f"{i}. {q}")
+        lines.append("")
+
+    hyps = result.get("suggested_hypotheses", [])
+    if hyps:
+        lines.append("## 建议初始假设")
+        lines.append("")
+        for i, h in enumerate(hyps, 1):
+            lines.append(f"{i}. {h}")
+        lines.append("")
+
+    lines.append("---")
+    lines.append("")
+    lines.append("_此文档由 intent_discovery 生成，会随调研演化（ros reflect 会追加修订）。_")
+    return "\n".join(lines)
+
+
+def _build_open_questions_md(result: dict[str, Any]) -> str:
+    questions = result.get("open_questions", [])
+    if not questions:
+        return "# AI 反问的问题\n\n_本次没有需要追问的，可以直接开始调研。_\n"
+    lines = ["# AI 反问你的问题", ""]
+    lines.append("_回答这些问题能帮 AI 更准确理解你的意图。可以全跳过，但建议至少看一眼。_")
+    lines.append("")
+    for i, q in enumerate(questions, 1):
+        lines.append(f"## Q{i}. {q.get('question', '')}")
+        why = q.get("why", "")
+        if why:
+            lines.append("")
+            lines.append(f"_为什么问: {why}_")
+        lines.append("")
+        lines.append("**你的回答:**")
+        lines.append("")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def _build_clarifying_questions_md(v07: dict[str, Any]) -> str:
+    questions = v07.get("clarifying_questions", [])
+    if not questions:
+        return ""
+    lines = ["# v0.7 澄清问题（ros plan 前必答）", ""]
+    lines.append("_以下问题因意图置信度低/概念陌生度高而触发。答完后 ros plan 才会执行。_")
+    lines.append("")
+    for i, q in enumerate(questions, 1):
+        lines.append(f"## Q{i}. {q.get('question', '')}")
+        why = q.get("why", "")
+        if why:
+            lines.append("")
+            lines.append(f"_为什么问: {why}_")
+        blocks = q.get("blocks_plan_if_unanswered", False)
+        if blocks:
+            lines.append("")
+            lines.append("_⚠ 不答将阻塞 ros plan_")
+        lines.append("")
+        lines.append("**你的回答:**")
+        lines.append("")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def _build_v07_doc_md(v07: dict[str, Any], project_name: str) -> str:
+    """Render v0.7 contracts as human-readable markdown section."""
+    lines = [f"# v0.7 报告契约 — {project_name}", ""]
+    lines.append(f"_schema: {v07.get('schema_version', 'research-os-intent-doc-v0.2')}_")
+    lines.append("")
+
+    rm = v07.get("reader_model", {})
+    if rm:
+        lines.append("## 读者模型 (reader_model)")
+        lines.append("")
+        lines.append(f"- **背景**: {rm.get('background', '')}")
+        known = rm.get("known_concepts", [])
+        if known:
+            lines.append(f"- **已知概念**: {', '.join(known)}")
+        unknown = rm.get("unknown_concepts", [])
+        if unknown:
+            lines.append(f"- **陌生概念**: {', '.join(unknown)}")
+        confusions = rm.get("likely_confusions", [])
+        if confusions:
+            lines.append(f"- **可能误解**: {', '.join(confusions)}")
+        lines.append(f"- **阅读目标**: {rm.get('reading_goal', '')}")
+        lines.append(f"- **注意力预算**: {rm.get('attention_budget', '?')}")
+        lines.append(f"- **偏好解释方式**: {rm.get('preferred_explanation_style', '?')}")
+        lines.append("")
+
+    tree = v07.get("intent_tree", [])
+    if tree:
+        lines.append("## 意图树 (intent_tree, 5 层)")
+        lines.append("")
+        for it in tree:
+            lines.append(f"### {it.get('intent_id', '?')}: {it.get('stated', '')}")
+            lines.append(f"- 真问题: {it.get('real_problem', '')}")
+            lines.append(f"- 为何现在: {it.get('why_now', '')}")
+            lines.append(f"- 不解损失: {it.get('cost_of_not_solving', '')}")
+            lines.append(f"- 读完动作: {it.get('next_action', '')}")
+            lines.append(f"- 置信度: {it.get('confidence', '?')} | 身份关联: {it.get('identity_link', '')}")
+            lines.append(f"- 报告含义: {it.get('report_implication', '')}")
+            lines.append("")
+
+    if v07.get("concept_ladder_needed"):
+        seed = v07.get("concept_ladder_seed", [])
+        if seed:
+            lines.append("## 概念阶梯种子 (concept_ladder_seed)")
+            lines.append("")
+            lines.append("_以下术语首次出现前必须有定义或在 ladder 中解释_")
+            lines.append("")
+            for term in seed:
+                lines.append(f"- {term}")
+            lines.append("")
+
+    pp = v07.get("personalization_plan", {})
+    if pp:
+        lines.append("## 个性化计划 (personalization_plan, 7 落点)")
+        lines.append("")
+        for key, label in [
+            ("case_selection", "案例选择"),
+            ("analogy_strategy", "类比策略"),
+            ("depth_control", "深度控制"),
+            ("risk_filter", "风险过滤"),
+            ("career_story", "求职叙事"),
+            ("product_insight", "产品启发"),
+            ("track_judgment", "赛道判断"),
+        ]:
+            val = pp.get(key, "")
+            if val:
+                lines.append(f"- **{label}**: {val}")
+        lines.append("")
+
+    rc = v07.get("report_contract", {})
+    if rc:
+        lines.append("## 报告契约 (report_contract)")
+        lines.append("")
+        req = rc.get("required_sections", [])
+        if req:
+            lines.append(f"- **必需章节**: {', '.join(req)}")
+        lines.append(f"- **叙事角度**: {rc.get('narrative_angle', '')}")
+        lines.append(f"- **基调**: {rc.get('tone', '')}")
+        lines.append(f"- **目标长度**: {rc.get('length_target', '')}")
+        lines.append("")
+
+    ls = v07.get("layout_spec", {})
+    if ls:
+        lines.append("## 布局契约 (layout_spec)")
+        lines.append("")
+        lines.append(f"- **主题**: {ls.get('theme', '?')}")
+        lines.append(f"- **视觉密度**: {ls.get('visual_density', '?')}")
+        blocks = ls.get("blocks", [])
+        if blocks:
+            lines.append(f"- **blocks (按顺序)**: {' → '.join(blocks)}")
+        skip = ls.get("skip_blocks", [])
+        if skip:
+            lines.append("- **跳过块**:")
+            for s in skip:
+                if isinstance(s, dict):
+                    lines.append(f"  - {s.get('block', '?')}: {s.get('reason', '')}")
+                else:
+                    lines.append(f"  - {s}")
+        lines.append("")
+
+    cq = v07.get("clarifying_questions", [])
+    if cq:
+        lines.append(f"## 澄清问题 ({len(cq)} 个，ros plan 前必答)")
+        lines.append("")
+        for i, q in enumerate(cq, 1):
+            lines.append(f"{i}. **{q.get('question', '')}**")
+            why = q.get("why", "")
+            if why:
+                lines.append(f"   _为什么: {why}_")
+        lines.append("")
+
+    ist = v07.get("iteration_strategy", {})
+    if ist:
+        lines.append("## 迭代策略 (iteration_strategy)")
+        lines.append("")
+        lines.append(f"- **广度**: {ist.get('breadth', '?')}")
+        lines.append(f"- **深度**: {ist.get('depth', '?')}")
+        stop = ist.get("stop_conditions", [])
+        if stop:
+            lines.append(f"- **停止条件**: {'; '.join(stop)}")
+        lines.append("")
+
+    lines.append("---")
+    lines.append("_v0.7 契约由 intent_discovery 二轮 LLM 调用生成。goal_ledger 已基于此初始化。_")
+    return "\n".join(lines)
+
+
+def _discover_v07_contracts(
+    project: Path,
+    project_name: str,
+    research_type: str,
+    depth: str,
+    research_mode: str,
+    task_card: str,
+    identity_summary: str,
+    intent_doc: dict[str, Any],
+) -> dict[str, Any]:
+    """Second LLM call to generate v0.7 contracts. Falls back to defaults
+    on failure so v0.5.1 projects still work."""
+    user_prompt = V07_USER_PROMPT_TEMPLATE.format(
+        project_name=project_name,
+        research_type=research_type,
+        depth=depth,
+        research_mode=research_mode,
+        task_card=task_card,
+        identity_summary=identity_summary,
+        intent_doc_json=json.dumps(intent_doc, ensure_ascii=False, indent=2)[:6000],
+    )
+
+    try:
+        v07 = llm_client.chat_json(
+            messages=[
+                {"role": "system", "content": V07_SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.4,
+            max_tokens=3500,
+        )
+    except Exception as exc:
+        # Fallback: minimal v0.7 contracts so downstream doesn't crash
+        v07 = {
+            "schema_version": "research-os-intent-doc-v0.2",
+            "reader_model": {
+                "background": "(v0.7 LLM 调用失败，回退默认)",
+                "known_concepts": [],
+                "unknown_concepts": [],
+                "likely_confusions": [],
+                "reading_goal": "",
+                "attention_budget": "medium",
+                "preferred_explanation_style": "first_principles",
+            },
+            "intent_tree": [],
+            "concept_ladder_needed": False,
+            "concept_ladder_seed": [],
+            "personalization_plan": {},
+            "report_contract": {"required_sections": [], "narrative_angle": "", "tone": "", "length_target": ""},
+            "layout_spec": {
+                "theme": "narrative",
+                "blocks": ["hero", "narrative_section"],
+                "skip_blocks": [],
+                "visual_density": "low",
+            },
+            "clarifying_questions": [],
+            "iteration_strategy": {"breadth": 4, "depth": 2, "stop_conditions": ["max_depth_reached"]},
+            "_v07_fallback_reason": str(exc),
+        }
+
+    v07.setdefault("schema_version", "research-os-intent-doc-v0.2")
+    v07.setdefault("reader_model", {})
+    v07.setdefault("intent_tree", [])
+    v07.setdefault("concept_ladder_needed", False)
+    v07.setdefault("concept_ladder_seed", [])
+    v07.setdefault("personalization_plan", {})
+    v07.setdefault("report_contract", {})
+    v07.setdefault("layout_spec", {})
+    v07.setdefault("clarifying_questions", [])
+    v07.setdefault("iteration_strategy", {"breadth": 4, "depth": 2})
+    return v07
+
+
+def discover(project: Path) -> dict[str, Any]:
+    """Run intent discovery on a project. Writes intent_doc.md/json and
+    open_questions.md. Returns the parsed LLM result."""
+    config.ensure_runtime_dirs()
+
+    state_path = project / "research_state.json"
+    if not state_path.exists():
+        raise FileNotFoundError(f"missing {state_path}")
+
+    try:
+        state = json.loads(state_path.read_text(encoding="utf-8-sig"))
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"invalid {state_path}: {exc}") from exc
+
+    project_name = state.get("project_name", project.name)
+    research_type = state.get("research_type", "mixed")
+    depth = state.get("depth", "R1")
+    route = route_research(project_name, research_type, depth)
+    research_mode = route.get("research_mode", "evidence_intelligence")
+
+    task_card = _read_task_card(project)
+    profile = profile_store.read_user_profile()
+    profile_summary = _summarize_user_profile(profile)
+    project_history = _summarize_project_history()
+    insight_summary = _summarize_insight_memory()
+    identity_summary = _summarize_identity()
+    intent_evolution_summary = _summarize_intent_evolution()
+
+    user_prompt = USER_PROMPT_TEMPLATE.format(
+        project_name=project_name,
+        research_type=research_type,
+        depth=depth,
+        research_mode=research_mode,
+        task_card=task_card,
+        identity_summary=identity_summary,
+        user_profile_summary=profile_summary,
+        project_history=project_history,
+        insight_memory_summary=insight_summary,
+        intent_evolution_summary=intent_evolution_summary,
+    )
+
+    result = llm_client.chat_json(
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.4,
+        max_tokens=4000,
+    )
+
+    # Defensive: ensure required keys exist
+    result.setdefault("stated_intent", "")
+    result.setdefault("hidden_intents", [])
+    result.setdefault("surfaced_seeds", [])
+    result.setdefault("suggested_sub_questions", [])
+    result.setdefault("suggested_hypotheses", [])
+    result.setdefault("open_questions", [])
+
+    # v0.7 second LLM call: generate 8 contracts based on first-stage intent
+    v07 = _discover_v07_contracts(
+        project, project_name, research_type, depth, research_mode,
+        task_card, identity_summary, result,
+    )
+    result["v07"] = v07
+    # Also hoist key v0.7 fields to top-level for easy consumption by planner/validator
+    result["schema_version"] = "research-os-intent-doc-v0.2"
+    result["reader_model"] = v07.get("reader_model", {})
+    result["intent_tree"] = v07.get("intent_tree", [])
+    result["concept_ladder_needed"] = v07.get("concept_ladder_needed", False)
+    result["concept_ladder_seed"] = v07.get("concept_ladder_seed", [])
+    result["personalization_plan"] = v07.get("personalization_plan", {})
+    result["report_contract"] = v07.get("report_contract", {})
+    result["layout_spec"] = v07.get("layout_spec", {})
+    result["clarifying_questions"] = v07.get("clarifying_questions", [])
+    result["iteration_strategy"] = v07.get("iteration_strategy", {"breadth": 4, "depth": 2})
+
+    task_dir = project / "00-task"
+    task_dir.mkdir(parents=True, exist_ok=True)
+
+    # Machine-readable version for research_planner to consume
+    (task_dir / "intent_doc.json").write_text(
+        json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    # Human-readable version
+    (task_dir / "intent_doc.md").write_text(
+        _build_intent_doc_md(result, project_name), encoding="utf-8"
+    )
+    # v0.7 contracts human-readable
+    (task_dir / "v07_contracts.md").write_text(
+        _build_v07_doc_md(v07, project_name), encoding="utf-8"
+    )
+    # AI's questions for the user (v0.5.1)
+    (task_dir / "open_questions.md").write_text(
+        _build_open_questions_md(result), encoding="utf-8"
+    )
+    # v0.7 clarifying questions — written only if non-empty (else empty file skipped)
+    clarifying_md = _build_clarifying_questions_md(v07)
+    if clarifying_md:
+        (task_dir / "clarifying_questions.md").write_text(clarifying_md, encoding="utf-8")
+    elif (task_dir / "clarifying_questions.md").exists():
+        # Remove stale file from previous run
+        (task_dir / "clarifying_questions.md").unlink()
+
+    # Initialize goal_ledger.json from intent_doc (idempotent)
+    try:
+        goal_tracker.initialize_from_intent_doc(project, result)
+    except Exception as exc:
+        print(f"[warn] goal_ledger init failed: {exc}", file=sys.stderr)
+
+    # Initialize iteration_log.json with breadth/depth from v0.7 strategy
+    try:
+        strat = v07.get("iteration_strategy", {})
+        iteration_log.init_log(
+            project,
+            breadth=strat.get("breadth", 4),
+            depth=strat.get("depth", 2),
+        )
+    except Exception as exc:
+        print(f"[warn] iteration_log init failed: {exc}", file=sys.stderr)
+
+    return result
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Run intent discovery on a Research OS project"
+    )
+    parser.add_argument("project", help="Path to research project directory")
+    args = parser.parse_args()
+    project = Path(args.project).resolve()
+    if not project.exists():
+        print(f"[error] project not found: {project}", file=sys.stderr)
+        return 1
+    try:
+        result = discover(project)
+    except Exception as exc:
+        print(f"[error] intent discovery failed: {exc}", file=sys.stderr)
+        return 1
+    print(f"[ok] intent_doc written to {project / '00-task' / 'intent_doc.md'}")
+    print(f"[ok] v07_contracts written to {project / '00-task' / 'v07_contracts.md'}")
+    print(f"[ok] open_questions written to {project / '00-task' / 'open_questions.md'}")
+    print(f"[ok] stated_intent: {result.get('stated_intent', '')[:80]}")
+    hidden = result.get("hidden_intents", [])
+    print(f"[ok] hidden_intents: {len(hidden)}")
+    seeds = result.get("surfaced_seeds", [])
+    print(f"[ok] surfaced_seeds: {len(seeds)}")
+    v07 = result.get("v07", {})
+    ls = v07.get("layout_spec", {})
+    print(f"[ok] v0.7 reader_model.unknown_concepts: {len(v07.get('reader_model', {}).get('unknown_concepts', []))}")
+    print(f"[ok] v0.7 intent_tree: {len(v07.get('intent_tree', []))} nodes")
+    print(f"[ok] v0.7 concept_ladder_needed: {v07.get('concept_ladder_needed', False)}")
+    print(f"[ok] v0.7 layout_spec.theme: {ls.get('theme', '?')} / blocks: {len(ls.get('blocks', []))}")
+    cq = v07.get("clarifying_questions", [])
+    if cq:
+        print(f"[⚠] v0.7 clarifying_questions: {len(cq)} 个 — 答 00-task/clarifying_questions.md 后才能 ros plan")
+    # Goal ledger init status
+    ledger = goal_tracker.load_goal_ledger(project)
+    if ledger:
+        cg = ledger.get("current_goal", {})
+        print(f"[ok] goal_ledger: {cg.get('goal_id', '?')} — {cg.get('statement', '')[:60]}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

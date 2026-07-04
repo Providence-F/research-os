@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Identity extractor for Research OS v0.2.
+"""Identity extractor for Research OS v0.5 (原 v0.2 模块，v0.5 重构后归并版本号).
 
 Dual-source extraction of user identity:
 1. Claude memory (~/.claude/CLAUDE.md + ~/.claude/projects/.../memory/*.md)

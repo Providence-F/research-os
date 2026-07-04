@@ -1,16 +1,24 @@
 #!/usr/bin/env python3
 """
-Research OS v0.1 - create_research_project.py
+Research OS v0.5 - create_research_project.py
 Scaffold a new research project from the template library.
+
+Changes from v0.1:
+- Copy all 14 required templates (not just 5)
+- Initialize candidates.md + discarded.md (not just candidate_pool.json)
+- Initialize intent_doc.json + goal_ledger.json
+- Upgrade schema_version to v0.5
+- Add version header to all generated files
+- Align with 00-使用说明.md v0.5
 
 Usage:
     ros new --name "Mizzen Insight 产品深度拆解" --type product --depth R2 --html
 
     # Or directly:
-    python create_research_project.py \
-        --name "Mizzen Insight 产品深度拆解" \
-        --type product \
-        --depth R2 \
+    python create_research_project.py \\
+        --name "Mizzen Insight 产品深度拆解" \\
+        --type product \\
+        --depth R2 \\
         --html
 """
 
@@ -43,18 +51,85 @@ FULL_DIRS = [
     "09-publish",
 ]
 
-# 模板文件 -> 目标子目录 + 目标文件名
+# v0.5: 完整模板映射（14 个必产物 + 4 个场景模板）
+# 之前 v0.1 只复制 5 个模板，导致 validator FAIL
 TEMPLATE_MAP = {
+    # 核心必产物
     "01-调研任务卡.md": ("00-task", "task-card.md"),
     "02-调研方案.md": ("01-plan", "research-plan.md"),
     "03-证据矩阵.md": ("03-evidence", "evidence_matrix.md"),
+    "04-假设账本.md": ("03-evidence", "hypothesis_ledger_template.md"),  # JSON 模板参考
     "07-反方审计.md": ("06-review", "red_team.md"),
     "08-最终报告.md": ("07-output", "final-report.md"),
+    "12-候选池.md": ("02-sources", "candidates.md"),
+    "14-研究执行状态机.md": ("01-plan", "state-machine-ref.md"),  # 参考
+    "15-结论溯源清单.md": ("07-output", "trace-manifest-template.md"),  # 参考
 }
-FULL_EXTRA_MAP = {
+
+# 场景模板（按需，R2+ 复制）
+SCENARIO_MAP = {
     "04-平台审计矩阵.md": ("02-sources", "platform-audit.md"),
     "05-用户原声库.md": ("02-sources", "user-voice.md"),
     "06-JD逐句拆解.md": ("02-sources", "jd-breakdown.md"),
+    "11-复盘回写清单.md": ("09-publish", "retro-checklist.md"),
+}
+
+# HTML 美学规范和视图模型总是复制到 08-html/ 供参考
+REFERENCE_MAP = {
+    "09-可视化视图模型.md": ("08-html", "view-model-schema-ref.md"),
+    "09-HTML美学规范.md": ("08-html", "html-aesthetics-spec.md"),
+}
+
+# 必须创建的空文件（discarded.md 没有模板但是必产物）
+EMPTY_FILES = {
+    "02-sources/discarded.md": """<!-- ros-version: v0.5 | last-updated: {date} | status: current -->
+
+# 丢弃源清单（discarded.md）
+
+> 本文件记录被丢弃的候选源及原因。**必产物**——不能省略。
+> 每条记录包含：源名 / URL / 丢弃原因 / 丢弃日期
+
+---
+
+## 丢弃源列表
+
+| 编号 | 源名 | URL | 丢弃原因 | 日期 |
+|---|---|---|---|---|
+| - | （待填）| | | |
+
+## 丢弃原因分类
+
+- **重复**：和已有源内容重复
+- **低质**：来源不可信（如营销稿、未署名博客）
+- **过时**：信息已过时（如 3 年前的数据）
+- **付费墙**：无法访问全文
+- **语言**：无法理解的语言
+- **主题偏移**：和调研主题不相关
+""",
+    "03-evidence/conflicts.md": """<!-- ros-version: v0.5 | last-updated: {date} | status: current -->
+
+# 冲突信息（conflicts.md）
+
+> 本文件记录证据之间的冲突。**必产物**——不能假装没看见。
+> 每条冲突包含：冲突描述 / 涉及证据 / 解决方式 / 最终判定
+
+---
+
+## 冲突列表
+
+### 冲突 1
+- **描述**：（待填）
+- **涉及证据**：E00X vs E00Y
+- **解决方式**：（待填）
+- **最终判定**：（待填）
+
+## 冲突解决原则
+
+1. **源码优先**：A 级证据（源码/技术报告）优先于 B/C 级
+2. **多源验证**：单一来源的论断标记为 partial
+3. **时间 newer 优先**：新信息覆盖旧信息
+4. **官方优先**：官方文档优先于社区评测
+""",
 }
 
 DEPTH_CHOICES = ["R0", "R1", "R2", "R3"]
@@ -72,7 +147,7 @@ TYPE_CHOICES = [
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="Research OS v0.1 - scaffold a new research project"
+        description="Research OS v0.5 - scaffold a new research project"
     )
     p.add_argument("--name", required=True, help="项目名")
     p.add_argument("--type", required=True, choices=TYPE_CHOICES, help="调研类型")
@@ -101,9 +176,11 @@ def slugify(name: str) -> str:
 
 
 def build_state(name: str, rtype: str, depth: str) -> dict:
+    """v0.5: 状态文件，schema 升级，包含全部 15 步流程状态。"""
     html_required = depth in ("R2", "R3")
     route = route_research(name, rtype, depth)
     return {
+        "schema_version": "research-os-state-v0.5",
         "project_name": name,
         "research_type": rtype,
         "research_mode": route["research_mode"],
@@ -117,14 +194,42 @@ def build_state(name: str, rtype: str, depth: str) -> dict:
         "discarded_source_count": 0,
         "open_questions": [],
         "final_report_mode": "reader_first",
+        # v0.5: 完整步骤状态（15 步）
+        "steps": {
+            "step_0_scaffold": "done",
+            "step_1_route": "pending",
+            "step_2_task_card": "pending",
+            "step_3_research_plan": "pending",
+            "step_4_candidates": "pending",
+            "step_5_evidence_matrix": "pending",
+            "step_6_hypothesis": "pending",
+            "step_7_analysis": "pending",
+            "step_8_red_team": "pending",
+            "step_9_final_report_draft": "pending",
+            "step_10_reader_simulation": "pending",
+            "step_11_trace_manifest": "pending",
+            "step_12_view_model": "pending",
+            "step_13_html_build": "pending",
+            "step_14_validate": "pending",
+            "step_15_publish": "pending",
+        },
+        "human_confirmation_points": {
+            "step_2_task_card": False,
+            "step_3_research_plan": False,
+            "step_13_html_build": False,
+        },
         "html_source": "07-output/final-report.md" if html_required else "",
         "view_model_source": "07-output/view-model.json" if html_required else "",
         "trace_manifest_source": "07-output/trace-manifest.json" if html_required else "",
-        "research_plan_source": "01-plan/research-execution-plan.md" if html_required else "",
-        "candidate_pool_source": "02-sources/candidate_pool.json" if html_required else "",
-        "hypothesis_ledger_source": "03-evidence/hypothesis_ledger.json" if html_required else "",
+        "research_plan_source": "01-plan/research-plan.md",
+        "candidates_source": "02-sources/candidates.md",
+        "discarded_source": "02-sources/discarded.md",
+        "hypothesis_ledger_source": "03-evidence/hypothesis_ledger.json",
+        "conflicts_source": "03-evidence/conflicts.md",
+        "intent_doc_source": "01-plan/intent_doc.json",
+        "goal_ledger_source": "01-plan/goal_ledger.json",
         "validation_required": True,
-        "next_required_action": "run_research_planner" if html_required else "fill_research_plan",
+        "next_required_action": "fill_task_card",
         "folded_sections": [
             "附录",
             "证据标准",
@@ -148,22 +253,23 @@ def build_state(name: str, rtype: str, depth: str) -> dict:
             "hypothesis_ledger_required": html_required,
             "trace_manifest_required": html_required,
             "strong_claims_must_trace": html_required,
+            # v0.5 新增
+            "require_discarded_md": True,
+            "require_conflicts_md": True,
+            "require_aesthetics_compliance": html_required,
+            "require_version_consistency": True,
         },
         "last_updated": date.today().isoformat(),
     }
 
 
 def copy_templates(project_root: Path, depth: str, project_name: str = "") -> list:
-    """复制模板到项目目录。返回 (template_src, dest) 列表，供日志打印。
-
-    如果模板含 {项目名} 占位符且 project_name 非空，会自动替换。
-    这是为了让 final-report.md 首行 # 标题自动个性化——build_research_html.py
-    用首行 # 标题作为 HTML <title> 和桌面文件名，写死"调研报告"会导致所有项目 HTML 同名。
-    """
+    """v0.5: 复制全部 14 个模板（不是 v0.1 的 5 个）。"""
     copied = []
     mapping = dict(TEMPLATE_MAP)
+    mapping.update(REFERENCE_MAP)
     if depth in ("R2", "R3"):
-        mapping.update(FULL_EXTRA_MAP)
+        mapping.update(SCENARIO_MAP)
     for src_name, (subdir, dest_name) in mapping.items():
         src = TEMPLATE_DIR / src_name
         if not src.exists():
@@ -182,13 +288,25 @@ def copy_templates(project_root: Path, depth: str, project_name: str = "") -> li
     return copied
 
 
+def create_empty_files(project_root: Path) -> list:
+    """v0.5: 创建必产的空文件（discarded.md, conflicts.md）。"""
+    today = date.today().isoformat()
+    created = []
+    for rel_path, template in EMPTY_FILES.items():
+        dest = project_root / rel_path
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        text = template.replace("{date}", today)
+        dest.write_text(text, encoding="utf-8")
+        created.append(str(dest))
+    return created
+
+
 def create_dirs(project_root: Path, depth: str) -> list:
     dirs = FULL_DIRS if depth in ("R2", "R3") else SIMPLE_DIRS
     created = []
     for d in dirs:
         p = project_root / d
         p.mkdir(parents=True, exist_ok=True)
-        # 空目录放 .gitkeep
         keep = p / ".gitkeep"
         if not keep.exists():
             keep.write_text("", encoding="utf-8")
@@ -214,8 +332,10 @@ def write_view_model(project_root: Path, state: dict) -> Path | None:
     }
     f = project_root / "07-output" / "view-model.json"
     f.parent.mkdir(parents=True, exist_ok=True)
+    empty_vm = build_empty_view_model(state["project_name"], route)
+    empty_vm["schema_version"] = "research-os-view-model-v0.5"
     f.write_text(
-        json.dumps(build_empty_view_model(state["project_name"], route), ensure_ascii=False, indent=2),
+        json.dumps(empty_vm, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     return f
@@ -225,7 +345,7 @@ def write_trace_manifest(project_root: Path, state: dict) -> Path | None:
     if state.get("depth") not in ("R2", "R3"):
         return None
     trace_manifest = {
-        "schema_version": "research-os-trace-manifest-v0.4",
+        "schema_version": "research-os-trace-manifest-v0.5",
         "project_name": state["project_name"],
         "claims": [],
     }
@@ -236,28 +356,51 @@ def write_trace_manifest(project_root: Path, state: dict) -> Path | None:
 
 
 def write_protocol_files(project_root: Path, state: dict) -> list[Path]:
+    """v0.5: 初始化 candidate_pool.json + hypothesis_ledger.json + intent_doc.json + goal_ledger.json"""
     if state.get("depth") not in ("R2", "R3"):
         return []
+    today = date.today().isoformat()
+
     candidate_pool = {
-        "schema_version": "research-os-candidate-pool-v0.3",
+        "schema_version": "research-os-candidate-pool-v0.5",
         "project_name": state["project_name"],
+        "created_at": today,
         "items": [],
     }
     hypothesis_ledger = {
-        "schema_version": "research-os-hypothesis-ledger-v0.3",
+        "schema_version": "research-os-hypothesis-ledger-v0.5",
         "project_name": state["project_name"],
+        "created_at": today,
         "hypotheses": [],
     }
-    outputs = []
-    candidate_path = project_root / "02-sources" / "candidate_pool.json"
-    candidate_path.parent.mkdir(parents=True, exist_ok=True)
-    candidate_path.write_text(json.dumps(candidate_pool, ensure_ascii=False, indent=2), encoding="utf-8")
-    outputs.append(candidate_path)
+    intent_doc = {
+        "schema_version": "research-os-intent-doc-v0.5",
+        "project_name": state["project_name"],
+        "created_at": today,
+        "initial_intent": "",
+        "discovered_questions": [],
+        "decision_context": "",
+        "reader_profile": "",
+    }
+    goal_ledger = {
+        "schema_version": "research-os-goal-ledger-v0.5",
+        "project_name": state["project_name"],
+        "created_at": today,
+        "goals": [],
+        "iteration_log": [],
+    }
 
-    ledger_path = project_root / "03-evidence" / "hypothesis_ledger.json"
-    ledger_path.parent.mkdir(parents=True, exist_ok=True)
-    ledger_path.write_text(json.dumps(hypothesis_ledger, ensure_ascii=False, indent=2), encoding="utf-8")
-    outputs.append(ledger_path)
+    outputs = []
+    for rel_path, data in [
+        ("02-sources/candidate_pool.json", candidate_pool),
+        ("03-evidence/hypothesis_ledger.json", hypothesis_ledger),
+        ("01-plan/intent_doc.json", intent_doc),
+        ("01-plan/goal_ledger.json", goal_ledger),
+    ]:
+        p = project_root / rel_path
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        outputs.append(p)
     return outputs
 
 
@@ -288,6 +431,7 @@ def create_project(
     created_dirs = create_dirs(project_root, depth)
     state = build_state(name, rtype, depth)
     copied = copy_templates(project_root, depth, state["project_name"])
+    empty_files = create_empty_files(project_root)
     state_file = write_state(project_root, state)
     view_model_file = write_view_model(project_root, state)
     trace_manifest_file = write_trace_manifest(project_root, state)
@@ -295,7 +439,8 @@ def create_project(
 
     print(f"[ok] 项目已创建: {project_root}")
     print(f"[ok] 目录数: {len(created_dirs)}")
-    print(f"[ok] 模板数: {len(copied)}")
+    print(f"[ok] 模板数: {len(copied)}（v0.5 完整 14 个）")
+    print(f"[ok] 空文件: {len(empty_files)}（discarded.md + conflicts.md）")
     print(f"[ok] 状态文件: {state_file}")
     if view_model_file:
         print(f"[ok] 视图模型: {view_model_file}")
@@ -307,9 +452,7 @@ def create_project(
     print(f"[ok] 路由: {state['research_mode']} / {state['view_type']}")
     print()
 
-    # Trigger intent discovery (pre-research phase). Non-fatal - if API key
-    # is missing or LLM call fails, the project is still usable; user can
-    # run `ros discover` later after filling the task card.
+    # Trigger intent discovery (pre-research phase). Non-fatal.
     try:
         discover_intent(project_root)
         print(f"[ok] 意图文档已生成 (基于项目名+历史画像)")
@@ -318,20 +461,27 @@ def create_project(
         print(f"[warn] 意图挖掘跳过: {exc}", file=sys.stderr)
         print(f"[hint] 填完 task-card.md 后可手动跑: ros discover \"{project_root}\"", file=sys.stderr)
     print()
-    print("下一步:")
+    print("下一步（v0.5 完整 15 步）:")
     print(f"  1. 填 {project_root / '00-task' / 'task-card.md'}")
+    print(f"  2. 🛑 人工确认任务卡")
     if depth in ("R2", "R3"):
-        print(f'  2. 生成执行计划: ros plan "{project_root}"')
-        print(f"  3. 填候选池并显式淘汰弱来源: {project_root / '02-sources' / 'candidate_pool.json'}")
-        print(f"  4. 填证据矩阵: {project_root / '03-evidence' / 'evidence_matrix.md'}")
-        print(f"  5. 更新假设账本，至少修正/降级/拒绝一个假设: {project_root / '03-evidence' / 'hypothesis_ledger.json'}")
-        print(f"  6. 做反方审计: {project_root / '06-review' / 'red_team.md'}")
-        print(f"  7. 写读者版最终报告: {project_root / '07-output' / 'final-report.md'}")
-        print(f"  8. 填结论溯源清单: {project_root / '07-output' / 'trace-manifest.json'}")
-        print(f"  9. 填视图模型: {project_root / '07-output' / 'view-model.json'}")
-        print(f'  10. 生成 HTML: ros build --project "{project_root}"')
-        print(f'  11. 查看状态: ros status "{project_root}"')
-        print(f'  12. 验证项目: ros validate "{project_root}"')
+        print(f'  3. 生成调研方案: ros plan "{project_root}"')
+        print(f"  4. 🛑 人工确认调研方案")
+        print(f"  5. 填候选池: {project_root / '02-sources' / 'candidates.md'}")
+        print(f"  6. 填丢弃源: {project_root / '02-sources' / 'discarded.md'}（必产物）")
+        print(f"  7. 填证据矩阵: {project_root / '03-evidence' / 'evidence_matrix.md'}")
+        print(f"  8. 填假设账本: {project_root / '03-evidence' / 'hypothesis_ledger.json'}")
+        print(f"  9. 填冲突信息: {project_root / '03-evidence' / 'conflicts.md'}（必产物）")
+        print(f"  10. 多 Agent 分析: {project_root / '05-analysis'}")
+        print(f"  11. 反方审计（至少 1 次降级）: {project_root / '06-review' / 'red_team.md'}")
+        print(f"  12. 写最终报告草稿: {project_root / '07-output' / 'final-report.md'}")
+        print(f"  13. 读者模拟 + 重写: ros rewrite \"{project_root}\"")
+        print(f"  14. 填溯源清单: {project_root / '07-output' / 'trace-manifest.json'}")
+        print(f"  15. 填视图模型: {project_root / '07-output' / 'view-model.json'}")
+        print(f'  16. 生成 HTML（遵循 09-HTML美学规范.md）: ros build --project "{project_root}"')
+        print(f'  17. 🛑 人工确认 HTML 美学合规')
+        print(f'  18. 验证项目: ros validate "{project_root}"')
+        print(f'  19. 发布到桌面: ros publish "{project_root}"')
     else:
         print(f"  2. 填 {project_root / '01-plan' / 'research-plan.md'}")
         print(f"  3. 写读者版最终报告: {project_root / '07-output' / 'final-report.md'}")
