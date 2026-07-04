@@ -1,4 +1,4 @@
-<!-- ros-version: v0.5 | last-updated: 2026-07-04 | status: current -->
+<!-- ros-version: v0.7.1 | last-updated: 2026-07-05 | status: current -->
 
 # HTML 美学规范 v0.5
 
