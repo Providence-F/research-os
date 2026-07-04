@@ -1,7 +1,8 @@
 // src/components/nav/TopNav.tsx
-// 顶部导航：Logo + 视图切换 + v0.5 徽章
+// 顶部导航：Logo + 视图切换 + 当前版本徽章
 
 import { useDashboardStore, type ViewType } from "@/store/useDashboardStore";
+import { stats } from "@/data/stats";
 
 const views: { id: ViewType; label: string }[] = [
   { id: "list", label: "列表" },
@@ -72,7 +73,7 @@ export function TopNav() {
           ))}
         </nav>
 
-        {/* v0.6.2 徽章 */}
+        {/* 当前版本徽章 */}
         <div
           style={{
             fontFamily: "JetBrains Mono, monospace",
@@ -84,7 +85,7 @@ export function TopNav() {
             borderRadius: "3px",
           }}
         >
-          v0.6.2 · 当前
+          {stats.hero.currentVersion} · 当前
         </div>
       </div>
     </header>
