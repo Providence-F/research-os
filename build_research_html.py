@@ -2011,6 +2011,17 @@ def build(project: Path, copy_desktop: bool = True) -> Path:
         shutil.copy2(out, desktop)
         print(f"Copied desktop HTML: {desktop}")
 
+    # 同步 final-report.md 到知识库
+    try:
+        from config import KNOWLEDGE_BASE
+        kb_dir = Path(KNOWLEDGE_BASE) / project.name
+        kb_dir.mkdir(parents=True, exist_ok=True)
+        kb_report = kb_dir / "final-report.md"
+        shutil.copy2(project / "07-output" / "final-report.md", kb_report)
+        print(f"Synced to knowledge base: {kb_report}")
+    except Exception as exc:
+        print(f"[warn] knowledge base sync skipped: {exc}", file=sys.stderr)
+
     return out
 
 

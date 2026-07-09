@@ -1,8 +1,5 @@
 """Research OS configuration.
 
-
-# 系统版本号——单一真相源，所有文件应与此一致
-SYSTEM_VERSION = "v1.0"
 All paths and external resources are read from environment variables with
 defaults pointing inside the Research OS home directory. Override them when
 integrating with an Obsidian vault or other external layout.
@@ -14,6 +11,13 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+
+# 系统版本号——单一真相源，所有文件应与此一致
+SYSTEM_VERSION = "v1.0"
+
+# 知识库路径——报告同步目标
+# final-report.md 会自动同步到这里（ros build 时触发）
+KNOWLEDGE_BASE = r"E:\obsidian\AI革命生存指南\09-收件箱\research-projects"
 
 # Research OS home: the directory containing this package by default.
 # Override with RESEARCH_OS_HOME to point at a different install location.
