@@ -100,7 +100,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         print(f"[BLOCKED] 澄清门禁未通过（v0.8）:\n{reason}", file=sys.stderr)
         print("[hint] 用 --force 跳过门禁（不推荐），或先回答澄清问题", file=sys.stderr)
         return 1
-    return run_step(project, copy_desktop=args.copy_desktop)
+    return run_step(project, copy_desktop=not args.no_copy_desktop)
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
@@ -134,7 +134,7 @@ def cmd_build(args: argparse.Namespace) -> int:
                     print(f"[ok] 读者门禁通过（整体读懂度 {diag.overall_score:.2f}）")
             except Exception as exc:
                 print(f"[warn] reader_simulation 跳过：{exc}", file=sys.stderr)
-    out = build(project, args.copy_desktop)
+    out = build(project, not args.no_copy_desktop)
     print(f"Wrote {out}")
     return 0
 
@@ -329,7 +329,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_run = sub.add_parser("run", help="Run the next safe mechanical step")
     p_run.add_argument("project", help="Path to research project directory")
-    p_run.add_argument("--copy-desktop", action="store_true", help="Copy built HTML to Desktop when action is build_html")
+    p_run.add_argument("--no-copy-desktop", action="store_true", help="不拷贝到桌面（默认拷贝）")
     p_run.set_defaults(func=cmd_run)
 
     p_validate = sub.add_parser("validate", help="Validate project against quality gates")
@@ -338,7 +338,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_build = sub.add_parser("build", help="Build reader-first HTML from final-report.md")
     p_build.add_argument("--project", required=True, help="Path to research project directory")
-    p_build.add_argument("--copy-desktop", action="store_true", help="Copy output HTML to Desktop")
+    p_build.add_argument("--no-copy-desktop", action="store_true", help="不拷贝到桌面（默认拷贝）")
     p_build.add_argument("--skip-reader-gate", action="store_true", help="v0.10: 跳过读者门禁")
     p_build.add_argument("--force", action="store_true", help="v0.10: 门禁未通过也强制 build")
     p_build.set_defaults(func=cmd_build)
@@ -361,7 +361,7 @@ def build_parser() -> argparse.ArgumentParser:
         "dashboard",
         help="v0.10: 生成系统看板 HTML（项目列表 + 系统演化 + 工作流可视化）",
     )
-    p_dashboard.add_argument("--copy-desktop", action="store_true", help="拷贝到桌面")
+    p_dashboard.add_argument("--no-copy-desktop", action="store_true", help="不拷贝到桌面（默认拷贝）")
     p_dashboard.add_argument("--open", action="store_true", help="生成后浏览器打开")
     p_dashboard.set_defaults(func=cmd_dashboard)
 
@@ -516,9 +516,9 @@ def cmd_confirm(args: argparse.Namespace) -> int:
 def cmd_dashboard(args: argparse.Namespace) -> int:
     """v0.10: 生成系统看板 HTML。"""
     import build_dashboard
-    out = build_dashboard.build_dashboard(copy_desktop=args.copy_desktop)
+    out = build_dashboard.build_dashboard(copy_desktop=not args.no_copy_desktop)
     print(f"看板已生成：{out}")
-    if args.copy_desktop:
+    if not args.no_copy_desktop:
         import shutil
         desktop = Path.home() / "Desktop" / "Research OS 看板.html"
         print(f"桌面副本：{desktop}")

@@ -921,7 +921,7 @@ body {
 # 6. CLI 入口
 # =====================================================================
 
-def build_dashboard(output_path: Path | None = None, copy_desktop: bool = False) -> Path:
+def build_dashboard(output_path: Path | None = None, copy_desktop: bool = True) -> Path:
     """生成看板 HTML。
 
     合并两个来源的项目：
@@ -944,5 +944,5 @@ def build_dashboard(output_path: Path | None = None, copy_desktop: bool = False)
 
 
 if __name__ == "__main__":
-    out = build_dashboard(copy_desktop=True)
+    out = build_dashboard()  # 默认拷贝到桌面
     print(f"看板已生成：{out}")

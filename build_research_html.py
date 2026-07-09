@@ -1884,7 +1884,7 @@ def _sync_state_after_build(project: Path) -> None:
     state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def build(project: Path, copy_desktop: bool = False) -> Path:
+def build(project: Path, copy_desktop: bool = True) -> Path:
     report = project / "07-output" / "final-report.md"
     if not report.exists():
         raise FileNotFoundError(f"missing {report}")
@@ -2000,10 +2000,12 @@ def build(project: Path, copy_desktop: bool = False) -> Path:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build Research OS reader-first HTML")
     parser.add_argument("--project", required=True, help="Path to research project directory")
-    parser.add_argument("--copy-desktop", action="store_true", help="Copy output HTML to Desktop")
+    parser.add_argument("--no-copy-desktop", action="store_true", help="不拷贝到桌面（默认拷贝）")
+    args = parser.parse_args()
+    copy_desktop = not args.no_copy_desktop
     args = parser.parse_args()
 
-    out = build(Path(args.project).resolve(), args.copy_desktop)
+    out = build(Path(args.project).resolve(), copy_desktop)
     print(f"Wrote {out}")
     return 0
 

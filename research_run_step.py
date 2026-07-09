@@ -39,7 +39,7 @@ def run_python(script: Path, project: Path, *args: str) -> int:
     return proc.returncode
 
 
-def run_step(project: Path, copy_desktop: bool = False) -> int:
+def run_step(project: Path, copy_desktop: bool = True) -> int:
     project = project.resolve()
     status = inspect_project(project)
     action = status.get("next_required_action", "")
@@ -65,9 +65,9 @@ def run_step(project: Path, copy_desktop: bool = False) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run the next safe Research OS step")
     parser.add_argument("project", help="Path to research project directory")
-    parser.add_argument("--copy-desktop", action="store_true", help="Copy built HTML to desktop when action is build_html")
+    parser.add_argument("--no-copy-desktop", action="store_true", help="不拷贝到桌面（默认拷贝）")
     args = parser.parse_args()
-    return run_step(Path(args.project).resolve(), copy_desktop=args.copy_desktop)
+    return run_step(Path(args.project).resolve(), copy_desktop=not args.no_copy_desktop)
 
 
 if __name__ == "__main__":
