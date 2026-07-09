@@ -1,6 +1,4 @@
-"""Research OS v0.5: chart_selector.py (原 v0.9.1 模块，v0.5 重构后归并版本号)
-
-有机融入 chart-visualization skill 的核心能力——
+"""Research OS v1.0: chart_selector.py有机融入 chart-visualization skill 的核心能力——
 "按信息类型智能选择最合适的图表类型"。
 
 不调外部 skill，而是把"选图逻辑"内化成 Research OS 自己的能力。

@@ -6,754 +6,987 @@
 <title>Research OS — 深度调研工作台</title>
 <style>
 :root {
-  --bg: #FAF9F5;
-  --surface: #FFFFFF;
-  --text: #1A1A1A;
-  --text-secondary: #5C5C5C;
-  --accent: #C96442;
-  --accent-light: #F4E4DE;
-  --border: #E5E2D9;
-  --green: #4A7C59;
-  --shadow: 0 2px 8px rgba(0,0,0,0.06);
+  --bg: #faf9f5;
+  --bg-warm: #f4f1e8;
+  --surface: #ffffff;
+  --text: #141413;
+  --text-secondary: #5c5c5c;
+  --text-tertiary: #b0aea5;
+  --accent: #d97757;
+  --accent-deep: #a04e32;
+  --accent-light: #f4e4de;
+  --blue: #6a9bcc;
+  --green: #788c5d;
+  --red: #c62828;
+  --border: #e8e6dc;
+  --shadow: 0 4px 12px rgba(60,40,20,0.06);
+  --transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
+  font-family: -apple-system, "Poppins", "Lora", "Noto Sans SC", "PingFang SC", sans-serif;
   background: var(--bg);
   color: var(--text);
-  line-height: 1.7;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 40px 24px 80px;
-}
-
-/* ===== Hero ===== */
-.hero {
-  text-align: center;
-  padding: 60px 20px 40px;
-}
-.hero h1 {
-  font-size: 2.8em;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  margin-bottom: 12px;
-}
-.hero .tagline {
-  font-size: 1.2em;
-  color: var(--text-secondary);
-  margin-bottom: 32px;
-}
-.hero .stats {
-  display: flex;
-  justify-content: center;
-  gap: 40px;
-  flex-wrap: wrap;
-}
-.hero .stat {
-  text-align: center;
-}
-.hero .stat-num {
-  font-size: 2.2em;
-  font-weight: 700;
-  color: var(--accent);
-}
-.hero .stat-label {
-  font-size: 0.9em;
-  color: var(--text-secondary);
-}
-.hero .version-badge {
-  display: inline-block;
-  margin-top: 20px;
-  padding: 6px 16px;
-  background: var(--accent-light);
-  color: var(--accent);
-  border-radius: 20px;
-  font-size: 0.85em;
-  font-weight: 600;
-}
-
-/* ===== Section ===== */
-.section {
-  margin-top: 60px;
-}
-.section h2 {
-  font-size: 1.6em;
-  font-weight: 700;
-  margin-bottom: 8px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid var(--border);
-}
-.section .section-desc {
-  color: var(--text-secondary);
-  font-size: 0.95em;
-  margin-bottom: 24px;
-}
-
-/* ===== 工作流 ===== */
-.workflow {
-  background: var(--surface);
-  border-radius: 12px;
+  line-height: 1.6;
   padding: 32px;
-  box-shadow: var(--shadow);
+  -webkit-font-smoothing: antialiased;
 }
-.workflow-steps {
+.dashboard {
+  max-width: 1440px;
+  margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
-  margin-top: 16px;
 }
-.workflow-step {
-  border-left: 3px solid var(--accent);
-  padding: 12px 16px;
-  background: var(--bg);
-  border-radius: 0 8px 8px 0;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.workflow-step:hover {
-  transform: translateX(4px);
-  box-shadow: var(--shadow);
-}
-.workflow-step .step-num {
-  font-size: 0.75em;
-  color: var(--accent);
-  font-weight: 700;
-  text-transform: uppercase;
-}
-.workflow-step .step-name {
-  font-weight: 600;
-  margin: 4px 0;
-}
-.workflow-step .step-cmd {
-  font-family: "Cascadia Code", "Consolas", monospace;
-  font-size: 0.8em;
-  color: var(--text-secondary);
-  background: var(--border);
-  padding: 2px 6px;
-  border-radius: 4px;
-  display: inline-block;
-  margin-bottom: 6px;
-}
-.workflow-step .step-desc {
-  font-size: 0.85em;
-  color: var(--text-secondary);
-}
-
-/* ===== 项目卡片 ===== */
-.category-group {
-  margin-bottom: 32px;
-}
-.category-group .cat-title {
-  font-size: 1.15em;
-  font-weight: 700;
-  color: var(--accent);
-  margin-bottom: 16px;
-  padding-bottom: 6px;
-  border-bottom: 1px dashed var(--border);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.category-group .cat-count {
-  font-size: 0.8em;
-  color: var(--text-secondary);
-  font-weight: 500;
-  background: var(--accent-light);
-  padding: 2px 10px;
-  border-radius: 12px;
-}
-.projects-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-}
-.project-card {
+.module {
   background: var(--surface);
-  border-radius: 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
   padding: 24px;
   box-shadow: var(--shadow);
-  border: 1px solid var(--border);
-  transition: transform 0.2s, box-shadow 0.2s;
-  display: flex;
-  flex-direction: column;
+  transition: var(--transition);
+  will-change: transform, opacity;
+  cursor: default;
 }
-.project-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+.module.expanded {
+  grid-column: span 3;
+  grid-row: span 2;
 }
-.project-card .proj-name {
-  font-size: 1.15em;
-  font-weight: 700;
+.module.compressed {
+  opacity: 0.55;
+  transform: scale(0.97);
+}
+.m1 { grid-column: span 3; cursor: default; }
+.m2 { grid-column: span 2; cursor: pointer; }
+.m6 { grid-column: span 1; cursor: pointer; }
+.m3, .m4, .m5 { grid-column: span 1; cursor: pointer; }
+@media (max-width: 1440px) {
+  .dashboard { grid-template-columns: repeat(2, 1fr); }
+  .m1, .module.expanded { grid-column: span 2; }
+}
+@media (max-width: 768px) {
+  .dashboard { grid-template-columns: 1fr; }
+  .module { grid-column: span 1 !important; }
+}
+
+/* M1 */
+.m1 { padding: 32px; }
+.m1-header { display: flex; align-items: center; gap: 20px; }
+.m1-title h1 {
+  font-family: "Poppins", sans-serif;
+  font-size: 32px; font-weight: 600;
+  color: var(--text); letter-spacing: -0.02em;
+}
+.m1-tagline {
+  font-family: "Lora", serif;
+  color: var(--text-secondary); font-size: 16px;
+}
+.m1-version-badge {
+  margin-left: auto;
+  background: var(--accent); color: white;
+  padding: 4px 12px; border-radius: 12px;
+  font-size: 13px; font-weight: 500;
+}
+.m1-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 24px; margin-top: 32px; padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.stat { text-align: center; }
+.stat-num {
+  display: block; font-family: "Poppins", sans-serif;
+  font-size: 32px; font-weight: 600; color: var(--accent);
+}
+.stat-label { color: var(--text-tertiary); font-size: 13px; }
+
+/* M2 */
+.m2 { padding: 32px; }
+.module-title {
+  font-family: "Poppins", sans-serif;
+  font-size: 22px; font-weight: 600; color: var(--text);
+}
+.module-subtitle {
+  color: var(--text-secondary); font-size: 14px; margin-top: 4px;
+}
+.version-timeline { margin-top: 32px; position: relative; padding: 0 16px; }
+.version-line {
+  position: absolute; top: 20px; left: 16px; right: 16px;
+  height: 2px; background: var(--border);
+}
+.version-nodes {
+  display: flex; justify-content: space-between; position: relative;
+}
+.version-node {
+  background: var(--surface); border: 2px solid var(--border);
+  border-radius: 50%; width: 48px; height: 48px;
+  cursor: pointer; transition: var(--transition);
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 0; position: relative;
+}
+.version-node:hover, .version-node.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 6px var(--accent-light);
+}
+.version-node .v-id {
+  font-size: 11px; font-weight: 600; color: var(--text);
+  font-family: "Poppins", sans-serif;
+}
+.version-node .v-date {
+  font-size: 8px; color: var(--text-tertiary);
+}
+.version-panels { margin-top: 24px; min-height: 120px; }
+.version-panel {
+  display: none; gap: 16px;
+  background: var(--bg-warm); padding: 16px;
+  border-radius: 12px; border-left: 3px solid var(--accent);
+}
+.version-panel.active { display: grid; grid-template-columns: repeat(3, 1fr); }
+.panel-col .panel-label {
+  font-size: 11px; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  font-family: "Poppins", sans-serif; font-weight: 500;
+}
+.panel-col .panel-text { font-size: 14px; color: var(--text); margin-top: 4px; }
+
+/* M3 */
+.m3 { padding: 32px; }
+.matrix-wrap { overflow-x: auto; margin-top: 16px; }
+.matrix {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.matrix th, .matrix td {
+  border: 1px solid var(--border); padding: 8px;
+  text-align: center; min-width: 80px; min-height: 50px;
+}
+.matrix th {
+  background: var(--bg-warm); font-weight: 500;
+  color: var(--text-secondary); font-family: "Poppins", sans-serif;
+}
+.matrix .row-head { text-align: left; font-size: 12px; padding-left: 12px; }
+.matrix td.empty { background: var(--bg-warm); opacity: 0.3; }
+.proj-chip {
+  display: inline-block; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 3px 10px; font-size: 11px; cursor: pointer;
+  transition: var(--transition); margin: 2px;
+  font-family: -apple-system, "PingFang SC", sans-serif;
+}
+.proj-chip:hover { border-color: var(--accent); transform: translateY(-1px); }
+.proj-chip.completed { border-style: solid; border-color: var(--green); color: var(--green); }
+.proj-chip.failed { border-style: dashed; border-color: var(--red); color: var(--red); }
+.proj-chip.planned { border-style: dotted; color: var(--text-secondary); }
+.node-graph {
+  margin-top: 24px; padding: 16px;
+  background: var(--bg-warm); border-radius: 12px;
+  display: none;
+}
+.node-graph svg { display: block; margin: 0 auto; }
+.node-graph .graph-title {
+  font-family: "Poppins", sans-serif;
+  font-size: 14px; font-weight: 500; color: var(--text);
   margin-bottom: 8px;
 }
-.project-card .proj-verdict {
-  color: var(--text-secondary);
-  font-size: 0.9em;
-  margin-bottom: 16px;
-  flex-grow: 1;
-  line-height: 1.6;
+.node-circle {
+  fill: var(--accent); opacity: 0.85; cursor: drag;
+  transition: r 0.2s;
 }
-.project-card .proj-meta {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
+.node-circle:hover { opacity: 1; }
+.node-text {
+  font-size: 11px; fill: var(--text);
+  text-anchor: middle; pointer-events: none;
+  font-family: -apple-system, "PingFang SC", sans-serif;
 }
-.project-card .badge {
-  font-size: 0.75em;
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-weight: 600;
-}
-.badge-depth { background: var(--accent-light); color: var(--accent); }
-.badge-status-done { background: #E8F5E9; color: var(--green); }
-.badge-status-failed { background: #FFEBEE; color: #C62828; }
-.badge-status-unknown { background: var(--border); color: var(--text-secondary); }
-.badge-evidence { background: #E3F2FD; color: #1565C0; }
-.badge-source {
-  background: #F3E5F5;
-  color: #6A1B9A;
-}
-.project-card .proj-link {
-  display: inline-block;
-  margin-top: 8px;
-  color: var(--accent);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.9em;
-}
-.project-card .proj-link:hover {
-  text-decoration: underline;
+.node-link {
+  stroke: var(--border); stroke-width: 1.5;
+  opacity: 0.6;
 }
 
-/* ===== 时间线 ===== */
-.timeline {
-  position: relative;
-  padding-left: 32px;
+/* M4 */
+.m4 { padding: 32px; }
+.workflow-stages {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 16px; margin-top: 24px;
 }
-.timeline::before {
-  content: "";
-  position: absolute;
-  left: 8px;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--border);
+.workflow-stage {
+  background: var(--bg-warm); padding: 20px;
+  border-radius: 12px; text-align: center;
 }
-.timeline-item {
-  position: relative;
-  margin-bottom: 32px;
-  padding: 20px;
-  background: var(--surface);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
+.stage-name {
+  font-family: "Poppins", sans-serif;
+  font-size: 16px; font-weight: 600; color: var(--accent);
 }
-.timeline-item::before {
-  content: "";
-  position: absolute;
-  left: -28px;
-  top: 24px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--accent);
-  border: 3px solid var(--bg);
+.stage-range {
+  font-size: 11px; color: var(--text-tertiary);
+  margin-top: 4px; font-family: monospace;
 }
-.timeline-item .tl-version {
-  font-size: 0.8em;
-  color: var(--accent);
-  font-weight: 700;
-  text-transform: uppercase;
+.stage-objects {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: 12px; margin-top: 16px;
 }
-.timeline-item .tl-title {
-  font-size: 1.2em;
-  font-weight: 700;
-  margin: 4px 0 8px;
+.workflow-object {
+  cursor: pointer; transition: var(--transition);
+  display: flex; flex-direction: column; align-items: center;
 }
-.timeline-item .tl-date {
-  font-size: 0.8em;
-  color: var(--text-secondary);
-  margin-bottom: 12px;
+.workflow-object:hover { transform: translateY(-3px); }
+.workflow-object svg { display: block; }
+.object-label {
+  display: block; font-size: 11px;
+  color: var(--text-secondary); margin-top: 4px;
 }
-.timeline-item .tl-why {
-  font-size: 0.9em;
-  color: var(--text-secondary);
-  margin-bottom: 12px;
-  font-style: italic;
+.stage-steps {
+  display: flex; gap: 4px; justify-content: center;
+  flex-wrap: wrap; margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid var(--border);
 }
-.timeline-item .tl-changes {
-  list-style: none;
-  padding: 0;
+.step-num {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; padding: 2px 6px;
+  font-size: 10px; color: var(--text-tertiary);
+  font-family: monospace;
 }
-.timeline-item .tl-changes li {
-  padding: 4px 0 4px 20px;
-  position: relative;
-  font-size: 0.9em;
-}
-.timeline-item .tl-changes li::before {
-  content: "+";
-  position: absolute;
-  left: 0;
-  color: var(--green);
-  font-weight: 700;
+.step-num.human-confirm {
+  background: var(--accent-light); border-color: var(--accent);
+  color: var(--accent-deep); font-weight: 600;
 }
 
-/* ===== 设计哲学 ===== */
-.philosophy-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 16px;
+/* M5 */
+.m5 { padding: 32px; }
+.philosophy-cards {
+  display: flex; flex-direction: column; gap: 16px; margin-top: 24px;
 }
 .philosophy-card {
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: var(--shadow);
-  border-top: 3px solid var(--accent);
+  background: var(--bg-warm); padding: 20px;
+  border-radius: 12px; border-left: 3px solid var(--border);
+  transition: var(--transition);
 }
-.philosophy-card .ph-title {
-  font-weight: 700;
-  margin-bottom: 8px;
-  font-size: 1.05em;
+.philosophy-card:hover { border-left-color: var(--accent); transform: translateX(2px); }
+.philosophy-card.highlight {
+  background: var(--accent-light);
+  border-left-color: var(--accent);
 }
-.philosophy-card .ph-desc {
-  font-size: 0.9em;
-  color: var(--text-secondary);
+.philosophy-card.highlight .ph-num { color: var(--accent-deep); }
+.philosophy-card.highlight .ph-title { color: var(--accent-deep); }
+.ph-num {
+  font-family: "Poppins", sans-serif;
+  font-size: 11px; color: var(--text-tertiary);
+  letter-spacing: 0.15em; font-weight: 500;
+}
+.ph-title {
+  font-family: "Poppins", sans-serif;
+  font-size: 17px; font-weight: 600; color: var(--text);
+  margin-top: 4px; line-height: 1.3;
+}
+.ph-claim {
+  font-family: "Lora", serif; font-size: 13px;
+  color: var(--text-secondary); margin-top: 8px; line-height: 1.6;
+}
+.ph-details {
+  margin-top: 16px; padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.ph-details summary {
+  cursor: pointer; font-size: 12px;
+  color: var(--accent); font-weight: 500;
+  font-family: "Poppins", sans-serif; letter-spacing: 0.02em;
+}
+.ph-details h4 {
+  font-size: 11px; color: var(--text-tertiary);
+  margin-top: 14px; text-transform: uppercase;
+  letter-spacing: 0.08em; font-family: "Poppins", sans-serif;
+}
+.ph-details p { font-size: 13px; margin-top: 6px; color: var(--text-secondary); line-height: 1.6; }
+.ph-details ul { margin-top: 6px; padding-left: 20px; }
+.ph-details li { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; line-height: 1.5; }
+.ph-source {
+  font-size: 11px; color: var(--text-tertiary);
+  margin-top: 14px; font-style: italic;
+  padding-top: 10px; border-top: 1px dashed var(--border);
 }
 
-/* ===== Footer ===== */
-.footer {
-  text-align: center;
-  margin-top: 60px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border);
-  color: var(--text-secondary);
-  font-size: 0.85em;
+/* M6 */
+.m6 { padding: 32px; }
+.alert-summary {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 8px; margin-top: 16px;
 }
+.alert-stat {
+  background: var(--bg-warm); padding: 12px;
+  border-radius: 8px; text-align: center;
+  border-left: 3px solid var(--border);
+}
+.alert-stat.ok { border-left-color: var(--green); }
+.alert-stat.warn { border-left-color: var(--red); }
+.alert-stat.pending { border-left-color: var(--blue); }
+.alert-num {
+  display: block; font-family: "Poppins", sans-serif;
+  font-size: 26px; font-weight: 600; color: var(--text);
+}
+.alert-label {
+  font-size: 11px; color: var(--text-tertiary); margin-top: 2px;
+}
+.alert-list { margin-top: 20px; }
+.alert-list h4 {
+  font-size: 11px; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  font-family: "Poppins", sans-serif; font-weight: 500;
+}
+.alert-list ul { list-style: none; margin-top: 8px; }
+.alert-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; background: var(--bg-warm);
+  border-radius: 6px; margin-bottom: 4px; cursor: pointer;
+  transition: var(--transition);
+}
+.alert-item:hover { background: var(--accent-light); transform: translateX(2px); }
+.alert-status {
+  font-size: 10px; font-weight: 600; color: white;
+  background: var(--red); padding: 2px 6px;
+  border-radius: 4px; font-family: monospace; letter-spacing: 0.05em;
+}
+.alert-name { font-size: 12px; color: var(--text); }
+.alert-item.empty {
+  color: var(--text-tertiary); font-style: italic;
+  justify-content: center; cursor: default;
+}
+.alert-item.empty:hover { background: var(--bg-warm); transform: none; }
 </style>
 </head>
 <body>
+<div class="dashboard">
 
-<div class="hero">
-  <h1>Research OS</h1>
-  <p class="tagline">深度调研工作台 — 让每条结论可溯源、可验证、可理解</p>
-  <div class="stats">
-    <div class="stat">
-      <div class="stat-num">14</div>
-      <div class="stat-label">调研项目</div>
+<section class="module m1" data-module="m1">
+  <div class="m1-header">
+    <div class="m1-logo">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="20" stroke="#d97757" stroke-width="2"/>
+        <path d="M14 24 L22 32 L34 16" stroke="#d97757" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
     </div>
-    <div class="stat">
-      <div class="stat-num">26</div>
-      <div class="stat-label">系统模块</div>
+    <div class="m1-title">
+      <h1>Research OS</h1>
+      <p class="m1-tagline">深度调研工作台</p>
     </div>
-    <div class="stat">
-      <div class="stat-num">31</div>
-      <div class="stat-label">证据条数</div>
-    </div>
-    <div class="stat">
-      <div class="stat-num">8</div>
-      <div class="stat-label">已完成</div>
+    <div class="m1-version-badge">v0.5</div>
+  </div>
+  <div class="m1-stats">
+    <div class="stat"><span class="stat-num">14</span><span class="stat-label">项目</span></div>
+    <div class="stat"><span class="stat-num">9</span><span class="stat-label">版本</span></div>
+    <div class="stat"><span class="stat-num">27</span><span class="stat-label">模块</span></div>
+    <div class="stat"><span class="stat-num">8</span><span class="stat-label">已完成</span></div>
+  </div>
+</section>
+
+
+<section class="module m2" data-module="m2">
+  <h2 class="module-title">版本演化</h2>
+  <p class="module-subtitle">从 v0.1 到 v0.5：9 个版本的真实迭代路径</p>
+  <div class="version-timeline">
+    <div class="version-line"></div>
+    <div class="version-nodes">
+      <button class="version-node" data-version="v0.1" data-date="06-22" title="v0.1 · 06-22">
+        <span class="v-id">v0.1</span>
+        <span class="v-date">06-22</span>
+      </button>
+    
+      <button class="version-node" data-version="v0.2" data-date="06-24" title="v0.2 · 06-24">
+        <span class="v-id">v0.2</span>
+        <span class="v-date">06-24</span>
+      </button>
+    
+      <button class="version-node" data-version="v0.3" data-date="06-25" title="v0.3 · 06-25">
+        <span class="v-id">v0.3</span>
+        <span class="v-date">06-25</span>
+      </button>
+    
+      <button class="version-node" data-version="v0.4" data-date="06-26" title="v0.4 · 06-26">
+        <span class="v-id">v0.4</span>
+        <span class="v-date">06-26</span>
+      </button>
+    
+      <button class="version-node" data-version="v0.7" data-date="06-30" title="v0.7 · 06-30">
+        <span class="v-id">v0.7</span>
+        <span class="v-date">06-30</span>
+      </button>
+    
+      <button class="version-node" data-version="v0.8" data-date="07-01" title="v0.8 · 07-01">
+        <span class="v-id">v0.8</span>
+        <span class="v-date">07-01</span>
+      </button>
+    
+      <button class="version-node" data-version="v0.9" data-date="07-02" title="v0.9 · 07-02">
+        <span class="v-id">v0.9</span>
+        <span class="v-date">07-02</span>
+      </button>
+    
+      <button class="version-node" data-version="v0.10" data-date="07-03" title="v0.10 · 07-03">
+        <span class="v-id">v0.10</span>
+        <span class="v-date">07-03</span>
+      </button>
+    
+      <button class="version-node" data-version="v0.5" data-date="07-04" title="v0.5 · 07-04">
+        <span class="v-id">v0.5</span>
+        <span class="v-date">07-04</span>
+      </button>
     </div>
   </div>
-  <div class="version-badge">v0.5 · 系统看板（v0.5 重构后归并版本号）</div>
-</div>
-
-<div class="section">
-  <h2>这个系统怎么运作</h2>
-  <p class="section-desc">每个调研任务走 10 步流程。前 3 步防止方向错，中间 4 步收集和验证证据，最后 3 步确保报告能被读者读懂。</p>
-  <div class="workflow">
-    <div class="workflow-steps">
-
-      <div class="workflow-step">
-        <div class="step-num">第 1 步</div>
-        <div class="step-name">创建项目</div>
-        <div class="step-cmd">ros new</div>
-        <div class="step-desc">起一个调研任务，设定深度和模式</div>
+  <div class="version-panels">
+      <div class="version-panel" data-version="v0.1">
+        <div class="panel-col">
+          <div class="panel-label">问题</div>
+          <div class="panel-text">需要一个调研脚手架</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">迭代</div>
+          <div class="panel-text">Dify 时代，5 模板 + 基础 CLI + 4 深度档位</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">解锁</div>
+          <div class="panel-text">R0-R3 深度体系建立</div>
+        </div>
       </div>
-
-      <div class="workflow-step">
-        <div class="step-num">第 2 步</div>
-        <div class="step-name">挖掘意图</div>
-        <div class="step-cmd">ros discover</div>
-        <div class="step-desc">3 轮探索：你嘴上要什么 vs 实际要什么</div>
+    
+      <div class="version-panel" data-version="v0.2">
+        <div class="panel-col">
+          <div class="panel-label">问题</div>
+          <div class="panel-text">缺少视图模型</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">迭代</div>
+          <div class="panel-text">引入 09-可视化视图模型.md v0.2</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">解锁</div>
+          <div class="panel-text">调研产物可被结构化呈现</div>
+        </div>
       </div>
-
-      <div class="workflow-step">
-        <div class="step-num">第 3 步</div>
-        <div class="step-name">确认意图</div>
-        <div class="step-cmd">ros confirm</div>
-        <div class="step-desc">你确认 agent 的理解对不对，防止方向错</div>
+    
+      <div class="version-panel" data-version="v0.3">
+        <div class="panel-col">
+          <div class="panel-label">问题</div>
+          <div class="panel-text">状态机散乱</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">迭代</div>
+          <div class="panel-text">research_status / planner / validator v0.3 + 候选池/假设账本模板</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">解锁</div>
+          <div class="panel-text">流程可追踪</div>
+        </div>
       </div>
-
-      <div class="workflow-step">
-        <div class="step-num">第 4 步</div>
-        <div class="step-name">制定计划</div>
-        <div class="step-cmd">ros plan</div>
-        <div class="step-desc">拆子问题、列假设、定证据来源</div>
+    
+      <div class="version-panel" data-version="v0.4">
+        <div class="panel-col">
+          <div class="panel-label">问题</div>
+          <div class="panel-text">缺执行规范</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">迭代</div>
+          <div class="panel-text">14-研究执行状态机.md v0.4（12 步线性）+ 结论溯源清单</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">解锁</div>
+          <div class="panel-text">12 步流程明确化</div>
+        </div>
       </div>
-
-      <div class="workflow-step">
-        <div class="step-num">第 5 步</div>
-        <div class="step-name">收集证据</div>
-        <div class="step-cmd">ros collect</div>
-        <div class="step-desc">从候选池筛选证据，分级（A/B/C/D）</div>
+    
+      <div class="version-panel" data-version="v0.7">
+        <div class="panel-col">
+          <div class="panel-label">问题</div>
+          <div class="panel-text">缺迭代追踪</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">迭代</div>
+          <div class="panel-text">research_planner / validator / goal_tracker / iteration_log v0.7</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">解锁</div>
+          <div class="panel-text">目标可追踪 + 迭代可记录</div>
+        </div>
       </div>
-
-      <div class="workflow-step">
-        <div class="step-num">第 6 步</div>
-        <div class="step-name">形成假设</div>
-        <div class="step-cmd">ros hypothesize</div>
-        <div class="step-desc">证据支持哪些假设，置信度多少</div>
+    
+      <div class="version-panel" data-version="v0.8">
+        <div class="panel-col">
+          <div class="panel-label">问题</div>
+          <div class="panel-text">HTML 输出丑</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">迭代</div>
+          <div class="panel-text">build_research_html.py CSS v0.8（Anthropic cream + Lora + Starlight asides）</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">解锁</div>
+          <div class="panel-text">Anthropic 美学确立</div>
+        </div>
       </div>
-
-      <div class="workflow-step">
-        <div class="step-num">第 7 步</div>
-        <div class="step-name">反方审计</div>
-        <div class="step-cmd">ros redteam</div>
-        <div class="step-desc">主动攻击自己的结论，至少降级 1 个</div>
+    
+      <div class="version-panel" data-version="v0.9">
+        <div class="panel-col">
+          <div class="panel-label">问题</div>
+          <div class="panel-text">意图探索不足</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">迭代</div>
+          <div class="panel-text">intent_discovery.py v0.9 + research_router.py v0.9 + 假设账本融入 ljg-think drill_down</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">解锁</div>
+          <div class="panel-text">意图可探索 + 路由智能化</div>
+        </div>
       </div>
-
-      <div class="workflow-step">
-        <div class="step-num">第 8 步</div>
-        <div class="step-name">写报告</div>
-        <div class="step-cmd">ros report</div>
-        <div class="step-desc">5 幕结构：问题-探索-冲突-决策-行动</div>
+    
+      <div class="version-panel" data-version="v0.10">
+        <div class="panel-col">
+          <div class="panel-label">问题</div>
+          <div class="panel-text">缺读者视角验证</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">迭代</div>
+          <div class="panel-text">reader_simulation.py 写-读-改闭环 + 5 幕叙事 + concept_ladder + CSS v0.10</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">解锁</div>
+          <div class="panel-text">写-读-改闭环确立（核心创新）</div>
+        </div>
       </div>
-
-      <div class="workflow-step">
-        <div class="step-num">第 9 步</div>
-        <div class="step-name">读者验证</div>
-        <div class="step-cmd">ros rewrite</div>
-        <div class="step-desc">LLM 扮演读者逐段读，读懂了才交付</div>
+    
+      <div class="version-panel" data-version="v0.5">
+        <div class="panel-col">
+          <div class="panel-label">问题</div>
+          <div class="panel-text">版本号碎片化</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">迭代</div>
+          <div class="panel-text">统一版本号 + 15 步状态机 + 3 人工确认点 + HTML 美学规范独立文档 + archive 归档</div>
+        </div>
+        <div class="panel-col">
+          <div class="panel-label">解锁</div>
+          <div class="panel-text">版本一致性 + 工程化成熟</div>
+        </div>
       </div>
-
-      <div class="workflow-step">
-        <div class="step-num">第 10 步</div>
-        <div class="step-name">生成 HTML</div>
-        <div class="step-cmd">ros build</div>
-        <div class="step-desc">渲染成可分享的 HTML 报告</div>
-      </div>
-
     </div>
+</section>
+
+
+<section class="module m3" data-module="m3">
+  <h2 class="module-title">调研产出矩阵</h2>
+  <p class="module-subtitle">14 个项目 × 9 个版本</p>
+  <div class="matrix-wrap">
+    <table class="matrix">
+      <thead><tr><th></th><th>v0.1</th><th>v0.2</th><th>v0.3</th><th>v0.4</th><th>v0.7</th><th>v0.8</th><th>v0.9</th><th>v0.10</th><th>v0.5</th></tr></thead>
+      <tbody><tr><th class="row-head">company-jd</th><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td><button class="proj-chip completed" data-project="AWS-Top20-求职路径">AWS-Top20-求职路径</button></td><td class="empty"></td><td class="empty"></td></tr><tr><th class="row-head">competitor</th><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td><button class="proj-chip completed" data-project="AI 调研工具横向对比">AI 调研工具横向对比</button></td><td class="empty"></td><td class="empty"></td></tr><tr><th class="row-head">industry</th><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td><button class="proj-chip failed" data-project="一人公司可行路径">一人公司可行路径</button></td><td class="empty"></td><td><button class="proj-chip failed" data-project="Agent 集群研究">Agent 集群研究</button></td><td class="empty"></td></tr><tr><th class="row-head">mixed</th><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td><button class="proj-chip planned" data-project="秋招时间线规划">秋招时间线规划</button></td></tr><tr><th class="row-head">portfolio</th><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td><button class="proj-chip planned" data-project="产品组合优化">产品组合优化</button></td></tr><tr><th class="row-head">product</th><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td><button class="proj-chip completed" data-project="知识塔罗定位">知识塔罗定位</button></td><td><button class="proj-chip completed" data-project="MizzenAI 产品拆解">MizzenAI 产品拆解</button></td><td class="empty"></td><td class="empty"></td></tr><tr><th class="row-head">topic</th><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td><button class="proj-chip completed" data-project="芯片-第一性原理">芯片-第一性原理</button></td><td class="empty"></td><td class="empty"></td><td><button class="proj-chip completed" data-project="Research-OS-自我审计">Research-OS-自我审计</button><button class="proj-chip completed" data-project="Anthropic-美学-研究">Anthropic-美学-研究</button></td><td><button class="proj-chip failed" data-project="RAG 系统设计参考">RAG 系统设计参考</button><button class="proj-chip planned" data-project="Obsidian 工作流迁移">Obsidian 工作流迁移</button></td></tr><tr><th class="row-head">user-research</th><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td class="empty"></td><td><button class="proj-chip completed" data-project="用户访谈方法论">用户访谈方法论</button></td><td class="empty"></td></tr></tbody>
+    </table>
   </div>
-</div>
-
-<div class="section">
-  <h2>调研产出</h2>
-  <p class="section-desc">每个项目是一份独立的深度调研。点击卡片打开完整报告。按类别分组，方便按场景查找。</p>
-
-  <div class="category-group">
-    <div class="cat-title">
-      <span>产品拆解</span>
-      <span class="cat-count">1 份</span>
-    </div>
-    <div class="projects-grid">
-
-      <div class="project-card">
-        <div class="proj-name">Mizzen Insight 产品深度拆解</div>
-        <div class="proj-verdict">对 Mizzen Insight 做产品层面的深度拆解。</div>
-        <div class="proj-meta">
-          <span class="badge badge-source">桌面报告</span>
-          <span class="badge badge-depth">—</span>
-          <span class="badge badge-status-done">已完成</span>
-          
-        </div>
-        <a class="proj-link" href="file:///C:/Users/19932/Desktop/Mizzen Insight 产品深度拆解报告.html" target="_blank">查看报告 →</a>
-      </div>
-
-    </div>
+  <div class="node-graph" id="nodeGraph">
+    <div class="graph-title" id="graphTitle">点击项目查看主题节点图</div>
+    <svg width="100%" height="280" viewBox="0 0 600 280" id="nodeGraphSvg"></svg>
   </div>
+</section>
 
-  <div class="category-group">
-    <div class="cat-title">
-      <span>求职</span>
-      <span class="cat-count">1 份</span>
+
+<section class="module m4" data-module="m4">
+  <h2 class="module-title">工作流引擎</h2>
+  <p class="module-subtitle">15 步状态机，分 3 阶段 · 🛑 标记为人工确认点</p>
+  <div class="workflow-stages">
+        <div class="workflow-stage">
+          <h3 class="stage-name">防方向错</h3>
+          <p class="stage-range">step 0-3</p>
+          <div class="stage-objects">
+    <div class="workflow-object" data-object="地基" title="地基">
+      <svg width="80" height="80" viewBox="0 0 80 80"><rect x="15" y="50" width="50" height="15" fill="#d97757" opacity="0.25" stroke="#a3a299" stroke-width="1.5"/><line x1="10" y1="50" x2="70" y2="50" stroke="#a3a299" stroke-width="1.5"/></svg>
+      <span class="object-label">地基</span>
     </div>
-    <div class="projects-grid">
-
-      <div class="project-card">
-        <div class="proj-name">Kai 下一阶段 AI 产品 FDE 作品集方向</div>
-        <div class="proj-verdict">研究 Kai 下一阶段作品集方向优先级，服务 FDE 岗位求职。</div>
-        <div class="proj-meta">
-          <span class="badge badge-source">桌面报告</span>
-          <span class="badge badge-depth">—</span>
-          <span class="badge badge-status-done">已完成</span>
-          
-        </div>
-        <a class="proj-link" href="file:///C:/Users/19932/Desktop/Kai 下一阶段 AI 产品 FDE 作品集方向优先级研究.html" target="_blank">查看报告 →</a>
-      </div>
-
+    
+    <div class="workflow-object" data-object="罗盘" title="罗盘">
+      <svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="22" fill="none" stroke="#a3a299" stroke-width="1.5"/><polygon points="40,20 44,40 40,60 36,40" fill="#d97757" opacity="0.7"/><circle cx="40" cy="40" r="2" fill="#a3a299"/></svg>
+      <span class="object-label">罗盘</span>
     </div>
-  </div>
-
-  <div class="category-group">
-    <div class="cat-title">
-      <span>求学</span>
-      <span class="cat-count">1 份</span>
+    
+    <div class="workflow-object" data-object="任务卡" title="任务卡">
+      <svg width="80" height="80" viewBox="0 0 80 80"><rect x="18" y="20" width="44" height="44" fill="#fff" stroke="#a3a299" stroke-width="1.5" rx="3"/><line x1="24" y1="30" x2="56" y2="30" stroke="#a3a299" stroke-width="1"/><line x1="24" y1="38" x2="50" y2="38" stroke="#a3a299" stroke-width="1"/><line x1="24" y1="46" x2="52" y2="46" stroke="#a3a299" stroke-width="1"/></svg>
+      <span class="object-label">任务卡</span>
     </div>
-    <div class="projects-grid">
-
-      <div class="project-card">
-        <div class="proj-name">物理学师范毕业论文选题与导师推荐</div>
-        <div class="proj-verdict">为物理学师范毕业论文选题方向与导师选择做推荐。</div>
-        <div class="proj-meta">
-          <span class="badge badge-source">桌面报告</span>
-          <span class="badge badge-depth">—</span>
-          <span class="badge badge-status-done">已完成</span>
-          
-        </div>
-        <a class="proj-link" href="file:///C:/Users/19932/Desktop/物理学师范毕业论文选题与导师推荐报告.html" target="_blank">查看报告 →</a>
-      </div>
-
+    
+    <div class="workflow-object" data-object="蓝图" title="蓝图">
+      <svg width="80" height="80" viewBox="0 0 80 80"><rect x="14" y="22" width="52" height="36" fill="#d97757" opacity="0.15" stroke="#a3a299" stroke-width="1.5" rx="2"/><line x1="20" y1="32" x2="60" y2="32" stroke="#a3a299" stroke-width="1"/><line x1="20" y1="42" x2="55" y2="42" stroke="#a3a299" stroke-width="1"/><line x1="20" y1="52" x2="48" y2="52" stroke="#a3a299" stroke-width="1"/></svg>
+      <span class="object-label">蓝图</span>
     </div>
-  </div>
-
-  <div class="category-group">
-    <div class="cat-title">
-      <span>系统设计</span>
-      <span class="cat-count">3 份</span>
     </div>
-    <div class="projects-grid">
-
-      <div class="project-card">
-        <div class="proj-name">前端设计深度调研</div>
-        <div class="proj-verdict">不该做新 GUI。HTML 报告已经是足够好的入口，真正卡住的是 Python 路径配置和报告内部的信息架构。</div>
-        <div class="proj-meta">
-          <span class="badge badge-source">本地项目</span>
-          <span class="badge badge-depth">R2</span>
-          <span class="badge badge-status-failed">进行中</span>
-          
-        </div>
-        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/前端设计深度调研/08-html/index.html" target="_blank">查看报告 →</a>
-      </div>
-
-      <div class="project-card">
-        <div class="proj-name">开源深度调研系统横向拆解v2</div>
-        <div class="proj-verdict">（结论待提取）</div>
-        <div class="proj-meta">
-          <span class="badge badge-source">本地项目</span>
-          <span class="badge badge-depth">R2</span>
-          <span class="badge badge-status-unknown">planned</span>
-          
-        </div>
-        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/开源深度调研系统横向拆解v2/08-html/index.html" target="_blank">查看报告 →</a>
-      </div>
-
-      <div class="project-card">
-        <div class="proj-name">深度调研开源项目横向拆解</div>
-        <div class="proj-verdict">（结论待提取）</div>
-        <div class="proj-meta">
-          <span class="badge badge-source">本地项目</span>
-          <span class="badge badge-depth">R2</span>
-          <span class="badge badge-status-unknown">planned</span>
-          
-        </div>
-        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/深度调研开源项目横向拆解/08-html/index.html" target="_blank">查看报告 →</a>
-      </div>
-
-    </div>
-  </div>
-
-  <div class="category-group">
-    <div class="cat-title">
-      <span>技术科普</span>
-      <span class="cat-count">1 份</span>
-    </div>
-    <div class="projects-grid">
-
-      <div class="project-card">
-        <div class="proj-name">MemOS 核心记忆机制科普拆解</div>
-        <div class="proj-verdict">拆解 MemOS 记忆系统的核心机制，做技术科普。</div>
-        <div class="proj-meta">
-          <span class="badge badge-source">桌面报告</span>
-          <span class="badge badge-depth">—</span>
-          <span class="badge badge-status-done">已完成</span>
-          
-        </div>
-        <a class="proj-link" href="file:///C:/Users/19932/Desktop/MemOS 核心记忆机制科普拆解.html" target="_blank">查看报告 →</a>
-      </div>
-
-    </div>
-  </div>
-
-  <div class="category-group">
-    <div class="cat-title">
-      <span>行业研究</span>
-      <span class="cat-count">1 份</span>
-    </div>
-    <div class="projects-grid">
-
-      <div class="project-card">
-        <div class="proj-name">芯片行业第一性原理</div>
-        <div class="proj-verdict">（结论待提取）</div>
-        <div class="proj-meta">
-          <span class="badge badge-source">本地项目</span>
-          <span class="badge badge-depth">R2</span>
-          <span class="badge badge-status-done">已完成</span>
-          
-        </div>
-        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/芯片行业第一性原理/08-html/index.html" target="_blank">查看报告 →</a>
-      </div>
-
-    </div>
-  </div>
-
-  <div class="category-group">
-    <div class="cat-title">
-      <span>其他</span>
-      <span class="cat-count">6 份</span>
-    </div>
-    <div class="projects-grid">
-
-      <div class="project-card">
-        <div class="proj-name">AMD参访准备</div>
-        <div class="proj-verdict">（结论待提取）</div>
-        <div class="proj-meta">
-          <span class="badge badge-source">本地项目</span>
-          <span class="badge badge-depth">R2</span>
-          <span class="badge badge-status-done">已完成</span>
-          
-        </div>
-        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/AMD参访准备/08-html/index.html" target="_blank">查看报告 →</a>
-      </div>
-
-      <div class="project-card">
-        <div class="proj-name">DeepSeek六月岗位JD分析</div>
-        <div class="proj-verdict">（结论待提取）</div>
-        <div class="proj-meta">
-          <span class="badge badge-source">本地项目</span>
-          <span class="badge badge-depth">R2</span>
-          <span class="badge badge-status-done">已完成</span>
-          
-        </div>
-        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/DeepSeek六月岗位JD分析/08-html/index.html" target="_blank">查看报告 →</a>
-      </div>
-
-      <div class="project-card">
-        <div class="proj-name">MizzenAI 创新用法探索</div>
-        <div class="proj-verdict">（结论待提取）</div>
-        <div class="proj-meta">
-          <span class="badge badge-source">本地项目</span>
-          <span class="badge badge-depth">R2</span>
-          <span class="badge badge-status-failed">进行中</span>
-          <span class="badge badge-evidence">31 条证据</span>
-        </div>
-        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/MizzenAI 创新用法探索/08-html/index.html" target="_blank">查看报告 →</a>
-      </div>
-
-      <div class="project-card">
-        <div class="proj-name">MizzenAI 技术栈拆解</div>
-        <div class="proj-verdict">（结论待提取）</div>
-        <div class="proj-meta">
-          <span class="badge badge-source">本地项目</span>
-          <span class="badge badge-depth">R2</span>
-          <span class="badge badge-status-failed">进行中</span>
-          
-        </div>
-        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/MizzenAI 技术栈拆解/08-html/index.html" target="_blank">查看报告 →</a>
-      </div>
-
-      <div class="project-card">
-        <div class="proj-name">opencode深度源码拆解</div>
-        <div class="proj-verdict">（结论待提取）</div>
-        <div class="proj-meta">
-          <span class="badge badge-source">本地项目</span>
-          <span class="badge badge-depth">unknown</span>
-          <span class="badge badge-status-unknown">unknown</span>
-          
+          <div class="stage-steps"><span class="step-num" title="step 0 · scaffold">0</span><span class="step-num" title="step 1 · route">1</span><span class="step-num human-confirm" title="step 2 · task_card 🛑 人工确认">2</span><span class="step-num human-confirm" title="step 3 · research_plan 🛑 人工确认">3</span></div>
         </div>
         
-      </div>
-
-      <div class="project-card">
-        <div class="proj-name">开源Agent与LLM深度拆解</div>
-        <div class="proj-verdict">（结论待提取）</div>
-        <div class="proj-meta">
-          <span class="badge badge-source">本地项目</span>
-          <span class="badge badge-depth">unknown</span>
-          <span class="badge badge-status-done">已完成</span>
-          
+        <div class="workflow-stage">
+          <h3 class="stage-name">收集证据</h3>
+          <p class="stage-range">step 4-8</p>
+          <div class="stage-objects">
+    <div class="workflow-object" data-object="漏斗" title="漏斗">
+      <svg width="80" height="80" viewBox="0 0 80 80"><path d="M15 22 L65 22 L42 50 L42 64 L38 64 L38 50 Z" fill="none" stroke="#a3a299" stroke-width="1.5" stroke-linejoin="round"/><line x1="38" y1="50" x2="42" y2="50" stroke="#a3a299" stroke-width="1.5"/></svg>
+      <span class="object-label">漏斗</span>
+    </div>
+    
+    <div class="workflow-object" data-object="天平" title="天平">
+      <svg width="80" height="80" viewBox="0 0 80 80"><line x1="40" y1="20" x2="40" y2="60" stroke="#a3a299" stroke-width="1.5"/><line x1="18" y1="32" x2="62" y2="32" stroke="#a3a299" stroke-width="1.5"/><path d="M18 32 L12 44 L24 44 Z" fill="none" stroke="#a3a299" stroke-width="1.2"/><path d="M62 32 L56 44 L68 44 Z" fill="none" stroke="#a3a299" stroke-width="1.2"/><rect x="35" y="60" width="10" height="4" fill="#a3a299"/></svg>
+      <span class="object-label">天平</span>
+    </div>
+    
+    <div class="workflow-object" data-object="账本" title="账本">
+      <svg width="80" height="80" viewBox="0 0 80 80"><rect x="18" y="22" width="44" height="40" fill="none" stroke="#a3a299" stroke-width="1.5" rx="2"/><line x1="40" y1="22" x2="40" y2="62" stroke="#a3a299" stroke-width="1"/><line x1="24" y1="32" x2="36" y2="32" stroke="#a3a299" stroke-width="1"/><line x1="24" y1="42" x2="36" y2="42" stroke="#a3a299" stroke-width="1"/><line x1="24" y1="52" x2="36" y2="52" stroke="#a3a299" stroke-width="1"/></svg>
+      <span class="object-label">账本</span>
+    </div>
+    
+    <div class="workflow-object" data-object="多Agent" title="多Agent">
+      <svg width="80" height="80" viewBox="0 0 80 80"><circle cx="22" cy="40" r="10" fill="none" stroke="#a3a299" stroke-width="1.5"/><circle cx="58" cy="40" r="10" fill="none" stroke="#a3a299" stroke-width="1.5"/><line x1="32" y1="40" x2="48" y2="40" stroke="#a3a299" stroke-width="1.2" stroke-dasharray="3,2"/><circle cx="22" cy="40" r="2" fill="#d97757"/><circle cx="58" cy="40" r="2" fill="#d97757"/></svg>
+      <span class="object-label">多Agent</span>
+    </div>
+    
+    <div class="workflow-object" data-object="盾牌" title="盾牌">
+      <svg width="80" height="80" viewBox="0 0 80 80"><path d="M40 18 L62 28 L62 42 Q62 56 40 64 Q18 56 18 42 L18 28 Z" fill="#d97757" opacity="0.15" stroke="#a3a299" stroke-width="1.5"/><path d="M30 40 L37 47 L52 32" stroke="#d97757" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      <span class="object-label">盾牌</span>
+    </div>
+    </div>
+          <div class="stage-steps"><span class="step-num" title="step 4 · candidates">4</span><span class="step-num" title="step 5 · evidence">5</span><span class="step-num" title="step 6 · hypothesize">6</span><span class="step-num" title="step 7 · analysis">7</span><span class="step-num" title="step 8 · red_team">8</span></div>
         </div>
-        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/开源Agent与LLM深度拆解/08-html/index.html" target="_blank">查看报告 →</a>
-      </div>
-
+        
+        <div class="workflow-stage">
+          <h3 class="stage-name">读者读懂</h3>
+          <p class="stage-range">step 9-15</p>
+          <div class="stage-objects">
+    <div class="workflow-object" data-object="草稿" title="草稿">
+      <svg width="80" height="80" viewBox="0 0 80 80"><rect x="18" y="18" width="40" height="52" fill="none" stroke="#a3a299" stroke-width="1.5" rx="2"/><line x1="24" y1="28" x2="50" y2="28" stroke="#a3a299" stroke-width="1"/><line x1="24" y1="38" x2="55" y2="38" stroke="#a3a299" stroke-width="1"/><line x1="24" y1="48" x2="48" y2="48" stroke="#a3a299" stroke-width="1"/><line x1="24" y1="58" x2="52" y2="58" stroke="#a3a299" stroke-width="1"/></svg>
+      <span class="object-label">草稿</span>
     </div>
+    
+    <div class="workflow-object" data-object="镜子" title="镜子">
+      <svg width="80" height="80" viewBox="0 0 80 80"><ellipse cx="40" cy="40" rx="22" ry="28" fill="none" stroke="#a3a299" stroke-width="1.5"/><line x1="40" y1="14" x2="40" y2="66" stroke="#d97757" stroke-width="1" opacity="0.4"/><circle cx="32" cy="34" r="1.5" fill="#d97757" opacity="0.6"/><circle cx="48" cy="46" r="1.5" fill="#d97757" opacity="0.6"/></svg>
+      <span class="object-label">镜子</span>
+    </div>
+    
+    <div class="workflow-object" data-object="溯源" title="溯源">
+      <svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="18" fill="none" stroke="#a3a299" stroke-width="1.5"/><line x1="40" y1="22" x2="40" y2="58" stroke="#a3a299" stroke-width="1.2" stroke-dasharray="2,2"/><line x1="22" y1="40" x2="58" y2="40" stroke="#a3a299" stroke-width="1.2" stroke-dasharray="2,2"/><circle cx="40" cy="40" r="3" fill="#d97757"/></svg>
+      <span class="object-label">溯源</span>
+    </div>
+    
+    <div class="workflow-object" data-object="JSON" title="JSON">
+      <svg width="80" height="80" viewBox="0 0 80 80"><rect x="16" y="26" width="48" height="28" fill="none" stroke="#a3a299" stroke-width="1.5" rx="3"/><text x="40" y="46" text-anchor="middle" fill="#d97757" font-size="11" font-family="monospace">{ }</text></svg>
+      <span class="object-label">JSON</span>
+    </div>
+    
+    <div class="workflow-object" data-object="HTML" title="HTML">
+      <svg width="80" height="80" viewBox="0 0 80 80"><rect x="16" y="26" width="48" height="28" fill="none" stroke="#a3a299" stroke-width="1.5" rx="3"/><text x="40" y="46" text-anchor="middle" fill="#d97757" font-size="11" font-family="monospace">&lt;/&gt;</text></svg>
+      <span class="object-label">HTML</span>
+    </div>
+    
+    <div class="workflow-object" data-object="章" title="章">
+      <svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="20" fill="#d97757" opacity="0.2" stroke="#a3a299" stroke-width="1.5"/><line x1="40" y1="20" x2="40" y2="60" stroke="#a3a299" stroke-width="1.2"/><line x1="30" y1="30" x2="50" y2="30" stroke="#a3a299" stroke-width="1"/><line x1="30" y1="50" x2="50" y2="50" stroke="#a3a299" stroke-width="1"/></svg>
+      <span class="object-label">章</span>
+    </div>
+    
+    <div class="workflow-object" data-object="发布" title="发布">
+      <svg width="80" height="80" viewBox="0 0 80 80"><path d="M28 52 L40 22 L52 52" fill="none" stroke="#a3a299" stroke-width="1.5" stroke-linejoin="round"/><circle cx="40" cy="18" r="4" fill="#d97757"/><line x1="20" y1="60" x2="60" y2="60" stroke="#a3a299" stroke-width="1.5"/></svg>
+      <span class="object-label">发布</span>
+    </div>
+    </div>
+          <div class="stage-steps"><span class="step-num" title="step 9 · report_draft">9</span><span class="step-num" title="step 10 · reader_simulation">10</span><span class="step-num" title="step 11 · trace_manifest">11</span><span class="step-num" title="step 12 · view_model">12</span><span class="step-num human-confirm" title="step 13 · html_build 🛑 人工确认">13</span><span class="step-num" title="step 14 · validate">14</span><span class="step-num" title="step 15 · publish">15</span></div>
+        </div>
+        </div>
+</section>
+
+
+<section class="module m5" data-module="m5">
+  <h2 class="module-title">设计哲学</h2>
+  <p class="module-subtitle">4 条哲学，每条对应一段真实代码 · 第 3 条最有灵气</p>
+  <div class="philosophy-cards">
+        <article class="philosophy-card " data-num="01">
+          <div class="ph-num">PRINCIPLE 01</div>
+          <h3 class="ph-title">目标在调研过程中"长出来"</h3>
+          <p class="ph-claim">传统调研是"先定题目，再找答案"。这套系统拒绝这个前提——真实的调研里，你往往调到一半才发现自己问错了问题。系统承认这件事，并把它写进了工作流。</p>
+          <details class="ph-details">
+            <summary>展开：为什么这样设计 + 代码如何强制</summary>
+            <h4>为什么这样设计</h4>
+            <p>人做调研最大的浪费，不是"找不到答案"，而是"答完了才发现问错了"。一份目标冻结在开头的调研，到结尾大概率已经偏离了真实需求——因为调研本身就是会改变你认知的过程。如果你一开始就把目标锁死，调研就成了"为初始假设找证据"，本质是合理化。但反过来，目标也不能随便漂——漂就成了没有方向的乱翻。所以系统做的是一个折中：目标可以被改，但每次改必须有理由、有痕迹、有人把关，且最多改 3 次。</p>
+            <h4>代码如何强制</h4>
+            <ul><li>每个项目有一份目标账本（goal_ledger.json），记录当前目标 + 全部历史修改记录 + 等待处理的修改建议</li><li>系统主动扫描三类信号提示目标漂移：反方审计出现"自我合理化"攻击 / 多个假设被反复修订 / 目标范围广但证据太少</li><li>调整建议不会自动生效，必须显式接受或拒绝；MAX_GOAL_REVISIONS=3，超过 3 次就停止</li><li>目标改了之后，旧目标写进 goal_history，不是删除——你可以回看"我是怎么走到这里的"</li></ul>
+            <p class="ph-source">来源：goal_tracker.py（MAX_GOAL_REVISIONS=3，三类 drift 信号检测，goal_history 不可删除）；00-使用说明.md 步骤 5「目标账本」</p>
+          </details>
+        </article>
+        
+        <article class="philosophy-card " data-num="02">
+          <div class="ph-num">PRINCIPLE 02</div>
+          <h3 class="ph-title">最终产物是"给读者看的东西"</h3>
+          <p class="ph-claim">调研分两层——中间过程是为了让结论站得住脚（给作者自己看的），最终报告是为了让读者读懂（给别人看的）。两层不能混着用，且最终产物必须以"读者能不能读懂"为唯一验收标准。</p>
+          <details class="ph-details">
+            <summary>展开：为什么这样设计 + 代码如何强制</summary>
+            <h4>为什么这样设计</h4>
+            <p>写报告的人天然有一个盲区——你做完了调研，脑子里装着全部上下文，你以为"这段写得很清楚"，其实读者根本跟不上你的跳跃。这个盲区无法靠作者自己审稿解决，因为作者永远无法"忘记自己知道的东西"。这套系统的解法是：让 AI 来扮演读者。写完之后，AI 切换身份去读，逐段反馈"哪里没懂、哪里卡住、哪里术语没解释"，然后写的人（也是 AI）再改。最多两轮，第三轮还不行就交还给人。</p>
+            <h4>代码如何强制</h4>
+            <ul><li>报告生成有写-读-改强制循环：写完初稿 → AI 扮演读者逐段读 → 不通过的段落打回重写 → 再读 → 通过才交付</li><li>每段读者诊断包含：读懂度分数、读者复述（验证真的读懂了）、卡点位置、改写建议</li><li>报告结构强制用 5 幕叙事（问题/探索/冲突/决策/行动），不允许 §1-§7 的并列堆砌</li><li>幕后信息会被自动过滤掉——证据编号、假设编号、schema 版本号这些内部术语不该出现在读者视图</li><li>内部文件（证据矩阵、假设账本、反方审计）和最终报告是两套产物，前者服务可信度，后者服务读者</li></ul>
+            <p class="ph-source">来源：reader_simulation.py（reader persona 逐段诊断 + 读懂度评分 + 2 轮重写上限）；final_report_writer.py（5 幕叙事 + 写-读-改闭环）</p>
+          </details>
+        </article>
+        
+        <article class="philosophy-card highlight" data-num="03">
+          <div class="ph-num">PRINCIPLE 03</div>
+          <h3 class="ph-title">意图是"挖出来的"，不是"问出来的"</h3>
+          <p class="ph-claim">用户嘴上说要调研的东西，往往不是他真正需要的东西。系统不直接接受用户的表面需求，而是花 3 轮探索去挖出真实意图。这一条是整套设计哲学里最区别于普通调研工具的地方，也是系统最有灵气的部分。</p>
+          <details class="ph-details">
+            <summary>展开：为什么这样设计 + 代码如何强制</summary>
+            <h4>为什么这样设计</h4>
+            <p>人提需求的时候，会说一个"我能想到的版本"，但真正想解决的问题往往藏在更深处。直接拿表面需求去跑调研，结果就是答得很认真，但答的不是真问题。这种"嘴上说的 vs 实际要的"差距，用户自己看不出来——需要外部视角去挖。系统把这件事做成 3 轮结构化探索：先记下嘴上说的，再主动挖差距，最后固化成可验证、可批评的问题说明书。</p>
+            <h4>代码如何强制</h4>
+            <ul><li>Round 1 · 宽泛探索：把用户嘴上说的需求原样记下来，不做任何判断。这一步建立"对照组"——后续挖出来的差距，要跟这个对比</li><li>Round 2 · 挖差距：基于 Round 1 主动问三个问题——"嘴上说要 X，实际可能要 Y 为什么" / "有没有 X 本身就是目的的情况" / "这个调研的真实成本，不做会损失什么"</li><li>Round 3 · 固化成问题说明书：把探索结果固化成 AI 能解、可验证、可批评的问题。三个验收维度：可验证（怎么检查被答了）/ 可批评（什么证据能推翻前提）/ AI 可解</li><li>交叉验证：Round 2 会读取用户画像里的判断模式；调研结束后比对 stated_intent vs resolved_intent 记录差距（intent_evolution）；这个差距记录会被下次调研读取——下次类似主题，系统会主动提议"要不要先做个 L1 草稿"</li><li>每轮探索记录存到 exploration_history 字段，让意图形成过程可审计——不是黑盒一次性输出</li></ul>
+            <p class="ph-source">来源：intent_discovery.py（3 轮探索 + exploration_history 可审计 + 跨项目 intent_evolution）；profile_updater.py（stated_intent vs resolved_intent 差距记录 + 反哺下次调研）</p>
+          </details>
+        </article>
+        
+        <article class="philosophy-card " data-num="04">
+          <div class="ph-num">PRINCIPLE 04</div>
+          <h3 class="ph-title">系统会从每次调研中"学到东西"</h3>
+          <p class="ph-claim">调研系统不是一次性工具。每次调研完成后，系统会主动复盘这次"用户真正解决了什么""展现了什么判断倾向""留下了什么没解决的问题""有什么方法论可以跨项目复用"，把这些写回长期记忆，影响下一次调研的起点。</p>
+          <details class="ph-details">
+            <summary>展开：为什么这样设计 + 代码如何强制</summary>
+            <h4>为什么这样设计</h4>
+            <p>普通调研工具的痛点是——你调了 10 次调研，但每次都从零开始。这次踩的坑、发现的模式、留下的未解问题，下次完全不记得。等于每次都在重置自己。这套系统拒绝这个前提。调研过程产出的不只是"报告"，还有"对用户的理解"——用户的判断模式是什么、这次没解决什么、什么洞察可以跨项目复用。这些是比报告本身更值钱的资产，因为报告服务一次决策，而"对用户的理解"服务所有未来的调研。</p>
+            <h4>代码如何强制</h4>
+            <ul><li>调研完成且校验通过后，触发画像回写：读取完整产出（证据/假设/反方/最终报告/意图文档+修订记录），调 LLM 提取 4 类信息</li><li>写回 3 份文件：user_profile.json（判断模式、未解种子、领域偏好）/ project_index.json（resolved_intent + 完成日期）/ insight_memory.json（跨项目可复用洞察，上限 50 条）</li><li>硬规则：resolved_intent 必须基于真实调研产出，不是任务卡里写的"想解决什么"；judgment_patterns 是稳定判断倾向，不是这次具体结论；unresolved_seeds 是这次没解决、下次可继续挖的；信息不足时输出空数组，不硬编</li><li>身份贯穿 3 维度：求职故事（这次调研能不能成为面试时的"我做过 X"案例）/ 产品启发（对用户当前产品组合的启发）/ 赛道修正（是否修正了用户对某条赛道的判断）——无关就写"无关"，不硬编</li><li>下次 ros new 时，intent_discovery 会读取这些记忆——上次留下的未解种子会主动浮出来，问"要不要继续挖"</li></ul>
+            <p class="ph-source">来源：profile_updater.py（4 类信息提取 + 3 份记忆文件写回 + 身份贯穿 3 维度）；intent_discovery.py（下次调研读取历史未解种子）</p>
+          </details>
+        </article>
+        </div>
+</section>
+
+
+<section class="module m6" data-module="m6">
+  <h2 class="module-title">自查告警</h2>
+  <div class="alert-summary">
+    <div class="alert-stat"><span class="alert-num">14</span><span class="alert-label">总项目</span></div>
+    <div class="alert-stat ok"><span class="alert-num">8</span><span class="alert-label">已完成</span></div>
+    <div class="alert-stat warn"><span class="alert-num">3</span><span class="alert-label">失败</span></div>
+    <div class="alert-stat pending"><span class="alert-num">3</span><span class="alert-label">计划中</span></div>
   </div>
-</div>
-<div class="section">
-  <h2>系统怎么长大的</h2>
-  <p class="section-desc">每个版本解决一个具体问题，不是预先设计出来的。</p>
-  <div class="timeline">
-
-    <div class="timeline-item">
-      <div class="tl-version">v0.1-v0.5</div>
-      <div class="tl-title">基础工作台</div>
-      <div class="tl-date">2026 Q1</div>
-      <div class="tl-why">解决调研过程中来源不可验证、结论断裂、过程与交付混杂的问题</div>
-      <ul class="tl-changes">
-        <li>命令行工具（ros new/plan/run/build）</li><li>10 步调研流程</li><li>JSON 配置 + Markdown 模板</li><li>HTML 报告生成器</li>
-      </ul>
-    </div>
-
-    <div class="timeline-item">
-      <div class="tl-version">v0.9</div>
-      <div class="tl-title">意图挖掘 + 反方审计</div>
-      <div class="tl-date">2026 Q2</div>
-      <div class="tl-why">用户嘴上说的需求跟真实需求常有差距，需要系统挖掘；每条结论需要被反方审计才能交付</div>
-      <ul class="tl-changes">
-        <li>意图挖掘模块（3 轮结构化探索）</li><li>反方审计（11 维度攻击）</li><li>读者优先报告模式</li><li>证据分级（A/B/C/D）</li><li>假设账本（含置信度追踪）</li>
-      </ul>
-    </div>
-
-    <div class="timeline-item">
-      <div class="tl-version">v0.5</div>
-      <div class="tl-title">读者代理 + 看板</div>
-      <div class="tl-date">2026-07</div>
-      <div class="tl-why">报告读起来像 XML（幕后信息泄漏正文）；LLM 只当生产者不当读者；意图挖掘过度拟合历史 pattern；缺少系统级的展示和自省入口</div>
-      <ul class="tl-changes">
-        <li>reader_simulation 模块（LLM 扮演读者逐段验证可读性）</li><li>写-读-改闭环（最多 2 轮重写）</li><li>用户确认门禁（ros confirm，输入端防方向错）</li><li>AI 味检测（detect_ai_tell）</li><li>意图挖掘反确认偏误（允许无 gap）</li><li>系统看板（本文件）</li>
-      </ul>
-    </div>
-
+  <div class="alert-list">
+    <h4>需要关注</h4>
+    <ul>
+      <li class="alert-item" data-project="Agent 集群研究">
+        <span class="alert-status">FAIL</span>
+        <span class="alert-name">Agent 集群研究</span>
+      </li>
+    
+      <li class="alert-item" data-project="一人公司可行路径">
+        <span class="alert-status">FAIL</span>
+        <span class="alert-name">一人公司可行路径</span>
+      </li>
+    
+      <li class="alert-item" data-project="RAG 系统设计参考">
+        <span class="alert-status">FAIL</span>
+        <span class="alert-name">RAG 系统设计参考</span>
+      </li>
+    </ul>
   </div>
+</section>
+
 </div>
+<script>
+// ============ Bento 展开/压缩 ============
+document.querySelectorAll('.module').forEach(mod => {
+  mod.addEventListener('click', (e) => {
+    if (e.target.closest('button, a, details, summary, .proj-chip, .version-node, .alert-item, .workflow-object, .node-circle, .ph-details')) return;
+    if (mod.classList.contains('m1')) return;
+    const wasExpanded = mod.classList.contains('expanded');
+    document.querySelectorAll('.module').forEach(m => {
+      m.classList.remove('expanded', 'compressed');
+    });
+    if (!wasExpanded) {
+      mod.classList.add('expanded');
+      document.querySelectorAll('.module').forEach(other => {
+        if (other !== mod) other.classList.add('compressed');
+      });
+    }
+  });
+});
 
-<div class="section">
-  <h2>为什么这样设计</h2>
-  <p class="section-desc">5 条核心原则，每条都来自实际踩过的坑。</p>
-  <div class="philosophy-grid">
+// ============ M2 版本节点切换 ============
+document.querySelectorAll('.version-node').forEach(node => {
+  node.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const vid = node.dataset.version;
+    document.querySelectorAll('.version-node').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.version-panel').forEach(p => p.classList.remove('active'));
+    node.classList.add('active');
+    const panel = document.querySelector('.version-panel[data-version="' + vid + '"]');
+    if (panel) panel.classList.add('active');
+  });
+});
+const defaultNode = document.querySelector('.version-node[data-version="v0.5"]');
+if (defaultNode) {
+  defaultNode.classList.add('active');
+  const defaultPanel = document.querySelector('.version-panel[data-version="v0.5"]');
+  if (defaultPanel) defaultPanel.classList.add('active');
+}
 
-    <div class="philosophy-card">
-      <div class="ph-title">可溯源</div>
-      <div class="ph-desc">每条结论都能追溯到证据。不是&#x27;我觉得&#x27;，是&#x27;证据显示&#x27;。</div>
-    </div>
+// ============ M3 节点图（原生 SVG + 力导向近似 + 引力浮动）============
+const PROJECTS_DATA = [
+    {name: "AWS-Top20-求职路径", cards: [{title: "AWS 云服务核心栈", related: ["职业路径选择"]}, {title: "Top20 公司筛选", related: ["AWS 云服务核心栈"]}, {title: "职业路径选择", related: []}]},
+    {name: "MizzenAI 产品拆解", cards: [{title: "产品定位", related: ["用户访谈方法论"]}, {title: "用户访谈方法论", related: []}, {title: "竞品对比", related: ["产品定位"]}]},
+    {name: "知识塔罗定位", cards: [{title: "用户画像", related: []}, {title: "定价策略", related: ["用户画像"]}]},
+    {name: "Research-OS-自我审计", cards: [{title: "工作流完整性", related: ["读者模拟有效性"]}, {title: "读者模拟有效性", related: []}]},
+    {name: "Anthropic-美学-研究", cards: [{title: "配色规范", related: ["字体选择"]}, {title: "字体选择", related: []}, {title: "简笔画物件", related: ["配色规范"]}]},
+    {name: "芯片-第一性原理", cards: [{title: "制程工艺", related: ["性能功耗权衡"]}, {title: "性能功耗权衡", related: []}]},
+    {name: "用户访谈方法论", cards: [{title: "访谈大纲设计", related: ["用户画像"]}, {title: "用户画像", related: []}]},
+    {name: "AI 调研工具横向对比", cards: [{title: "GPT Researcher", related: ["Deep Research"]}, {title: "Deep Research", related: []}, {title: "Perplexity", related: ["GPT Researcher"]}]},
+    {name: "Agent 集群研究", cards: [{title: "Kimi Agent", related: []}, {title: "Claude Code", related: ["Kimi Agent"]}]},
+    {name: "一人公司可行路径", cards: [{title: "赛道选择", related: []}]},
+    {name: "RAG 系统设计参考", cards: [{title: "向量数据库对比", related: []}]},
+    {name: "产品组合优化", cards: [{title: "知识塔罗 + Research OS", related: []}]},
+    {name: "秋招时间线规划", cards: [{title: "面试准备节奏", related: []}]},
+    {name: "Obsidian 工作流迁移", cards: [{title: "知识库结构", related: []}]}
+];
 
-    <div class="philosophy-card">
-      <div class="ph-title">读者优先</div>
-      <div class="ph-desc">报告写给读者看，不是写给研究者自己看。幕后信息不进正文。</div>
-    </div>
+function renderNodeGraph(projectName) {
+    const proj = PROJECTS_DATA.find(p => p.name === projectName);
+    if (!proj) return;
+    const svg = document.getElementById('nodeGraphSvg');
+    const titleEl = document.getElementById('graphTitle');
+    const container = document.getElementById('nodeGraph');
+    if (!svg || !titleEl || !container) return;
 
-    <div class="philosophy-card">
-      <div class="ph-title">反方审计</div>
-      <div class="ph-desc">每条核心结论必须经过反方攻击。R2 深度要求至少降级 1 个结论。</div>
-    </div>
+    titleEl.textContent = projectName + ' · 主题节点图';
+    container.style.display = 'block';
 
-    <div class="philosophy-card">
-      <div class="ph-title">写-读-改闭环</div>
-      <div class="ph-desc">写完不是结束，读者读懂了才是结束。LLM 既当作者又当读者。</div>
-    </div>
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
 
-    <div class="philosophy-card">
-      <div class="ph-title">输入端确认</div>
-      <div class="ph-desc">意图挖掘后必须用户确认，防止整个调研方向错。</div>
-    </div>
+    const cards = proj.cards;
+    const W = 600, H = 280;
+    const cx = W / 2, cy = H / 2;
+    const radius = Math.min(W, H) / 3;
 
-  </div>
-</div>
+    const nodes = cards.map((c, i) => {
+        const angle = (i / cards.length) * Math.PI * 2 - Math.PI / 2;
+        return {
+            title: c.title,
+            related: c.related || [],
+            baseX: cx + Math.cos(angle) * radius,
+            baseY: cy + Math.sin(angle) * radius,
+            x: cx + Math.cos(angle) * radius,
+            y: cy + Math.sin(angle) * radius,
+        };
+    });
 
-<div class="footer">
-  Research OS v0.5 · 生成于 2026-07-04 17:07<br>
-  深度调研工作台 · 让每条结论可溯源、可验证、可理解
-</div>
+    const links = [];
+    cards.forEach((c, i) => {
+        (c.related || []).forEach(target => {
+            const j = cards.findIndex(cc => cc.title === target);
+            if (j >= 0 && i !== j) links.push({source: i, target: j});
+        });
+    });
 
+    links.forEach(link => {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('class', 'node-link');
+        line.setAttribute('data-source', link.source);
+        line.setAttribute('data-target', link.target);
+        svg.appendChild(line);
+    });
+
+    nodes.forEach((n, i) => {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('class', 'node-circle');
+        circle.setAttribute('r', '12');
+        circle.setAttribute('cx', n.x);
+        circle.setAttribute('cy', n.y);
+        let dragging = false;
+        let startX, startY, startNodeX, startNodeY;
+        circle.addEventListener('mousedown', (e) => {
+            dragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            startNodeX = nodes[i].x;
+            startNodeY = nodes[i].y;
+            e.preventDefault();
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (!dragging) return;
+            nodes[i].x = startNodeX + (e.clientX - startX);
+            nodes[i].y = startNodeY + (e.clientY - startY);
+        });
+        document.addEventListener('mouseup', () => { dragging = false; });
+        g.appendChild(circle);
+
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('class', 'node-text');
+        text.setAttribute('x', n.x);
+        text.setAttribute('y', n.y + 28);
+        text.textContent = n.title;
+        g.appendChild(text);
+
+        svg.appendChild(g);
+    });
+
+    let tick = 0;
+    function animate() {
+        tick += 0.02;
+        nodes.forEach((n, i) => {
+            n.x = n.baseX + Math.sin(tick + i * 0.7) * 4;
+            n.y = n.baseY + Math.cos(tick + i * 1.1) * 4;
+        });
+
+        const groups = svg.querySelectorAll('g');
+        groups.forEach((g, i) => {
+            const circle = g.querySelector('circle');
+            const text = g.querySelector('text');
+            if (circle && text) {
+                circle.setAttribute('cx', nodes[i].x);
+                circle.setAttribute('cy', nodes[i].y);
+                text.setAttribute('x', nodes[i].x);
+                text.setAttribute('y', nodes[i].y + 28);
+            }
+        });
+
+        svg.querySelectorAll('line.node-link').forEach(line => {
+            const s = parseInt(line.dataset.source);
+            const t = parseInt(line.dataset.target);
+            line.setAttribute('x1', nodes[s].x);
+            line.setAttribute('y1', nodes[s].y);
+            line.setAttribute('x2', nodes[t].x);
+            line.setAttribute('y2', nodes[t].y);
+        });
+
+        requestAnimationFrame(animate);
+    }
+    animate();
+}
+
+document.querySelectorAll('.proj-chip').forEach(chip => {
+  chip.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const projectName = chip.dataset.project;
+    renderNodeGraph(projectName);
+  });
+});
+
+// ============ M6 → M3 联动 ============
+document.querySelectorAll('.alert-item[data-project]').forEach(item => {
+  item.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const proj = item.dataset.project;
+    const m3 = document.querySelector('.m3');
+    if (!m3) return;
+    document.querySelectorAll('.module').forEach(m => {
+      m.classList.remove('expanded', 'compressed');
+    });
+    m3.classList.add('expanded');
+    document.querySelectorAll('.module').forEach(other => {
+      if (other !== m3) other.classList.add('compressed');
+    });
+    m3.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => {
+      const chip = document.querySelector('.proj-chip[data-project="' + proj + '"]');
+      if (chip) chip.click();
+    }, 600);
+  });
+});
+</script>
 </body>
 </html>

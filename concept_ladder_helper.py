@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""Research OS v0.5 concept_ladder_helper (原 v0.8 模块，v0.5 重构后归并版本号).
-
-为 intent_doc.concept_ladder_seed 里的每个术语生成 6 层解释：
+"""Research OS v1.0 concept_ladder_helper为 intent_doc.concept_ladder_seed 里的每个术语生成 6 层解释：
   1. intuition       直觉比喻（用日常事物类比）
   2. definition      基础定义（一句话说清楚）
   3. mechanism       工作机制（怎么运转的）

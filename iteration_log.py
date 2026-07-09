@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""Research OS v0.5 iteration log — depth × breadth iterative research loop (原 v0.7 模块，v0.5 重构后归并版本号).
-
-Borrowed pattern: dzhng/deep-research `deepResearch({query, breadth, depth,
+"""Research OS v1.0 iteration log — depth × breadth iterative research loopBorrowed pattern: dzhng/deep-research `deepResearch({query, breadth, depth,
 learnings, visitedUrls})` recursive loop. Each round outputs `learnings[]` +
 `next_directions[]` which feed back into the next round's planner context.
 

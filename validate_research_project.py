@@ -35,26 +35,52 @@ from pathlib import Path
 # v0.7 配置
 # ============================================================
 
-MIN_CONTENT_CHARS = {
-    "00-task/task-card.md": 500,
-    "01-plan/research-plan.md": 1000,
-    "01-plan/intent_doc.json": 100,
-    "02-sources/candidates.md": 500,
-    "03-evidence/evidence_matrix.md": 800,
-    "03-evidence/hypothesis_ledger.json": 50,
-    "04-captures/core_objects_fetch_log.md": 200,
-    "05-analysis/product_teardown.md": 1000,
-    "06-review/red_team.md": 300,
-    "06-review/audit_report.md": 200,
-    "07-output/final-report.md": 2000,
+# 深度档位感知的最小字符数阈值
+# R0 快速问答 / R1 标准调研 / R2 深度调研 / R3 极致深度
+MIN_CONTENT_CHARS_BY_DEPTH = {
+    "R0": {
+        "00-task/task-card.md": 200,
+        "07-output/final-report.md": 800,
+    },
+    "R1": {
+        "00-task/task-card.md": 500,
+        "01-plan/research-plan.md": 800,
+        "02-sources/candidates.md": 300,
+        "03-evidence/evidence_matrix.md": 500,
+        "07-output/final-report.md": 1500,
+    },
+    "R2": {
+        "00-task/task-card.md": 500,
+        "01-plan/research-plan.md": 1000,
+        "02-sources/candidates.md": 500,
+        "03-evidence/evidence_matrix.md": 800,
+        "03-evidence/hypothesis_ledger.json": 50,
+        "04-captures/core_objects_fetch_log.md": 200,
+        "06-review/red_team.md": 300,
+        "06-review/audit_report.md": 200,
+        "07-output/final-report.md": 3000,
+    },
+    "R3": {
+        "00-task/task-card.md": 800,
+        "01-plan/research-plan.md": 1500,
+        "02-sources/candidates.md": 800,
+        "03-evidence/evidence_matrix.md": 1200,
+        "03-evidence/hypothesis_ledger.json": 100,
+        "04-captures/core_objects_fetch_log.md": 300,
+        "06-review/red_team.md": 500,
+        "06-review/audit_report.md": 300,
+        "07-output/final-report.md": 5000,
+    },
 }
 
+# 向后兼容：默认使用 R1 阈值
+MIN_CONTENT_CHARS = MIN_CONTENT_CHARS_BY_DEPTH["R1"]
+
 JSON_FIELD_REQUIREMENTS = {
-    "01-plan/intent_doc.json": {
-        "initial_intent": str,
-        "discovered_questions": list,
-        "decision_context": str,
-        "reader_profile": str,
+    "00-task/intent_doc.json": {
+        "status": str,
+        "exploration_history": list,
+        "stated_intent": str,
     },
     "03-evidence/hypothesis_ledger.json": {
         "hypotheses": list,
@@ -79,7 +105,7 @@ STEP_ARTIFACTS = {
     "step_5_evidence_matrix": {"required": ["03-evidence/evidence_matrix.md"]},
     "step_6_hypothesis": {"required": ["03-evidence/hypothesis_ledger.json"]},
     "step_6_5_core_objects_fetch": {"required": ["04-captures/core_objects_fetch_log.md"]},
-    "step_7_analysis": {"required": ["05-analysis/product_teardown.md"]},
+    "step_7_analysis": {"required": ["05-analysis/"], "any_md": True},
     "step_8_red_team": {"required": ["06-review/red_team.md"]},
     "step_9_final_report_draft": {"required": ["07-output/final-report.md"]},
     "step_9_5_independent_audit": {"required": ["06-review/audit_report.md"]},
@@ -385,17 +411,32 @@ def check_file_existence(project, checks):
 
 
 def check_min_content(project, checks):
-    for rel, min_chars in MIN_CONTENT_CHARS.items():
+    # 读取 depth 档位，默认 R1
+    state = read_json(project / "research_state.json")
+    depth = state.get("depth", "R1") if state else "R1"
+    thresholds = MIN_CONTENT_CHARS_BY_DEPTH.get(depth, MIN_CONTENT_CHARS_BY_DEPTH["R1"])
+
+    for rel, min_chars in thresholds.items():
         p = project / rel
         if not p.exists():
+            continue
+        # 05-analysis/ 目录特殊处理：检查目录下所有 .md 文件的总字符数
+        if rel.endswith("/"):
+            total = sum(len(read_text(f)) for f in p.glob("*.md"))
+            if total < min_chars:
+                add(checks, "FAIL", f"empty template: {rel}",
+                    f"only {total} chars in {depth}, need >= {min_chars}")
+            else:
+                add(checks, "PASS", f"content sufficiency: {rel}",
+                    f"{total} chars in {depth} (>= {min_chars})")
             continue
         content = read_text(p)
         if len(content) < min_chars:
             add(checks, "FAIL", f"empty template: {rel}",
-                f"only {len(content)} chars, need >= {min_chars}")
+                f"only {len(content)} chars in {depth}, need >= {min_chars}")
         else:
             add(checks, "PASS", f"content sufficiency: {rel}",
-                f"{len(content)} chars (>= {min_chars})")
+                f"{len(content)} chars in {depth} (>= {min_chars})")
 
 
 def check_state_artifact_consistency(project, checks):
@@ -411,6 +452,7 @@ def check_state_artifact_consistency(project, checks):
         step_status = steps.get(step_name, "pending")
         if step_status != "done":
             continue
+        any_md = artifact_spec.get("any_md", False)
         for rel in artifact_spec["required"]:
             p = project / rel
             if not p.exists():
@@ -418,6 +460,18 @@ def check_state_artifact_consistency(project, checks):
                     f"state-artifact mismatch: {step_name}",
                     f"{step_name} marked done but {rel} missing")
                 fake_done_count += 1
+            elif any_md and rel.endswith("/"):
+                # 检查目录下至少有一个 .md 文件（mode 无关）
+                md_files = list(p.glob("*.md"))
+                if not md_files:
+                    add(checks, "FAIL",
+                        f"state-artifact mismatch: {step_name}",
+                        f"{step_name} marked done but {rel} has no .md files")
+                    fake_done_count += 1
+                else:
+                    add(checks, "PASS",
+                        f"state-artifact: {step_name}",
+                        f"{rel} has {len(md_files)} .md file(s)")
 
     if fake_done_count == 0:
         add(checks, "PASS", "state-artifact consistency",

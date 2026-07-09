@@ -1,31 +1,45 @@
 #!/usr/bin/env python3
-"""Research OS intent discovery (v0.5 重构后归并版本号，原 v0.9 模块).
+"""Research OS intent_discovery — 意图探索骨架准备器（Dumb Tool）。
 
-v0.9 升级：融入 brainstorming skill 的结构化探索方法论。
-discover 从"LLM 一次性 prompt 生成 intent_doc"升级成
-"多轮结构化探索"——
+设计原则（Smart Agent. Dumb Tools.）：
+  这个工具只做两件机械的事：
+    1. 创建 intent_doc.json 骨架，含 3 轮探索的 prompt 模板
+    2. 提供 commit_exploration_result() 供 Agent 写回探索结果
 
-Round 1: 宽泛探索（用户嘴上说什么）
-Round 2: 挖差距（嘴上说 vs 实际要的）
-Round 3: 固化（写成 agent 可解的问题说明书，融入 ljg-good-question）
+  工具不做的事（交给 Agent）：
+    - 不调 LLM 跑探索（探索是语义动作，由 Agent 做）
+    - 不判断意图是否"完成"（由 Agent 的实际调用驱动 status）
+    - 不声称用了什么探索方法（避免伪信任）
 
-每轮的探索记录都存到 intent_doc.json 的 exploration_history 字段，
-让意图形成过程可审计——不是黑盒一次性输出。
+  诚实标注：骨架创建后 status="skeleton_pending_agent"，
+  exploration_history 为空列表。任何人看到此文件都知道探索尚未开始。
 
 用法：
-  python intent_discovery.py discover <project_dir>
-  → 读 task-card.md
-  → 3 轮结构化探索
-  → 输出 intent_doc.json（含 exploration_history）
+  # 工具创建骨架（ros new 时自动调用，或手动）
+  python intent_discovery.py prepare <project_dir>
+
+  # Agent 跑完某轮探索后提交结果（Agent 代码调用）
+  from intent_discovery import commit_exploration_result
+  commit_exploration_result(project_dir, round_num=1, result={...})
+
+  # 标记探索完成（Agent 全部跑完后调用）
+  from intent_discovery import finalize_exploration
+  finalize_exploration(project_dir, stated_intent="...")
 """
+
 from __future__ import annotations
+
 import json
 import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 
-# v0.9 新增：3 轮探索的 prompt 模板
+# ============================================================
+# 3 轮探索的 prompt 模板（供 Agent 使用，工具不执行）
+# ============================================================
+
 EXPLORATION_ROUNDS = [
     {
         "round": 1,
@@ -49,18 +63,17 @@ EXPLORATION_ROUNDS = [
     {
         "round": 2,
         "name": "挖差距",
-        "purpose": "找出嘴上说 vs 实际要的差距（这是 brainstorming 的核心）",
+        "purpose": "找出嘴上说 vs 实际要的差距",
         "prompt": """你是意图探索员 Round 2。基于 Round 1 的记录，挖掘差距：
 
 1. 用户嘴上说要 X，但实际可能要 Y——为什么？
-   （参考 user_profile.json 的判断模式）
 2. 有没有"嘴上说要 X，实际 X 本身就是目的"的情况？
-   （参考过去调研的 intent_discovery 记录）
 3. 这个调研的真实成本——如果不做会损失什么？
 
+注意：不是每个任务都有 gap。如果字面意思就是真实意图，输出"无显著 gap"。
 输出 JSON：
 {{
-  "stated_vs_real_gap": "...",
+  "stated_vs_real_gap": "...（可为'无显著 gap'）",
   "real_problem_hypothesis": "...",
   "cost_of_not_solving": "...",
   "round2_notes": "差距分析"
@@ -79,48 +92,43 @@ EXPLORATION_ROUNDS = [
 5. concept_ladder_seed：需要解释的 5-10 个术语
 6. clarifying_questions：还需要澄清的问题（若有）
 
-输出完整的 intent_doc.json（v0.9 schema）。""",
+输出完整的 intent_doc 补充字段。""",
     },
 ]
 
 
-def discover(project_dir: str | Path) -> Path:
-    """v0.9 多轮结构化意图探索。
+# ============================================================
+# 阶段 1：创建骨架（工具做）
+# ============================================================
 
-    流程：
-      1. 读 task-card.md
-      2. 跑 3 轮探索（实际由 LLM 执行，这里只准备结构）
-      3. 输出 intent_doc.json（含 exploration_history）
+def prepare(project_dir: str | Path) -> Path:
+    """创建 intent_doc.json 骨架。
+
+    骨架特征（诚实标注）：
+      - status = "skeleton_pending_agent"（探索尚未开始）
+      - exploration_history = []（空列表，等 Agent 填）
+      - stated_intent = ""（空，等 Agent 填）
+      - prompt_templates = EXPLORATION_ROUNDS（供 Agent 使用的 prompt）
+
+    工具不调 LLM，不做探索。骨架只是准备好了结构，等 Agent 来填。
+
+    Args:
+        project_dir: 项目目录路径
+
+    Returns:
+        intent_doc.json 的路径
     """
     project = Path(project_dir)
-    task_card = project / "00-task" / "task-card.md"
-
-    # v0.9: 记录探索历史（可审计）
-    exploration_history = []
-    for r in EXPLORATION_ROUNDS:
-        exploration_history.append({
-            "round": r["round"],
-            "name": r["name"],
-            "purpose": r["purpose"],
-            "prompt_template": r["prompt"],
-            "timestamp": datetime.now().isoformat(),
-            "result": None,  # LLM 执行后填入
-        })
 
     intent_doc = {
-        "schema_version": "research-os-intent-v0.9",
+        "schema_version": "research-os-intent-v1.0",
         "project_name": project.name,
-        "exploration_method": "brainstorming_integrated_3rounds",
-        "exploration_history": exploration_history,
+        "status": "skeleton_pending_agent",
+        "created_at": datetime.now().isoformat(),
         "stated_intent": "",
-        "confidence": "medium",
-        "v09_features": {
-            "core_generators_aware": True,
-            "drill_down_required": True,
-            "task_card_is_problem_spec": True,
-        },
+        "prompt_templates": EXPLORATION_ROUNDS,
+        "exploration_history": [],
         "v07": {
-            # 保留 v0.7 兼容字段
             "reader_model": {},
             "intent_tree": [],
             "concept_ladder_needed": True,
@@ -137,37 +145,151 @@ def discover(project_dir: str | Path) -> Path:
     return out_path
 
 
+# ============================================================
+# 阶段 2：Agent 提交探索结果（Agent 调用）
+# ============================================================
+
+def commit_exploration_result(
+    project_dir: str | Path,
+    round_num: int,
+    result: dict[str, Any],
+) -> None:
+    """Agent 跑完某轮探索后，把结果写回 intent_doc.json。
+
+    工具只做"写入"，不做"探索"。Agent 必须显式调用此函数。
+
+    Args:
+        project_dir: 项目目录路径
+        round_num: 第几轮（1/2/3）
+        result: 探索结果（LLM 输出的 JSON）
+    """
+    project = Path(project_dir)
+    intent_path = project / "00-task" / "intent_doc.json"
+
+    if not intent_path.exists():
+        raise FileNotFoundError(
+            f"intent_doc.json 不存在于 {intent_path}。请先运行 prepare() 创建骨架。"
+        )
+
+    intent_doc = json.loads(intent_path.read_text(encoding="utf-8-sig"))
+
+    # 更新 status
+    intent_doc["status"] = "exploration_in_progress"
+
+    # 找到对应轮次的 history 条目，填入 result
+    history = intent_doc.get("exploration_history", [])
+    found = False
+    for entry in history:
+        if entry.get("round") == round_num:
+            entry["result"] = result
+            entry["committed_at"] = datetime.now().isoformat()
+            found = True
+            break
+
+    # 如果没找到（可能是新轮次），追加
+    if not found:
+        round_template = next(
+            (r for r in EXPLORATION_ROUNDS if r["round"] == round_num),
+            {"round": round_num, "name": f"Round {round_num}", "purpose": ""}
+        )
+        history.append({
+            "round": round_num,
+            "name": round_template["name"],
+            "purpose": round_template["purpose"],
+            "prompt_template": round_template.get("prompt", ""),
+            "timestamp": datetime.now().isoformat(),
+            "result": result,
+            "committed_at": datetime.now().isoformat(),
+        })
+
+    intent_doc["exploration_history"] = history
+    intent_path.write_text(json.dumps(intent_doc, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def finalize_exploration(
+    project_dir: str | Path,
+    stated_intent: str,
+    concept_ladder_seed: list[str] | None = None,
+    clarifying_questions: list[str] | None = None,
+) -> None:
+    """Agent 全部探索完成后，标记探索为已完成并固化最终意图。
+
+    Args:
+        project_dir: 项目目录路径
+        stated_intent: 一句话核心意图（Agent 从 Round 3 固化的）
+        concept_ladder_seed: 需要解释的术语列表
+        clarifying_questions: 还需澄清的问题
+    """
+    project = Path(project_dir)
+    intent_path = project / "00-task" / "intent_doc.json"
+
+    if not intent_path.exists():
+        raise FileNotFoundError(
+            f"intent_doc.json 不存在于 {intent_path}。请先运行 prepare() 创建骨架。"
+        )
+
+    intent_doc = json.loads(intent_path.read_text(encoding="utf-8-sig"))
+
+    # 验证所有轮次都有结果
+    history = intent_doc.get("exploration_history", [])
+    missing_rounds = []
+    for r in EXPLORATION_ROUNDS:
+        round_num = r["round"]
+        entry = next((e for e in history if e.get("round") == round_num), None)
+        if not entry or not entry.get("result"):
+            missing_rounds.append(round_num)
+
+    if missing_rounds:
+        raise ValueError(
+            f"无法标记探索完成——轮次 {missing_rounds} 尚无结果。"
+            f"请先用 commit_exploration_result() 提交所有轮次的结果。"
+        )
+
+    intent_doc["status"] = "exploration_complete"
+    intent_doc["stated_intent"] = stated_intent
+
+    if concept_ladder_seed is not None:
+        intent_doc.setdefault("v07", {})["concept_ladder_seed"] = concept_ladder_seed
+    if clarifying_questions is not None:
+        intent_doc.setdefault("v07", {})["clarifying_questions"] = clarifying_questions
+
+    intent_path.write_text(json.dumps(intent_doc, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+# ============================================================
+# 向后兼容：discover() 保留为 prepare() 的别名
+# ============================================================
+
+def discover(project_dir: str | Path) -> Path:
+    """向后兼容别名——等同于 prepare()。
+
+    旧代码中 create_research_project.py 调用 discover()，
+    保留此函数避免破坏现有调用。
+    """
+    return prepare(project_dir)
+
+
+# ============================================================
+# CLI 入口
+# ============================================================
+
 if __name__ == "__main__":
-    if len(sys.argv) < 3 or sys.argv[1] != "discover":
-        print("usage: intent_discovery.py discover <project_dir>", file=sys.stderr)
+    if len(sys.argv) < 3:
+        print("usage:", file=sys.stderr)
+        print("  intent_discovery.py prepare <project_dir>    # 创建骨架", file=sys.stderr)
+        print("  intent_discovery.py discover <project_dir>   # 向后兼容别名", file=sys.stderr)
         sys.exit(1)
-    out = discover(sys.argv[2])
-    print(f"Wrote {out}")
 
+    cmd = sys.argv[1]
+    project_dir = sys.argv[2]
 
-# =====================================================================
-# v0.10 反确认偏误：防止过度拟合历史 pattern
-# =====================================================================
-#
-# intent_discovery 的第 2 轮（挖差距）默认找 gap，但不是每个任务都有 gap。
-# 过度拟合历史 pattern 会导致：
-# - 强行套用"嘴上要 X 实际要 Y"模板
-# - 把字面意思就是真实意图的任务也框进 gap 模板
-#
-# 修复原则：
-# 1. user_profile 的 intent_evolution 是参考，不是模板
-# 2. 第 2 轮允许输出"无显著 gap"
-# 3. gap 必须由本次任务的具体内容验证，不能直接套历史 pattern
-# 4. intent_doc 的 gap 字段允许为 null
-
-ALLOW_NO_GAP = True  # v0.10: 允许无 gap
-
-def should_question_gap(gap_result: dict) -> bool:
-    """如果 gap 跟历史 pattern 高度相似，质疑是否在套模板。"""
-    if not gap_result.get("stated_vs_real_gap"):
-        return False  # 已经是"无 gap"
-    # 检查是否在套"广度覆盖 vs 单一决策"pattern
-    gap_text = gap_result.get("stated_vs_real_gap", "")
-    pattern_keywords = ["广度", "单一", "嘴上", "实际要"]
-    matches = sum(1 for kw in pattern_keywords if kw in gap_text)
-    return matches >= 3  # 命中 3+ 关键词，可能是套模板
+    if cmd in ("prepare", "discover"):
+        out = prepare(project_dir)
+        print(f"[ok] intent_doc.json 骨架已创建: {out}")
+        print(f"[hint] status=skeleton_pending_agent，exploration_history 为空")
+        print(f"[hint] Agent 应使用 prompt_templates 中的 prompt 跑 3 轮探索")
+        print(f"[hint] 每轮完成后调用 commit_exploration_result() 写回结果")
+        print(f"[hint] 全部完成后调用 finalize_exploration() 标记完成")
+    else:
+        print(f"unknown command: {cmd}", file=sys.stderr)
+        sys.exit(1)

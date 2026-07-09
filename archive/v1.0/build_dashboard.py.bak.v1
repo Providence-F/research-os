@@ -1,4 +1,4 @@
-"""build_dashboard.py - Research OS v1.0 系统看板生成器
+"""build_dashboard.py - Research OS v0.5 系统看板生成器
 
 生成一个展示 Research OS 系统本身的 HTML 看板：
 - 系统怎么运作（可视化工作流）
@@ -658,7 +658,7 @@ body {
       <div class="stat-label">已完成</div>
     </div>
   </div>
-  <div class="version-badge">v0.5 · 系统看板（）</div>
+  <div class="version-badge">v0.5 · 系统看板（v0.5 重构后归并版本号）</div>
 </div>
 """)
 
@@ -791,7 +791,7 @@ body {
     # ===== Footer =====
     html_parts.append(f"""
 <div class="footer">
-  Research OS v1.0 · 生成于 {datetime.now().strftime('%Y-%m-%d %H:%M')}<br>
+  Research OS v0.5 · 生成于 {datetime.now().strftime('%Y-%m-%d %H:%M')}<br>
   深度调研工作台 · 让每条结论可溯源、可验证、可理解
 </div>
 

@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""Research OS v0.5 plain_glossary (原 v0.8 模块，v0.5 重构后归并版本号).
-
-提供"专业名词 → 通俗解释"的转换工具。
+"""Research OS v1.0 plain_glossary提供"专业名词 → 通俗解释"的转换工具。
 模板要求每个专业名词配 blockquote 解释，但当前解释太技术化。
 这个模块提供两层解释：
   - plain: 大白话（12岁能懂）

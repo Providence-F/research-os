@@ -1,5 +1,8 @@
 """Research OS configuration.
 
+
+# 系统版本号——单一真相源，所有文件应与此一致
+SYSTEM_VERSION = "v1.0"
 All paths and external resources are read from environment variables with
 defaults pointing inside the Research OS home directory. Override them when
 integrating with an Obsidian vault or other external layout.

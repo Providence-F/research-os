@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""Research OS v0.5 反方审计 agent (原 v0.9 模块，v0.5 重构后归并版本号).
-
-把"反方审计"从 06-review/red_team.md 空模板升级成
+"""Research OS v1.0 反方审计 agent把"反方审计"从 06-review/red_team.md 空模板升级成
 有 persona 的主动 agent（融入 dogfood skill 的核心方法论）。
 
 dogfood 的核心方法论：
@@ -108,7 +106,7 @@ def run_audit(project_dir: Path | str, conclusions: list[dict]) -> dict:
 - 至少一条 confidence_after_attack 低于原 confidence
 - 修订建议自动写回 trace-manifest.json
 """
-    (review_dir / "red_team.md").write_text(red_team_md, encoding="utf-8")
+    (review_dir / "06-review/red_team.md").write_text(red_team_md, encoding="utf-8")
 
     # 保存审计框架（供 LLM 执行）
     audit_framework = {

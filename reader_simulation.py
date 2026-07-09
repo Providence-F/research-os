@@ -1,6 +1,4 @@
-"""reader_simulation.py - Research OS v0.5 模块 (原 v0.10 模块，v0.5 重构后归并版本号)
-
-LLM 不只是生产者，更要扮演读者代理。在 final-report.md 写完后、ros build 之前，
+"""reader_simulation.py - Research OS v1.0 模块LLM 不只是生产者，更要扮演读者代理。在 final-report.md 写完后、ros build 之前，
 让 LLM 扮演 reader persona 逐段读报告，反馈读懂度 + 卡点 + 改写建议，
 触发写-读-改闭环。
 
@@ -349,47 +347,3 @@ def apply_diagnosis_to_rewrite(project, rewritten_report_md, round_num, simulate
     return passed, diag
 
 
-# =====================================================================
-# 8. AI 味检测（规则层，配合 stop-slop 思路）
-# =====================================================================
-
-AI_TELLS = [
-    (r"不是.{1,25}?而是", "对比句式：直接陈述后者，不提前者"),
-    (r"反常识", "自我标榜：删掉，让事实说话"),
-    (r"反直觉", "自我标榜：删掉，让事实说话"),
-    (r"你之所以", "第二人称心理描写：改客观陈述"),
-    (r"带着.{1,10}?问题", "情节连接：改逻辑连接"),
-    (r"这.{1,5}?让我", "第一人称叙事：改证据陈述"),
-    (r"但.{1,15}?有个反方", "戏剧化转折：改客观陈述"),
-    (r"深入.{0,5}?拆解|深入.{0,5}?分析", "空洞程度词：具体化或删掉"),
-    (r"矫枉过正", "成语化程度词：具体说哪里过度"),
-    (r"本质上|根本上是", "空洞强调词：删掉，让证据支撑"),
-]
-
-
-def detect_ai_tell(text: str) -> list[dict[str, str]]:
-    """检测 AI 写作特征，返回 [{"pattern": "...", "match": "...", "suggestion": "..."}]。"""
-    findings = []
-    for pattern, suggestion in AI_TELLS:
-        for m in re.finditer(pattern, text):
-            findings.append({
-                "pattern": pattern,
-                "match": m.group(),
-                "suggestion": suggestion,
-            })
-    return findings
-
-
-def strip_ai_tell(text: str) -> str:
-    """删除明显的 AI tell，保留语义。"""
-    # 删"反常识""反直觉"等自我标榜词
-    text = re.sub(r"反常识的是[，,]?", "", text)
-    text = re.sub(r"反直觉的[是，,]?", "", text)
-    text = re.sub(r"本质上[是来]?", "", text)
-    text = re.sub(r"根本上是?", "", text)
-    # "不是 X 而是 Y" → "Y"
-    text = re.sub(r"不是.{1,25}?而是", "", text)
-    # 清理多余空格和标点
-    text = re.sub(r"  +", " ", text)
-    text = re.sub(r"[，,]{2,}", "，", text)
-    return text.strip()

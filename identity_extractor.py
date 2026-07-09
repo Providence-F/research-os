@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""Identity extractor for Research OS v0.5 (原 v0.2 模块，v0.5 重构后归并版本号).
-
-Dual-source extraction of user identity:
+"""Identity extractor for Research OS v1.0Dual-source extraction of user identity:
 1. Claude memory (~/.claude/CLAUDE.md + ~/.claude/projects/.../memory/*.md)
 2. Obsidian vault (E:/obsidian/AI革命生存指南/, focus on 01-身份 / 04-项目 / 09-收件箱)
 

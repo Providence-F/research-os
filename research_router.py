@@ -1,24 +1,20 @@
 #!/usr/bin/env python3
-"""Research OS topic router (v0.9).
+"""Research OS topic router — Dumb Router.
 
-v0.9 升级：融入 ljg-rank"降秩"方法论。
-不再只看关键词决定 research_mode，而是分析
-"撑着这个调研对象的几根独立的力"（core_generators）。
+设计原则（Smart Agent. Dumb Tools.）：
+  这个工具只做一件机械的事：按 research_type 返回 preset 配置。
+  不做关键词路由（Agent 显式选择 research_mode）。
+  不硬编码 core_generators（Agent 用 ljg-rank 现场降秩，写入 research-plan.md）。
+  不做项目名语义联想（工具不基于名称做推断）。
 
-router 现在输出两部分：
-  1. research_mode / view_type（沿用 v0.8）
-  2. core_generators: 这个调研对象背后的核心生成器列表
-     （借鉴 ljg-rank：把现象砍到不可再少的生成器，
-      砍完能把现象一个个生回来才算数）
-
-core_generators 决定：
-  - concept_ladder_seed（概念阶梯种子）
-  - comparison_matrix 的维度
-  - 报告的核心章节
+  core_generators 留空，由 Agent 在调研方案阶段用 ljg-rank skill 降秩产出，
+  写入 research-plan.md 的 ## 核心生成器 章节，工具从该章节读取。
 """
 from __future__ import annotations
 
+import re
 from copy import deepcopy
+from pathlib import Path
 
 
 BASE_MODULES = ["hero", "summary_cards", "full_report", "appendix_fold"]
@@ -71,25 +67,7 @@ ROUTE_PRESETS = {
     },
 }
 
-# v0.9 新增：每种 research_mode 的默认 core_generators
-# 借鉴 ljg-rank：把领域砍到不可再少的生成器
-# 这些是"撑着这个调研类型的核心维度"——不是关键词，是结构
-DEFAULT_CORE_GENERATORS = {
-    "evidence_intelligence": ["事实可靠性", "来源独立性", "时间新鲜度"],
-    "thinking_decision": ["价值大小", "成本风险", "时间窗口", "可逆性"],
-    "opportunity_map": ["机会规模", "门槛高度", "增长趋势", "竞争密度"],
-    "product_teardown": ["架构哲学", "执行引擎", "差异化机制", "工程成熟度"],
-    "user_voice": ["核心痛点", "使用场景", "满意度信号", "未满足需求"],
-    "career_strategy": ["背景匹配度", "赛道增长", "技能可迁移性", "时机窗口"],
-}
-
-# 关键词仍保留作为 fallback（v0.8 兼容）
-DECISION_KEYWORDS = ["选题", "导师", "毕业论文", "论文", "职业", "求职", "转行",
-                     "作品集", "策略", "要不要", "是否值得"]
-OPPORTUNITY_KEYWORDS = ["地图", "榜单", "候选池", "展商", "公司清单", "秋招", "投递", "岗位"]
-PRODUCT_KEYWORDS = ["产品", "机制", "拆解", "竞品", "体验", "增长", "商业模式"]
-USER_VOICE_KEYWORDS = ["用户", "访谈", "评论", "需求", "痛点", "原声"]
-
+# research_type -> preset 的机械映射（不做语义判断）
 MODE_BY_TYPE = {
     "product": "product_teardown",
     "competitor": "product_teardown",
@@ -102,59 +80,54 @@ MODE_BY_TYPE = {
 }
 
 
-def _contains_any(text: str, keywords: list[str]) -> bool:
-    return any(keyword.lower() in text for keyword in keywords)
-
-
 def infer_route(project_name: str, research_type: str, depth: str) -> dict:
-    """v0.9: 推断路由 + core_generators。
+    """按 research_type 返回 preset，不做语义判断。
 
-    流程：
-      1. 先按 research_type 给默认 preset（v0.8 兼容）
-      2. 关键词 override（v0.8 兼容）
-      3. v0.9 新增：根据 research_mode 取默认 core_generators
-      4. v0.9 新增：如果 project_name 含特定信号，调整 generators
+    core_generators 留空——由 Agent 在 research-plan.md 中用 ljg-rank 降秩产出。
+    工具不硬编码生成器，不做关键词路由，不做项目名联想。
     """
-    name = project_name or ""
-    text = f"{name} {research_type or ''}".lower()
     rtype = research_type or "mixed"
-
     preset_key = MODE_BY_TYPE.get(rtype, "narrative")
-
-    if _contains_any(text, DECISION_KEYWORDS):
-        preset_key = "thinking_decision"
-    elif _contains_any(text, OPPORTUNITY_KEYWORDS):
-        preset_key = "opportunity_map"
-    elif _contains_any(text, PRODUCT_KEYWORDS):
-        preset_key = "product_teardown"
-    elif _contains_any(text, USER_VOICE_KEYWORDS):
-        preset_key = "user_voice"
-
     route = deepcopy(ROUTE_PRESETS[preset_key])
 
-    # v0.9 新增：注入 core_generators
-    research_mode = route["research_mode"]
-    generators = list(DEFAULT_CORE_GENERATORS.get(research_mode, []))
+    # core_generators 留空，由 Agent 降秩产出
+    route["core_generators"] = []
 
-    # v0.9 新增：项目名含特定信号时调整 generators
-    if "开源" in name or "github" in name.lower():
-        # 开源项目拆解：加"社区活跃度""复现可行性"
-        if "社区活跃度" not in generators:
-            generators.append("社区活跃度")
-        if "复现可行性" not in generators:
-            generators.append("复现可行性")
-    if "深度调研" in name or "调研系统" in name:
-        # 调研系统拆解：加"引用溯源""证据留存"
-        if "引用溯源" not in generators:
-            generators.append("引用溯源")
-        if "证据留存" not in generators:
-            generators.append("证据留存")
-
-    route["core_generators"] = generators
-
+    # R0/R1 深度简化视觉模块
     if depth in ("R0", "R1") and route["view_type"] != "narrative_report":
         route["visual_modules"] = [m for m in route["visual_modules"] if m in BASE_MODULES]
     return route
+
+
+def read_core_generators_from_plan(project: Path) -> list[str]:
+    """从 research-plan.md 的 ## 核心生成器 章节读取 Agent 降秩的结果。
+
+    这是 dumb 的机械读取——不判断生成器对不对，只提取列表。
+    Agent 负责降秩的质量，工具负责把结果传递给需要的地方。
+    """
+    plan_path = project / "01-plan" / "research-plan.md"
+    if not plan_path.exists():
+        return []
+
+    text = plan_path.read_text(encoding="utf-8-sig")
+    # 提取 ## 核心生成器 到下一个 ## 之间的内容
+    pattern = r"^##\s+核心生成器\s*\n(.*?)(?=^##\s|\Z)"
+    match = re.search(pattern, text, re.MULTILINE | re.DOTALL)
+    if not match:
+        return []
+
+    section = match.group(1)
+    # 提取列表项（- 开头的行）
+    generators = []
+    for line in section.splitlines():
+        line = line.strip()
+        if line.startswith("- "):
+            # 去掉前缀和可能的尾注
+            item = line[2:].strip()
+            # 去掉"（待填）"等占位符
+            if "（待填）" not in item and item:
+                generators.append(item)
+    return generators
 
 
 def apply_route_overrides(route: dict, overrides: dict | None = None) -> dict:
@@ -175,19 +148,19 @@ def route_research(
     depth: str,
     overrides: dict | None = None,
 ) -> dict:
-    """v0.9: 推断路由 + 应用覆盖"""
+    """推断路由 + 应用覆盖"""
     return apply_route_overrides(infer_route(project_name, research_type, depth), overrides)
 
 
 def build_empty_view_model(project_name: str, route: dict) -> dict:
-    """v0.9: 构建空 view-model.json 模板（含 core_generators）"""
+    """构建空 view-model.json 模板"""
     return {
         "schema_version": "research-os-view-model-v0.5",
         "project_name": project_name,
         "research_mode": route.get("research_mode", "evidence_intelligence"),
         "view_type": route.get("view_type", "narrative_report"),
         "visual_modules": route.get("visual_modules", []),
-        "core_generators": route.get("core_generators", []),  # v0.9 新增
+        "core_generators": route.get("core_generators", []),
         "hero": {
             "verdict": "",
             "summary": "",
@@ -200,5 +173,5 @@ def build_empty_view_model(project_name: str, route: dict) -> dict:
             "columns": [],
             "rows": [],
         },
-        "concept_ladder": [],  # v0.9: 由 concept_ladder_helper.py 填充
+        "concept_ladder": [],
     }

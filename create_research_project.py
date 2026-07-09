@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Research OS v0.5 - create_research_project.py
+Research OS v1.0 - create_research_project.py
 Scaffold a new research project from the template library.
 
 Changes from v0.1:
@@ -147,7 +147,7 @@ TYPE_CHOICES = [
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="Research OS v0.5 - scaffold a new research project"
+        description="Research OS v1.0 - scaffold a new research project"
     )
     p.add_argument("--name", required=True, help="项目名")
     p.add_argument("--type", required=True, choices=TYPE_CHOICES, help="调研类型")
@@ -226,8 +226,8 @@ def build_state(name: str, rtype: str, depth: str) -> dict:
         "discarded_source": "02-sources/discarded.md",
         "hypothesis_ledger_source": "03-evidence/hypothesis_ledger.json",
         "conflicts_source": "03-evidence/conflicts.md",
-        "intent_doc_source": "01-plan/intent_doc.json",
-        "goal_ledger_source": "01-plan/goal_ledger.json",
+        "intent_doc_source": "00-task/intent_doc.json",
+        "goal_ledger_source": "00-task/goal_ledger.json",
         "validation_required": True,
         "next_required_action": "fill_task_card",
         "folded_sections": [
@@ -356,7 +356,10 @@ def write_trace_manifest(project_root: Path, state: dict) -> Path | None:
 
 
 def write_protocol_files(project_root: Path, state: dict) -> list[Path]:
-    """v0.5: 初始化 candidate_pool.json + hypothesis_ledger.json + intent_doc.json + goal_ledger.json"""
+    """初始化 candidate_pool.json + hypothesis_ledger.json + goal_ledger.json
+
+    intent_doc.json 由 intent_discovery.prepare() 创建（ros new 时自动调用），
+    此处不再重复创建以避免 schema 不一致。"""
     if state.get("depth") not in ("R2", "R3"):
         return []
     today = date.today().isoformat()
@@ -373,15 +376,6 @@ def write_protocol_files(project_root: Path, state: dict) -> list[Path]:
         "created_at": today,
         "hypotheses": [],
     }
-    intent_doc = {
-        "schema_version": "research-os-intent-doc-v0.5",
-        "project_name": state["project_name"],
-        "created_at": today,
-        "initial_intent": "",
-        "discovered_questions": [],
-        "decision_context": "",
-        "reader_profile": "",
-    }
     goal_ledger = {
         "schema_version": "research-os-goal-ledger-v0.5",
         "project_name": state["project_name"],
@@ -394,8 +388,7 @@ def write_protocol_files(project_root: Path, state: dict) -> list[Path]:
     for rel_path, data in [
         ("02-sources/candidate_pool.json", candidate_pool),
         ("03-evidence/hypothesis_ledger.json", hypothesis_ledger),
-        ("01-plan/intent_doc.json", intent_doc),
-        ("01-plan/goal_ledger.json", goal_ledger),
+        ("00-task/goal_ledger.json", goal_ledger),
     ]:
         p = project_root / rel_path
         p.parent.mkdir(parents=True, exist_ok=True)

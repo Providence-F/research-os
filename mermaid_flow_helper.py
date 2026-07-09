@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""Research OS v0.5 mermaid_flow_helper (原 v0.8 模块，v0.5 重构后归并版本号).
-
-提供深度调研开源项目的标准 mermaid 流程图模板。
+"""Research OS v1.0 mermaid_flow_helper提供深度调研开源项目的标准 mermaid 流程图模板。
 HTML 生成器 (build_research_html.py) 已支持 mermaid——
 检测到 ```mermaid 代码块会自动加载 CDN 并渲染。
 

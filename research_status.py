@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Research OS v0.5 status inspector.
+"""Research OS v1.0 status inspector.
 
 Read project state and protocol files, then emit a concise machine-readable
 status with the next required action.
@@ -343,7 +343,7 @@ def infer_status(project: Path, state: dict[str, Any], validator: dict[str, Any]
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Inspect Research OS v0.5 project status")
+    parser = argparse.ArgumentParser(description="Inspect Research OS v1.0 project status")
     parser.add_argument("project", help="Path to research project directory")
     args = parser.parse_args()
     result = inspect_project(Path(args.project).resolve())

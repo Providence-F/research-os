@@ -1,4 +1,4 @@
-<!-- ros-version: v0.7.1 | last-updated: 2026-07-05 | status: current -->
+<!-- ros-version: v1.0 | last-updated: 2026-07-09 | status: current -->
 
 # 独立审计 Agent Prompt 模板
 
