@@ -153,25 +153,33 @@ def route_research(
 
 
 def build_empty_view_model(project_name: str, route: dict) -> dict:
-    """构建空 view-model.json 模板"""
-    return {
-        "schema_version": "research-os-view-model-v0.5",
+    """构建空 view-model.json 模板——只创建 visual_modules 内的字段。
+
+    避免创建不需要的空字段（如 narrative_report 不需要 object_cards），
+    防止 Agent 看到空字段后被引导去填不需要的数据。
+    """
+    visual_modules = route.get("visual_modules", [])
+    model = {
+        "schema_version": "research-os-view-model-v1.0",
         "project_name": project_name,
         "research_mode": route.get("research_mode", "evidence_intelligence"),
         "view_type": route.get("view_type", "narrative_report"),
-        "visual_modules": route.get("visual_modules", []),
+        "visual_modules": visual_modules,
         "core_generators": route.get("core_generators", []),
-        "hero": {
-            "verdict": "",
-            "summary": "",
-            "meta": [],
-        },
-        "summary_cards": [],
-        "object_cards": [],
-        "strategy_tabs": [],
-        "comparison_matrix": {
-            "columns": [],
-            "rows": [],
-        },
-        "concept_ladder": [],
     }
+    # 只创建 visual_modules 内的字段，避免空字段引导 Agent 填不需要的数据
+    if "hero" in visual_modules:
+        model["hero"] = {"verdict": "", "summary": "", "meta": []}
+    if "summary_cards" in visual_modules:
+        model["summary_cards"] = []
+    if "object_cards" in visual_modules:
+        model["object_cards"] = []
+    if "strategy_tabs" in visual_modules:
+        model["strategy_tabs"] = []
+    if "comparison_matrix" in visual_modules:
+        model["comparison_matrix"] = {"columns": [], "rows": []}
+    if "filterable_table" in visual_modules:
+        model["filterable_table"] = {"columns": [], "rows": []}
+    # concept_ladder 总是需要（解释设计的基础设施）
+    model["concept_ladder"] = []
+    return model

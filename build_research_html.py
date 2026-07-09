@@ -1320,8 +1320,9 @@ def render_object_cards(cards: list[dict[str, Any]], kind: str = "object") -> st
           {render_card_fields(obj)}
         </article>
         """)
+    kind_label = {"object": "对象卡片", "advisor": "顾问卡片", "career": "岗位卡片"}.get(kind, "对象卡片")
     return f"""
-    <div class="section-label">岗位卡片</div>
+    <div class="section-label">{kind_label}</div>
     <div class="object-tools">
       <input id="objectSearch" type="search" placeholder="筛选岗位 / 风险 / 方向 / 价值" oninput="filterCards(this.value)">
       <span class="pill" id="objectCount">{len(cards)} 张卡片</span>
@@ -1353,7 +1354,7 @@ def render_tabs(raw_tabs: Any) -> str:
         active = " active" if idx == 0 else ""
         buttons.append(f"<button class='{active.strip()}' onclick='switchTab(" + str(idx) + f")'>{inline_md(title)}</button>")
         panels.append(f"<div class='tab-panel{active}' data-tab='{idx}'>{render_list(body)}</div>")
-    return f"<div class='section-label'>Strategy Tabs</div><section class='strategy-tabs'><div class='tab-buttons'>{''.join(buttons)}</div>{''.join(panels)}</section>"
+    return f"<div class='section-label'>策略对比</div><section class='strategy-tabs'><div class='tab-buttons'>{''.join(buttons)}</div>{''.join(panels)}</section>"
 
 
 def normalize_matrix(raw: Any) -> tuple[list[str], list[Any]]:

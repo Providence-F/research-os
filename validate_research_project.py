@@ -388,6 +388,86 @@ def check_prerequisite_gate(project, checks):
 
 
 # ============================================================
+# v1.0 面向读者的质量检查
+# ============================================================
+
+# 开发者术语——不应出现在面向读者的字段中
+DEVELOPER_TERMS = [
+    "step_", "final-report", "view-model", ".json", "schema_version",
+    "_design", "intent_doc", "research_state", "meta_validator",
+    "trust_ledger", "build_research_html", "dumb_tools",
+    "07-output", "00-task", "01-plan", "06-review",
+]
+
+
+def check_view_model_reader_facing(project, checks):
+    """v1.0: 检查 view-model.json 的面向读者字段不含开发者术语。
+
+    hero.verdict 和 hero.summary 是读者第一眼看到的内容，
+    不应包含实现细节（step 编号、文件路径、schema 名词）。
+    """
+    vm = read_json(project / "07-output" / "view-model.json")
+    if not vm:
+        return
+
+    hero = vm.get("hero", {})
+    if not hero:
+        return
+
+    for field_name in ("verdict", "summary"):
+        value = hero.get(field_name, "")
+        if not value:
+            continue
+        found_terms = [term for term in DEVELOPER_TERMS if term in value.lower()]
+        if found_terms:
+            add(checks, "FAIL", f"reader-facing: hero.{field_name}",
+                f"含开发者术语: {found_terms}（面向读者字段不应含实现细节）")
+        else:
+            add(checks, "PASS", f"reader-facing: hero.{field_name}",
+                f"无开发者术语 ({len(value)} chars)")
+
+
+def check_action_plan_proportion(project, checks):
+    """v1.0: 检查行动方案章节占报告总字符数的比例。
+
+    行动方案是读者最需要的部分（告诉读者怎么做），
+    如果占比过低说明行动方案潦草。
+    阈值：行动方案章节 >= 总报告的 15%。
+    """
+    report = read_text(project / "07-output" / "final-report.md")
+    if not report or len(report) < 500:
+        return
+
+    # 找行动方案章节：标题含"行动""怎么修""方案""实施""建议"的章节
+    import re
+    # 先移除代码块（避免代码块内的 ## 被误认为章节标题）
+    report_no_code = re.sub(r"```[\s\S]*?```", "", report)
+    sections = re.split(r"^##\s+", report_no_code, flags=re.MULTILINE)
+    total_chars = len(report)
+    action_chars = 0
+    action_found = False
+
+    for sec in sections[1:]:  # 跳过第一部分（标题前的内容）
+        title_line = sec.split("\n")[0].lower()
+        if any(kw in title_line for kw in ["行动", "怎么修", "方案", "实施", "建议", "决策建议"]):
+            action_found = True
+            action_chars += len(sec)
+
+    if not action_found:
+        add(checks, "WARN", "action plan section",
+            "未找到行动方案章节（标题应含'行动/方案/实施/建议'）")
+        return
+
+    proportion = action_chars / total_chars
+    if proportion < 0.15:
+        add(checks, "FAIL", "action plan proportion",
+            f"行动方案仅占报告的 {proportion:.0%} ({action_chars}/{total_chars} chars)，应 >= 15%")
+    else:
+        add(checks, "PASS", "action plan proportion",
+            f"行动方案占报告的 {proportion:.0%} ({action_chars}/{total_chars} chars)")
+
+
+# ============================================================
 # v0.6 保留检查函数
 # ============================================================
 
@@ -593,6 +673,10 @@ def validate_project(project):
     check_html_forbidden_patterns(project, checks)
     check_core_object_mentions(project, checks)
     check_prerequisite_gate(project, checks)
+
+    # v1.0 面向读者的质量检查
+    check_view_model_reader_facing(project, checks)
+    check_action_plan_proportion(project, checks)
 
     return checks
 
