@@ -176,7 +176,7 @@ def slugify(name: str) -> str:
 
 
 def build_state(name: str, rtype: str, depth: str) -> dict:
-    """v0.5: 状态文件，schema 升级，包含全部 15 步流程状态。"""
+    """v1.0: 状态文件，schema 升级，含核心对象直采和独立审计两个子步骤。"""
     html_required = depth in ("R2", "R3")
     route = route_research(name, rtype, depth)
     return {
@@ -194,7 +194,7 @@ def build_state(name: str, rtype: str, depth: str) -> dict:
         "discarded_source_count": 0,
         "open_questions": [],
         "final_report_mode": "reader_first",
-        # v0.5: 完整步骤状态（15 步）
+        # v1.0: 完整步骤状态（含 step_6_5 核心对象直采和 step_9_5 独立审计）
         "steps": {
             "step_0_scaffold": "done",
             "step_1_route": "pending",
@@ -203,9 +203,11 @@ def build_state(name: str, rtype: str, depth: str) -> dict:
             "step_4_candidates": "pending",
             "step_5_evidence_matrix": "pending",
             "step_6_hypothesis": "pending",
+            "step_6_5_core_objects_fetch": "pending",
             "step_7_analysis": "pending",
             "step_8_red_team": "pending",
             "step_9_final_report_draft": "pending",
+            "step_9_5_independent_audit": "pending",
             "step_10_reader_simulation": "pending",
             "step_11_trace_manifest": "pending",
             "step_12_view_model": "pending",

@@ -204,6 +204,23 @@ SYSTEM_EVOLUTION = [
         ],
         "why": "报告读起来像 XML（幕后信息泄漏正文）；LLM 只当生产者不当读者；意图挖掘过度拟合历史 pattern；缺少系统级的展示和自省入口",
     },
+    {
+        "version": "v1.0",
+        "date": "2026-07-09",
+        "title": "信任转化器架构 + 四权分立",
+        "changes": [
+            "第一性原理重构：系统本质是'信任转化器'——把不可信的 AI 认知劳动转化为人类敢拿真实后果下注的决策输入",
+            "四权分立：研究 Agent + 审计 Agent + 工具 + 元审计层（meta_validator）",
+            "Smart Agent. Dumb Tools.：工具只做机械检查，语义判断交给 Agent",
+            "意图探索诚实化：消除伪信任注入（exploration_method 字段造假）",
+            "核心生成器降秩：Agent 用 ljg-rank 现场降秩，工具不硬编码",
+            "信任账本（trust_ledger.json）：5 环信任链加权打分，>=0.7 才能 decision_ready",
+            "深度档位感知验证：R0/R1/R2/R3 四档阈值",
+            "路径契约统一：intent_doc 和 goal_ledger 统一到 00-task/",
+            "版本治理：单一 SYSTEM_VERSION 源",
+        ],
+        "why": "工具越界做语义判断（硬编码产品名、声称用了探索方法但 result=None）；信任链没有显式审计；版本号散落各处；工具硬编码核心生成器违反 Dumb Tools 原则",
+    },
 ]
 
 
@@ -212,16 +229,16 @@ SYSTEM_EVOLUTION = [
 # =====================================================================
 
 WORKFLOW_STEPS = [
-    {"step": 1, "name": "创建项目", "cmd": "ros new", "desc": "起一个调研任务，设定深度和模式"},
-    {"step": 2, "name": "挖掘意图", "cmd": "ros discover", "desc": "3 轮探索：你嘴上要什么 vs 实际要什么"},
-    {"step": 3, "name": "确认意图", "cmd": "ros confirm", "desc": "你确认 agent 的理解对不对，防止方向错"},
-    {"step": 4, "name": "制定计划", "cmd": "ros plan", "desc": "拆子问题、列假设、定证据来源"},
-    {"step": 5, "name": "收集证据", "cmd": "ros collect", "desc": "从候选池筛选证据，分级（A/B/C/D）"},
-    {"step": 6, "name": "形成假设", "cmd": "ros hypothesize", "desc": "证据支持哪些假设，置信度多少"},
-    {"step": 7, "name": "反方审计", "cmd": "ros redteam", "desc": "主动攻击自己的结论，至少降级 1 个"},
-    {"step": 8, "name": "写报告", "cmd": "ros report", "desc": "5 幕结构：问题-探索-冲突-决策-行动"},
-    {"step": 9, "name": "读者验证", "cmd": "ros rewrite", "desc": "LLM 扮演读者逐段读，读懂了才交付"},
-    {"step": 10, "name": "生成 HTML", "cmd": "ros build", "desc": "渲染成可分享的 HTML 报告"},
+    {"step": 1, "name": "创建项目", "cmd": "ros new", "desc": "起调研任务，设定深度和模式，生成 intent_doc 骨架"},
+    {"step": 2, "name": "意图探索", "cmd": "Agent 3轮探索", "desc": "宽泛探索→挖差距→固化问题说明书。Agent 提交真实结果，工具不做伪信任注入"},
+    {"step": 3, "name": "任务卡 + 降秩", "cmd": "Agent", "desc": "填 task-card + 用 ljg-rank 降秩核心生成器写入 research-plan.md"},
+    {"step": 4, "name": "收集证据", "cmd": "Agent", "desc": "候选源筛选、证据矩阵、假设账本（含置信度追踪）"},
+    {"step": 5, "name": "核心对象直采", "cmd": "Agent", "desc": "直接检查核心对象（产品/JD/技术栈），记录真实发现"},
+    {"step": 6, "name": "分析 + 红队", "cmd": "Agent", "desc": "深度分析 + 反方审计（主动攻击自己的结论）"},
+    {"step": 7, "name": "写报告", "cmd": "Agent", "desc": "读者优先报告模式：已知→桥梁→未知的认知阶梯结构"},
+    {"step": 8, "name": "独立审计", "cmd": "Agent", "desc": "独立审计 Agent 检查强论断溯源率，不参与写作只负责审计"},
+    {"step": 9, "name": "读者模拟", "cmd": "Agent", "desc": "LLM 扮演读者逐段读，读懂了才交付。写-读-改闭环"},
+    {"step": 10, "name": "溯源 + 验证", "cmd": "ros build", "desc": "生成 trace-manifest + view-model + HTML，跑 validate + meta_validator + trust_ledger"},
 ]
 
 
@@ -231,24 +248,32 @@ WORKFLOW_STEPS = [
 
 DESIGN_PHILOSOPHY = [
     {
+        "title": "信任转化器",
+        "desc": "系统本质是把不可信的 AI 认知劳动转化为人类敢拿真实后果下注的决策输入。每条产出都要回答：这个结论的信任分是多少？",
+    },
+    {
+        "title": "Smart Agent. Dumb Tools.",
+        "desc": "工具只做机械检查（文件存不存在、字段非空、字符数够不够），语义判断全部交给 Agent。工具不硬编码产品名，不做关键词路由。",
+    },
+    {
+        "title": "四权分立",
+        "desc": "研究 Agent（生产）+ 审计 Agent（攻击）+ 工具（机械验证）+ 元审计层（审计工具自身）。四权互相制衡，任何一方作弊都会被其他方检出。",
+    },
+    {
         "title": "可溯源",
-        "desc": "每条结论都能追溯到证据。不是'我觉得'，是'证据显示'。",
+        "desc": "每条结论都能追溯到证据。不是'我觉得'，是'证据显示'。trace-manifest.json 记录每个 claim 的证据链。",
     },
     {
         "title": "读者优先",
-        "desc": "报告写给读者看，不是写给研究者自己看。幕后信息不进正文。",
+        "desc": "报告写给读者看，不是写给研究者自己看。幕后信息不进正文。reader_simulation 逐段验证可读性。",
     },
     {
         "title": "反方审计",
-        "desc": "每条核心结论必须经过反方攻击。R2 深度要求至少降级 1 个结论。",
+        "desc": "每条核心结论必须经过反方攻击。R2 深度要求至少降级 1 个结论。独立审计 Agent 不参与写作，只负责审计。",
     },
     {
-        "title": "写-读-改闭环",
-        "desc": "写完不是结束，读者读懂了才是结束。LLM 既当作者又当读者。",
-    },
-    {
-        "title": "输入端确认",
-        "desc": "意图挖掘后必须用户确认，防止整个调研方向错。",
+        "title": "信任账本",
+        "desc": "5 环信任链加权打分：意图探索(0.20) + 核心生成器(0.15) + 独立审计(0.20) + 读者模拟(0.15) + 状态产物一致性(0.30)。>=0.7 才能 decision_ready。",
     },
 ]
 
@@ -621,6 +646,55 @@ body {
   color: var(--text-secondary);
 }
 
+/* ===== Trust Chain ===== */
+.trust-chain {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+.trust-stage {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.trust-stage:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(88, 166, 255, 0.15);
+}
+.trust-stage .stage-weight {
+  font-size: 1.8em;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.trust-stage .stage-name {
+  font-size: 0.95em;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.trust-stage .stage-desc {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.trust-formula {
+  text-align: center;
+  margin-top: 20px;
+  padding: 12px 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+  color: var(--accent);
+}
+
 /* ===== Footer ===== */
 .footer {
   text-align: center;
@@ -658,7 +732,7 @@ body {
       <div class="stat-label">已完成</div>
     </div>
   </div>
-  <div class="version-badge">v0.5 · 系统看板（）</div>
+  <div class="version-badge">v1.0 · 信任转化器架构 · 四权分立</div>
 </div>
 """)
 
@@ -666,7 +740,7 @@ body {
     html_parts.append("""
 <div class="section">
   <h2>这个系统怎么运作</h2>
-  <p class="section-desc">每个调研任务走 10 步流程。前 3 步防止方向错，中间 4 步收集和验证证据，最后 3 步确保报告能被读者读懂。</p>
+  <p class="section-desc">v1.0 流程：前 3 步防止方向错（意图探索+降秩），中间 3 步收集和验证证据（含核心对象直采），最后 4 步确保报告可信且能被读者读懂（独立审计+读者模拟+信任账本）。</p>
   <div class="workflow">
     <div class="workflow-steps">
 """)
@@ -773,7 +847,7 @@ body {
     html_parts.append("""
 <div class="section">
   <h2>为什么这样设计</h2>
-  <p class="section-desc">5 条核心原则，每条都来自实际踩过的坑。</p>
+  <p class="section-desc">7 条核心原则，前 3 条是 v1.0 第一性原理重构新增——信任转化器、Smart Agent Dumb Tools、四权分立。</p>
   <div class="philosophy-grid">
 """)
     for ph in DESIGN_PHILOSOPHY:
@@ -784,6 +858,44 @@ body {
     </div>
 """)
     html_parts.append("""
+  </div>
+</div>
+""")
+
+    # ===== 信任账本可视化 =====
+    html_parts.append("""
+<div class="section">
+  <h2>信任账本（Trust Ledger）</h2>
+  <p class="section-desc">每个调研项目都有 5 环信任链加权打分。>=0.7 才能 decision_ready（敢拿真实后果下注）。跑 <code>python meta_validator.py --project &lt;项目&gt; --trust-ledger</code> 生成。</p>
+  <div class="trust-chain">
+    <div class="trust-stage">
+      <div class="stage-weight">0.20</div>
+      <div class="stage-name">B1 意图探索</div>
+      <div class="stage-desc">3 轮真实探索已提交，无伪信任注入</div>
+    </div>
+    <div class="trust-stage">
+      <div class="stage-weight">0.15</div>
+      <div class="stage-name">B2 核心生成器</div>
+      <div class="stage-desc">Agent 用 ljg-rank 降秩，工具不硬编码</div>
+    </div>
+    <div class="trust-stage">
+      <div class="stage-weight">0.20</div>
+      <div class="stage-name">B3 独立审计</div>
+      <div class="stage-desc">独立审计 Agent 引用报告原文检查强论断</div>
+    </div>
+    <div class="trust-stage">
+      <div class="stage-weight">0.15</div>
+      <div class="stage-name">B4 读者模拟</div>
+      <div class="stage-desc">LLM 扮演读者逐段验证，写-读-改闭环</div>
+    </div>
+    <div class="trust-stage">
+      <div class="stage-weight">0.30</div>
+      <div class="stage-name">B5 状态-产物一致</div>
+      <div class="stage-desc">所有 done 步骤的产物文件全部存在</div>
+    </div>
+  </div>
+  <div class="trust-formula">
+    Overall Trust = Σ(stage_score × weight) &nbsp;|&nbsp; Decision Ready = Overall >= 0.7
   </div>
 </div>
 """)
