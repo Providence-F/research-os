@@ -4,11 +4,23 @@ import type { Version } from "./types";
 
 export const versions: Version[] = [
   {
+    id: "v1.1",
+    date: "- 2026-07-10",
+    summary: "修复规范与实现断层：恢复 HTML 构建器，验证器增加 9 项必须结构检查",
+    changes: ["恢复 build_html_v07.py 到根目录，步骤 13 真正工具驱动，不再手写 HTML", "验证器新增 9 项 HTML 必须结构检查（page-shell/aside.toc/vm-hero/section.chapter 等）", "修复 Smart Agent Dumb Tools 哲学盲区：工具从只检查禁止什么扩展到也检查必须有什么", "使用说明重写为 v1.1，新增错误 11（手写HTML）和错误 12（规范引用已归档工具）"],
+    isCurrent: true,
+  },
+  {
+    id: "v1.0",
+    date: "- 2026-07-09",
+    summary: "新增行动方案比例检查和 LaTeX 公式渲染检查，但使用说明未同步",
+    changes: ["新增 view-model reader-facing 检查：确保 hero 字段面向读者", "新增行动方案比例检查：最终报告中行动方案占比 ≥ 15%", "新增 LaTeX 公式渲染检查：报告含公式时 HTML 必须有 MathJax/KaTeX", "已知问题：build_html_v07.py 被误归档但使用说明仍引用（v1.1 已修复）"],
+  },
+  {
     id: "v0.7.1",
     date: "- 2026-07-05",
     summary: "去除工具中的项目硬编码，让系统真正通用化，建立发布完整性条款",
     changes: ["去除工具中的项目特定硬编码（如公司名列表），改为从任务卡动态读取", "去除工具中的语义判断逻辑，只输出数据，让 AI Agent 做决策", "同步所有入口文档到 v0.7.1（README / 使用说明 / 模板版本头）", "建立发布完整性条款：每次版本升级必须同步入口文档，杜绝文档滞后"],
-    isCurrent: true,
   },
   {
     id: "v0.7",

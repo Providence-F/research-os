@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Research OS v0.7 - Dumb Validator
+"""Research OS v1.1 - Dumb Validator
 
 v0.7 变更（从 v0.6.1）：
   - 新增 JSON 字段值非空检查（解决空 JSON 通过问题）
@@ -134,6 +134,50 @@ DEPTH_METRICS = {
     "04-captures/core_objects_fetch_log.md": {
         "min_urls": 3,
         "min_objects": 3,
+    },
+}
+
+# v1.1 新增：HTML 必须结构检查（不只是"禁止什么"，还要"必须有什么"）
+# 这解决了 Smart Agent. Dumb Tools. 哲学的盲区：
+# 工具原来只检查"禁止模式"（不能有什么），不检查"必须结构"（必须有什么）
+# 导致 Agent 手写 HTML 缺失关键结构（如 aside.toc/vm-hero/page-shell）时验证器无法发现
+# 这些检查是机械的（正则匹配字符串是否存在），不是语义判断，符合 Dumb Tools 原则
+HTML_REQUIRED_STRUCTURES = {
+    "page_shell": {
+        "pattern": r'class="page-shell"',
+        "message": "缺少 .page-shell 双列布局（规范要求 grid 侧栏+正文）",
+    },
+    "aside_toc": {
+        "pattern": r'<aside class="toc"',
+        "message": "缺少 aside.toc 固定侧栏（规范要求 sticky 左侧目录）",
+    },
+    "vm_hero": {
+        "pattern": r'class="vm-hero"',
+        "message": "缺少 .vm-hero Hero区（规范要求 kicker+hero-verdict+hero-summary+hero-meta）",
+    },
+    "hero_verdict": {
+        "pattern": r'class="hero-verdict"',
+        "message": "缺少 .hero-verdict 一句话结论（30px 衬线）",
+    },
+    "reading_progress": {
+        "pattern": r'class="reading-progress"',
+        "message": "缺少 .reading-progress 阅读进度条",
+    },
+    "chapter_section": {
+        "pattern": r'<section class="chapter"',
+        "message": "缺少 section.chapter 章节结构",
+    },
+    "lora_font": {
+        "pattern": r"Lora",
+        "message": "缺少 Lora 衬线字体加载",
+    },
+    "bg_color_faf9f5": {
+        "pattern": r"#faf9f5",
+        "message": "缺少米色背景 #faf9f5",
+    },
+    "accent_b85b44": {
+        "pattern": r"#b85b44",
+        "message": "缺少暖砖红 accent #b85b44",
     },
 }
 
@@ -311,6 +355,27 @@ def check_html_forbidden_patterns(project, checks):
             add(checks, "FAIL", f"html pattern: {name}", spec["message"])
         else:
             add(checks, "PASS", f"html pattern: {name}", "ok")
+
+
+def check_html_required_structures(project, checks):
+    """v1.1: 检查 HTML 必须结构（不只是禁止什么，还要必须有什么）。
+
+    这修复了 Smart Agent. Dumb Tools. 哲学的盲区：
+    - 原来只检查"禁止模式"（overflow-y:auto, div未闭合）
+    - 不检查"必须结构"（page-shell, aside.toc, vm-hero 等）
+    - 导致 Agent 手写 HTML 缺失关键结构时验证器无法发现
+
+    新增的检查是机械的（正则匹配字符串是否存在），不是语义判断。
+    """
+    html = read_text(project / "08-html" / "index.html")
+    if not html:
+        return
+
+    for name, spec in HTML_REQUIRED_STRUCTURES.items():
+        if re.search(spec["pattern"], html):
+            add(checks, "PASS", f"html structure: {name}", "found")
+        else:
+            add(checks, "FAIL", f"html structure: {name}", spec["message"])
 
 
 def check_core_object_mentions(project, checks):
@@ -712,6 +777,9 @@ def validate_project(project):
     # v1.0 面向读者的质量检查
     check_view_model_reader_facing(project, checks)
     check_action_plan_proportion(project, checks)
+
+    # v1.1 HTML 必须结构检查
+    check_html_required_structures(project, checks)
 
     # v0.8 LaTeX公式渲染检查
     check_latex_rendering(project, checks)

@@ -1,10 +1,10 @@
-<!-- ros-version: v1.0 | last-updated: 2026-07-05 | status: current -->
+<!-- ros-version: v1.1 | last-updated: 2026-07-10 | status: current -->
 
 # Research OS
 
 **深度调研工作流系统**。给定一个研究主题，引导走完"任务定义 → 候选源采集 → 证据矩阵 → 假设账本 → 核心对象直采 → 多 Agent 分析 → 反方审计 → 独立审计 → 读者模拟 → 写-读-改闭环 → 最终报告 → HTML 可视化"的完整链路，产出有信任度保证的深度报告。
 
-**当前版本**：v1.0（2026-07-05）
+**当前版本**：v1.1（2026-07-10）
 
 **设计哲学**：**Smart Agent. Dumb Tools.**——工具只做机械检查（存在性、字数、格式、字段值非空），语义判断（好不好、要不要重写、质量高低）交给 Agent。
 
@@ -71,7 +71,7 @@ v0.7 验证器包含 14 项检查（7 项 v0.6 保留 + 7 项 v0.7 新增），�
 ## 版本治理
 
 - **当前版本**：v1.0
-- **版本标记**：每个文件头 `<!-- ros-version: v1.0 | last-updated: YYYY-MM-DD | status: current -->`
+- **版本标记**：每个文件头 `<!-- ros-version: v1.1 | last-updated: YYYY-MM-DD | status: current -->`
 - **归档规则**：旧版本移到 `archive/v0.x/`，不作为当前规范
 - **变更记录**：见 [`CHANGELOG.md`](CHANGELOG.md)
 - **发布完整性**：每次发布必须同步更新 README.md / 00-使用说明.md / CHANGELOG.md / 所有模板版本头

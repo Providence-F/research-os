@@ -2,6 +2,59 @@
 
 所有版本变更记录。日期格式：YYYY-MM-DD。
 
+## [v1.1] - 2026-07-10
+
+### 核心修复：规范与实现断层
+
+**问题背景**：v1.0 升级时归档了 `build_html_v07.py` 但没更新使用说明，导致：
+1. 规范文档说"用工具构建HTML"但工具不存在
+2. Agent 被迫手写HTML，手写HTML严重偏离美学规范
+3. 验证器只检查"禁止模式"不检查"必须结构"，无法发现缺失
+
+### 修复内容
+
+1. **恢复 build_html_v07.py 到根目录**
+   - 从 archive/v1.0/ 恢复工具到根目录
+   - 升级为 v1.1：新增 wrap_chapters() 函数，包裹 section.chapter 结构
+   - 步骤13 HTML构建真正"工具驱动"
+
+2. **验证器增加 HTML 必须结构检查（9项）**
+   - 新增 `check_html_required_structures` 函数
+   - 检查 9 项必须结构：page-shell/aside.toc/vm-hero/hero-verdict/reading-progress/section.chapter/Lora/#faf9f5/#b85b44
+   - 这些检查是机械的正则匹配，符合 Dumb Tools 原则
+
+3. **使用说明同步真实状态**
+   - 00-使用说明.md 重写为 v1.1
+   - 修复规范与实现的矛盾（工具引用 vs 工具归档）
+   - 新增"错误11：手写HTML"和"错误12：规范引用已归档工具"
+
+### 设计哲学修复
+
+**Smart Agent. Dumb Tools. 哲学的盲区修复**：
+
+原来验证器只检查两类：
+- ✅ "禁止什么"（不能有 overflow-y:auto）
+- ❌ "必须有什么"（必须有 aside.toc）→ 缺失
+
+v1.1 新增第三类：
+- ✅ "必须有什么"（9项必须结构正则匹配）
+
+这修复了哲学的执行盲区：工具原来太 dumb（只检查禁止模式），导致 Agent 手写 HTML 缺失关键结构时验证器无法发现。新增的检查仍是机械的（正则匹配字符串是否存在），不是语义判断。
+
+## [v1.0] - 2026-07-09
+
+### 新增检查（2项）
+
+1. **view-model reader-facing 检查**：检查 view-model.json 的 hero 字段是否面向读者
+2. **行动方案比例检查**：最终报告中行动方案占比 ≥ 15%
+3. **LaTeX 公式渲染检查**：报告含 LaTeX 公式时 HTML 必须有 MathJax/KaTeX
+
+### 已知问题（v1.1 已修复）
+
+- `build_html_v07.py` 被归档到 archive/v1.0/ 但使用说明仍引用
+- 验证器不检查 HTML 必须结构
+- 使用说明未同步到 v1.0
+
 ## [v0.7.1] - 2026-07-05
 
 ### Dumb Tools 合规修复
