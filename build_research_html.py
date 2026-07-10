@@ -219,15 +219,21 @@ li { margin: var(--space-2) 0; }
 strong { font-weight: 600; color: var(--fg); }
 em { font-style: italic; }
 
-/* ===== Blockquote →Aside pattern (Starlight style) ===== */
+/* ===== Blockquote = Aside pattern (Starlight style) =====
+   v1.1: blockquote 渲染为彩色提示块（对齐 Lev8 的 aside.note 风格）
+   色彩来自结构化块——blockquote 必须有彩色背景，不能是透明
+*/
 blockquote {
   margin: var(--space-5) 0;
-  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-5);
-  border-inline-start: 3px solid var(--line);
-  background: transparent;
+  padding: var(--space-4) var(--space-5);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent-bg);
   color: var(--fg-soft);
-  font-style: italic;
+  font-style: normal;
 }
+blockquote p { color: var(--fg-soft); margin-bottom: 0; }
+blockquote strong { color: var(--accent); }
 
 /* ===== Code ===== */
 code {
