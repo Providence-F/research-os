@@ -970,10 +970,13 @@ window.addEventListener('scroll', function() {{
 
   // 滚动时高亮当前章节
   function updateActive() {{
-    var scrollY = window.scrollY + 120;  // offset 让当前章节提前高亮
+    var scrollPos = window.scrollY + 150;  // offset 让当前章节提前高亮
     var current = null;
     for (i = 0; i < sections.length; i++) {{
-      if (sections[i].el.offsetTop <= scrollY) {{
+      // 用 getBoundingClientRect 获取相对于视口的绝对位置
+      var rect = sections[i].el.getBoundingClientRect();
+      var absTop = rect.top + window.scrollY;
+      if (absTop <= scrollPos) {{
         current = sections[i];
       }}
     }}
@@ -984,6 +987,13 @@ window.addEventListener('scroll', function() {{
     // 设置当前 active
     if (current) {{
       current.link.classList.add('active');
+      // 让 active 的 TOC 链接在 TOC 视野内
+      var tocContainer = document.querySelector('aside.toc');
+      var linkRect = current.link.getBoundingClientRect();
+      var tocRect = tocContainer.getBoundingClientRect();
+      if (linkRect.top < tocRect.top || linkRect.bottom > tocRect.bottom) {{
+        current.link.scrollIntoView({{block: 'nearest', behavior: 'smooth'}});
+      }}
     }}
   }}
 

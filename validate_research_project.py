@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Research OS v1.1 - Dumb Validator
 
 v0.7 变更（从 v0.6.1）：
@@ -190,6 +190,15 @@ HTML_FORBIDDEN_PATTERNS = {
     },
 }
 
+# v1.1: 视觉规范量化检查——色彩来自结构化块，不来自 inline code
+# 参考基准：Lev8 报告（0 code, 9 blockquote, 161 strong, 12 table）
+VISUAL_METRICS = {
+    "inline_code_max": 5,        # <code> 元素上限（允许少量，但不允许密集）
+    "blockquote_min": 6,         # <blockquote> 引用块下限
+    "strong_min": 80,            # <strong> 强调下限
+    "table_min": 6,              # <table> 表格下限
+}
+
 
 @dataclass
 class Check:
@@ -374,6 +383,52 @@ def check_html_required_structures(project, checks):
             add(checks, "PASS", f"html structure: {name}", "found")
         else:
             add(checks, "FAIL", f"html structure: {name}", spec["message"])
+
+
+def check_html_visual_metrics(project, checks):
+    """v1.1: 检查 HTML 视觉规范量化指标。
+
+    色彩来自结构化块（blockquote/table/strong），不来自 inline code。
+    参考基准：Lev8 报告（0 code, 9 blockquote, 161 strong, 12 table）。
+    这是机械检查（数 HTML 标签数量），不是语义判断。
+    """
+    html = read_text(project / "08-html" / "index.html")
+    if not html:
+        return
+
+    # 统计各元素数量（排除 CSS 和 JS 中的出现，只数 HTML 标签）
+    code_count = len(re.findall(r"<code>", html))
+    blockquote_count = len(re.findall(r"<blockquote", html))
+    strong_count = len(re.findall(r"<strong>", html))
+    table_count = len(re.findall(r"<table>", html))
+
+    # inline code 上限检查
+    if code_count > VISUAL_METRICS["inline_code_max"]:
+        add(checks, "FAIL", "visual: inline_code_count",
+            f"{code_count} 个 <code>（上限 {VISUAL_METRICS['inline_code_max']}）——色彩不应来自 inline code 药丸，应用 strong/blockquote/table 等结构化块")
+    else:
+        add(checks, "PASS", "visual: inline_code_count", f"{code_count} 个（上限 {VISUAL_METRICS['inline_code_max']}）")
+
+    # blockquote 下限检查
+    if blockquote_count < VISUAL_METRICS["blockquote_min"]:
+        add(checks, "FAIL", "visual: blockquote_count",
+            f"{blockquote_count} 个 <blockquote>（下限 {VISUAL_METRICS['blockquote_min']}）——需要更多引用块提供色彩节奏")
+    else:
+        add(checks, "PASS", "visual: blockquote_count", f"{blockquote_count} 个（下限 {VISUAL_METRICS['blockquote_min']}）")
+
+    # strong 下限检查
+    if strong_count < VISUAL_METRICS["strong_min"]:
+        add(checks, "FAIL", "visual: strong_count",
+            f"{strong_count} 个 <strong>（下限 {VISUAL_METRICS['strong_min']}）——需要更多段首标签词服务扫读")
+    else:
+        add(checks, "PASS", "visual: strong_count", f"{strong_count} 个（下限 {VISUAL_METRICS['strong_min']}）")
+
+    # table 下限检查
+    if table_count < VISUAL_METRICS["table_min"]:
+        add(checks, "FAIL", "visual: table_count",
+            f"{table_count} 个 <table>（下限 {VISUAL_METRICS['table_min']}）——需要更多表格展示结构化数据")
+    else:
+        add(checks, "PASS", "visual: table_count", f"{table_count} 个（下限 {VISUAL_METRICS['table_min']}）")
 
 
 def check_core_object_mentions(project, checks):
@@ -778,6 +833,9 @@ def validate_project(project):
 
     # v1.1 HTML 必须结构检查
     check_html_required_structures(project, checks)
+
+    # v1.1 HTML 视觉规范量化检查（色彩来自结构化块，不来自 inline code）
+    check_html_visual_metrics(project, checks)
 
     # v0.8 LaTeX公式渲染检查
     check_latex_rendering(project, checks)
