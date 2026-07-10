@@ -650,6 +650,41 @@ def check_version_consistency(project, checks):
         add(checks, "WARN", "version consistency", f"multiple versions: {unique_versions}")
 
 
+def check_latex_rendering(project, checks):
+    """v0.8: 检查HTML是否包含LaTeX公式渲染支持。
+
+    当报告包含 $...$ 或 $$...$$ 公式时，HTML必须引入MathJax或KaTeX，
+    否则公式会以原始LaTeX源码显示（对读者而言是乱码）。
+    """
+    report = read_text(project / "07-output" / "final-report.md")
+    if not report:
+        return
+
+    # 检测报告中是否包含LaTeX公式
+    has_inline_math = bool(re.search(r"\$[^\$\n]{3,}\$", report))
+    has_display_math = "$$" in report
+
+    if not (has_inline_math or has_display_math):
+        return  # 报告无公式，跳过检查
+
+    html = read_text(project / "08-html" / "index.html")
+    if not html:
+        return
+
+    has_mathjax = "mathjax" in html.lower() or "MathJax" in html
+    has_katex = "katex" in html.lower()
+
+    formula_count = len(re.findall(r"\$[^\$\n]{3,}\$", report)) + report.count("$$") // 2
+
+    if has_mathjax or has_katex:
+        lib = "MathJax" if has_mathjax else "KaTeX"
+        add(checks, "PASS", "latex rendering",
+            f"HTML includes {lib}, {formula_count} formulas renderable")
+    else:
+        add(checks, "FAIL", "latex rendering",
+            f"report has {formula_count} LaTeX formulas but HTML lacks MathJax/KaTeX")
+
+
 # ============================================================
 # 主验证函数
 # ============================================================
@@ -677,6 +712,9 @@ def validate_project(project):
     # v1.0 面向读者的质量检查
     check_view_model_reader_facing(project, checks)
     check_action_plan_proportion(project, checks)
+
+    # v0.8 LaTeX公式渲染检查
+    check_latex_rendering(project, checks)
 
     return checks
 

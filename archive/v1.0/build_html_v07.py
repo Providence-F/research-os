@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Research OS v0.7 - HTML Builder
+"""Research OS v0.8 - HTML Builder
+
+v0.8 升级（从 v0.7）：
+  1. LaTeX公式渲染：引入MathJax 3 CDN，支持$...$行内公式和$$...$$块级公式
+  2. inline()函数公式保护：提取$...$公式后再处理其他格式，防止*和#正则破坏LaTeX
+  3. md_to_html()块级公式处理：识别$$...$$独占行，输出为math-display div
+  4. CSS添加.math-display样式：居中显示、背景色区分、横向滚动
 
 v0.7 升级（从 v0.6）：
   1. 通用化：命令行参数接收项目路径（不再硬编码特赞项目）
@@ -422,6 +428,23 @@ aside.note p, aside.tip p, aside.caution p, aside.ok p { color: var(--fg); margi
   .viz-step::after { display: none; }
   .viz-card-grid { grid-template-columns: 1fr; }
 }
+
+/* ===== v0.8: 数学公式样式 ===== */
+.math-display {
+  margin: 1.5em 0;
+  padding: 1.2em 1.5em;
+  background: var(--bg-soft);
+  border-radius: 6px;
+  border-left: 3px solid var(--accent);
+  overflow-x: auto;
+  text-align: center;
+  font-size: 1.05em;
+}
+.math-display mjx-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+}
 """
 
 
@@ -494,6 +517,31 @@ def md_to_html(md: str) -> str:
             close_list()
             close_table()
             out.append(f"<h4>{inline(stripped[5:])}</h4>")
+        elif stripped.startswith("$$"):
+            close_list()
+            close_table()
+            # v0.8: 块级公式处理
+            if stripped.endswith("$$") and len(stripped) > 4:
+                # 单行块级公式：$$ formula $$
+                formula = stripped[2:-2].strip()
+                out.append(f'<div class="math-display">$${formula}$$</div>')
+            else:
+                # 多行块级公式：收集到下一个 $$
+                formula_parts = []
+                if len(stripped) > 2:
+                    formula_parts.append(stripped[2:].strip())
+                i += 1
+                while i < len(lines):
+                    line_stripped = lines[i].strip()
+                    if line_stripped.endswith("$$"):
+                        remaining = line_stripped[:-2].strip()
+                        if remaining:
+                            formula_parts.append(remaining)
+                        break
+                    formula_parts.append(line_stripped)
+                    i += 1
+                formula = " ".join(formula_parts)
+                out.append(f'<div class="math-display">$${formula}$$</div>')
         elif stripped.startswith("> "):
             close_list()
             close_table()
@@ -542,10 +590,21 @@ def md_to_html(md: str) -> str:
 
 
 def inline(text: str) -> str:
+    # v0.8: 先提取行内公式 $...$，避免被后续正则破坏LaTeX中的*和[]符号
+    formulas = []
+    def _save_formula(m):
+        formulas.append(m.group(0))
+        return f"\x00FORMULA{len(formulas)-1}\x00"
+    text = re.sub(r"\$([^\$\n]+)\$", _save_formula, text)
+
     text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
     text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
     text = re.sub(r"\*([^*]+)\*", r"<em>\1</em>", text)
     text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', text)
+
+    # v0.8: 恢复公式
+    for i, formula in enumerate(formulas):
+        text = text.replace(f"\x00FORMULA{i}\x00", formula)
     return text
 
 
@@ -770,7 +829,7 @@ def build_html(project: Path, project_name: str = None) -> str:
         project_name = project.name
 
     hero = build_hero(project_name)
-    footer = f"Research OS v0.7 · {project_name} · 生成时间 2026-07-05"
+    footer = f"Research OS v0.8 · {project_name} · 生成时间 2026-07-10"
 
     html = f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -782,6 +841,19 @@ def build_html(project: Path, project_name: str = None) -> str:
 <style>
 {CSS}
 </style>
+<script>
+  MathJax = {{
+    tex: {{
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']]
+    }},
+    svg: {{ fontCache: 'global' }},
+    options: {{
+      skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    }}
+  }};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
 </head>
 <body>
 <div class="reading-progress" id="progress"></div>
