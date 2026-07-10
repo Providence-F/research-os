@@ -182,10 +182,8 @@ HTML_REQUIRED_STRUCTURES = {
 }
 
 HTML_FORBIDDEN_PATTERNS = {
-    "toc_scrollbar": {
-        "pattern": r"aside\.toc\s*\{[^}]*overflow-y:\s*auto",
-        "message": "目录栏禁止使用 overflow-y: auto（滚轮问题）",
-    },
+    # v1.1: aside.toc 允许 overflow-y: auto（长目录需要滚动，v0.7 的 overflow:hidden 导致目录截断）
+    # 此检查已废弃，保留空模式避免破坏代码结构
     "unclosed_div": {
         "pattern": r"<div class=\"source-section\">[^<]*<h1",
         "message": "source-section div 未正确闭合（附录 div bug）",

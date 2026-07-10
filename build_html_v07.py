@@ -79,18 +79,24 @@ body {
   min-height: 100vh;
 }
 
-/* ===== LOCKED: 目录栏样式（禁止修改 overflow） =====
- * 历史问题：overflow-y: auto 会导致目录栏出现滚轮，影响阅读体验
- * v0.7 固化：永远 overflow: hidden，目录超长时由内容收敛解决，不靠滚动
+/* ===== 目录栏样式（v1.1 修复：支持滚动） =====
+ * v0.7 问题：overflow: hidden 导致长目录被截断不可见
+ * v1.1 修复：overflow-y: auto + 隐藏滚动条，保留滚动功能不影响美观
+ * 验证器同步更新：aside.toc 允许 overflow-y: auto
  */
 aside.toc {
   position: sticky;
   top: 0;
   height: 100vh;
-  overflow: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;  /* Firefox: 隐藏滚动条 */
+  -ms-overflow-style: none;  /* IE/Edge: 隐藏滚动条 */
   padding: 2rem 1.5rem;
   border-right: 1px solid var(--line);
   background: var(--bg);
+}
+aside.toc::-webkit-scrollbar {
+  display: none;  /* Chrome/Safari: 隐藏滚动条 */
 }
 aside.toc .toc-title {
   font-family: var(--font-sans);
@@ -114,6 +120,7 @@ aside.toc nav a {
 }
 aside.toc nav a:hover { color: var(--accent); border-left-color: var(--accent); }
 aside.toc nav a.sub { padding-left: 1.5rem; font-size: 12.5px; color: var(--muted); }
+aside.toc nav a.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; background: rgba(184, 91, 68, 0.06); }
 /* ===== LOCKED END ===== */
 
 main {
@@ -453,7 +460,7 @@ aside.note p, aside.tip p, aside.caution p, aside.ok p { color: var(--fg); margi
 # ============================================================
 
 HTML_FORBIDDEN_PATTERNS = {
-    "toc_scrollbar": r"aside\.toc\s*\{[^}]*overflow-y:\s*auto",
+    # v1.1: aside.toc 允许 overflow-y: auto（长目录需要滚动），此检查已废弃
     "unclosed_div": r"<div class=\"source-section\">[^<]*<h1",
 }
 
@@ -615,7 +622,7 @@ def add_anchors(html: str) -> str:
         plain = re.sub(r"<[^>]+>", "", title)
         anchor = re.sub(r"[^\w\u4e00-\u9fff]+", "-", plain.lower()).strip("-")
         return f'<h{level} id="{anchor}">{title}</h{level}>'
-    return re.sub(r"<h(1|2|3)>([^<]+)</h\1>", repl, html)
+    return re.sub(r"<h(1|2|3|4)>([^<]+)</h\1>", repl, html)
 
 
 def build_toc(md: str) -> str:
@@ -929,6 +936,60 @@ window.addEventListener('scroll', function() {{
   var progress = (h[st] || b[st]) / ((h[sh] || b[sh]) - h.clientHeight) * 100;
   document.getElementById('progress').style.width = progress + '%';
 }});
+
+// v1.1: TOC 滚动联动 + active 高亮 + 点击平滑跳转
+(function() {{
+  var tocLinks = document.querySelectorAll('aside.toc nav a');
+  var sections = [];
+  var i;
+
+  // 收集所有章节元素（h2 有 id 的）
+  for (i = 0; i < tocLinks.length; i++) {{
+    var href = tocLinks[i].getAttribute('href');
+    if (href && href.startsWith('#')) {{
+      var target = document.getElementById(href.slice(1));
+      if (target) {{
+        sections.push({{link: tocLinks[i], el: target}});
+      }}
+    }}
+  }}
+
+  // 点击平滑跳转
+  for (i = 0; i < tocLinks.length; i++) {{
+    tocLinks[i].addEventListener('click', function(e) {{
+      var href = this.getAttribute('href');
+      if (href && href.startsWith('#')) {{
+        e.preventDefault();
+        var target = document.getElementById(href.slice(1));
+        if (target) {{
+          target.scrollIntoView({{behavior: 'smooth', block: 'start'}});
+        }}
+      }}
+    }});
+  }}
+
+  // 滚动时高亮当前章节
+  function updateActive() {{
+    var scrollY = window.scrollY + 120;  // offset 让当前章节提前高亮
+    var current = null;
+    for (i = 0; i < sections.length; i++) {{
+      if (sections[i].el.offsetTop <= scrollY) {{
+        current = sections[i];
+      }}
+    }}
+    // 清除所有 active
+    for (i = 0; i < tocLinks.length; i++) {{
+      tocLinks[i].classList.remove('active');
+    }}
+    // 设置当前 active
+    if (current) {{
+      current.link.classList.add('active');
+    }}
+  }}
+
+  window.addEventListener('scroll', updateActive);
+  updateActive();  // 初始化
+}})();
 </script>
 </body>
 </html>
@@ -940,6 +1001,23 @@ window.addEventListener('scroll', function() {{
         print(f"[WARN] HTML 包含禁止模式: {violations}")
         print("[WARN] 这些模式应该在构建过程中被修复，但当前仍存在")
         print("[WARN] 请检查 wrap_source_and_appendix() 和 CSS 中的 aside.toc 规则")
+
+    # v1.1 工具自检：验证关键JS功能存在（不依赖人工验证）
+    required_js = {
+        "toc_scroll_sync": ("updateActive", "TOC滚动联动"),
+        "toc_smooth_scroll": ("scrollIntoView", "TOC平滑跳转"),
+        "toc_active_class": ("classList.add('active')", "TOC active高亮"),
+    }
+    js_failures = []
+    for check_id, (pattern, desc) in required_js.items():
+        if pattern not in html:
+            js_failures.append(f"{desc}({pattern}未找到)")
+    if js_failures:
+        print(f"[FAIL] 工具自检: 关键JS功能缺失: {', '.join(js_failures)}")
+        print("[FAIL] build_html_v07.py 生成的HTML缺少交互JS，请检查工具源码")
+        return html  # 仍然输出HTML，但标记问题
+    else:
+        print("[OK] 工具自检: 3项关键JS功能全部存在")
 
     return html
 
