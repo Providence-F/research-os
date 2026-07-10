@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 
 # 系统版本号——单一真相源，所有文件应与此一致
-SYSTEM_VERSION = "v1.0"
+SYSTEM_VERSION = "v1.1"
 
 # 知识库路径——报告同步目标
 # final-report.md 会自动同步到这里（ros build 时触发）

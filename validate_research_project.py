@@ -32,7 +32,7 @@ from pathlib import Path
 
 
 # ============================================================
-# v0.7 配置
+# v1.1 配置
 # ============================================================
 
 # 深度档位感知的最小字符数阈值
@@ -219,7 +219,7 @@ def read_json(p):
 
 
 # ============================================================
-# v0.7 新增检查函数
+# v1.x 新增检查函数
 # ============================================================
 
 def check_json_field_values(project, checks):
@@ -453,7 +453,7 @@ def check_prerequisite_gate(project, checks):
 
 
 # ============================================================
-# v1.0 面向读者的质量检查
+# v1.0-v1.1 面向读者的质量检查
 # ============================================================
 
 # 开发者术语——不应出现在面向读者的字段中
@@ -765,7 +765,7 @@ def validate_project(project):
     check_html_existence(project, checks)
     check_version_consistency(project, checks)
 
-    # v0.7 新增
+    # v1.x 检查
     check_json_field_values(project, checks)
     check_task_card_field_values(project, checks)
     check_step_dependencies(project, checks)
@@ -774,7 +774,7 @@ def validate_project(project):
     check_core_object_mentions(project, checks)
     check_prerequisite_gate(project, checks)
 
-    # v1.0 面向读者的质量检查
+    # v1.0-v1.1 面向读者的质量检查
     check_view_model_reader_facing(project, checks)
     check_action_plan_proportion(project, checks)
 
@@ -788,7 +788,7 @@ def validate_project(project):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Research OS v0.7 Dumb Validator")
+    parser = argparse.ArgumentParser(description="Research OS v1.1 Dumb Validator")
     parser.add_argument("project", help="项目路径")
     parser.add_argument("--json", action="store_true", help="JSON 输出")
     args = parser.parse_args()
@@ -808,7 +808,7 @@ def main():
         warn_count = sum(1 for c in checks if c.level == "WARN")
         fail_count = sum(1 for c in checks if c.level == "FAIL")
         print(f"\n{'=' * 60}")
-        print(f"Research OS v0.7 Dumb Validator")
+        print(f"Research OS v1.1 Dumb Validator")
         print(f"Project: {project.name}")
         print(f"{'=' * 60}\n")
         for c in checks:

@@ -13,6 +13,12 @@ from pathlib import Path
 from typing import Any
 
 from research_planner import update_state
+
+# 从 config 读取版本号——单一真相源
+try:
+    from config import SYSTEM_VERSION
+except ImportError:
+    SYSTEM_VERSION = "v1.1"  # fallback
 from research_status import infer_status
 
 
@@ -1769,13 +1775,13 @@ def render_sections(sections: list[tuple[str, str]]) -> tuple[list[tuple[str, st
         body_html = md_block_to_html(body)
         if is_appendix(section_title):
             section_html.append(
-                f"<section class='chapter' id='{anchor}'><details class='details-wrap'>"
+                f'<section class="chapter" id="{anchor}"><details class="details-wrap">' 
                 f"<summary>{inline_md(section_title)}</summary><div class='details-body'>{body_html}</div>"
                 f"</details></section>"
             )
         else:
             section_html.append(
-                f"<section class='chapter' id='{anchor}'><h2>{inline_md(section_title)}</h2>{body_html}</section>"
+                f'<section class="chapter" id="{anchor}"><h2>{inline_md(section_title)}</h2>{body_html}</section>' 
             )
     return toc, "".join(section_html)
 
@@ -1934,7 +1940,7 @@ def build(project: Path, copy_desktop: bool = True) -> Path:
     else:
         dashboard = render_dashboard(view_model) if view_model else ""
     modal = render_modal_shell() if view_model else ""
-    full_report_open = "<section class='chapter' id='full-report'><h2>完整正文</h2><div class='full-report-note'>下方保留 07-output/final-report.md 的完整正文，方便存档和逐段阅读。</div>" if view_model else ""
+    full_report_open = '<section class="chapter" id="full-report"><h2>完整正文</h2><div class="full-report-note">下方保留 07-output/final-report.md 的完整正文，方便存档和逐段阅读。</div>' if view_model else ""
     full_report_close = "</section>" if view_model else ""
 
     # Detect mermaid blocks: only load CDN script if report actually uses them.
@@ -1956,7 +1962,7 @@ def build(project: Path, copy_desktop: bool = True) -> Path:
 <body data-source="final-report.md" data-view-type="{html.escape(str(state.get('view_type', '')))}" data-theme="{html.escape(str(layout_spec.get('theme', '')))}" data-layout-v07="{'true' if has_layout_spec else 'false'}">
   <div class="reading-progress" id="readingProgress"></div>
   <div class="page-shell">
-    <aside>
+    <aside class="toc">
       <div class="toc-title">目录</div>
       <ol class="toc">
         {''.join(f'<li><a href="#{a}">{inline_md(t)}</a></li>' for a, t in toc_items)}
@@ -1976,7 +1982,7 @@ def build(project: Path, copy_desktop: bool = True) -> Path:
       {md_block_to_html(intro)}
       {section_html}
       {full_report_close}
-      <footer>Research OS v1.0 · {datetime.date.today().isoformat()}</footer>
+      <footer>Research OS {SYSTEM_VERSION} · {datetime.date.today().isoformat()}</footer>
     </main>
   </div>
   {modal}
@@ -2021,6 +2027,23 @@ def build(project: Path, copy_desktop: bool = True) -> Path:
         print(f"Synced to knowledge base: {kb_report}")
     except Exception as exc:
         print(f"[warn] knowledge base sync skipped: {exc}", file=sys.stderr)
+
+    # 自动重建看板——确保每次 build 后看板都是最新的
+    try:
+        import subprocess
+        dashboard_script = Path(__file__).parent / "build_dashboard.py"
+        if dashboard_script.exists():
+            result = subprocess.run(
+                ["python", str(dashboard_script)],
+                capture_output=True, text=True, timeout=30,
+                cwd=str(Path(__file__).parent)
+            )
+            if result.returncode == 0:
+                print("Dashboard rebuilt (auto-sync after build)")
+            else:
+                print(f"[warn] dashboard rebuild failed: {result.stderr[:200]}", file=sys.stderr)
+    except Exception as exc:
+        print(f"[warn] dashboard rebuild skipped: {exc}", file=sys.stderr)
 
     return out
 

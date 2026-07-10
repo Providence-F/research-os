@@ -1,4 +1,4 @@
-"""build_dashboard.py - Research OS v1.0 系统看板生成器
+"""build_dashboard.py - Research OS 系统看板生成器（版本从 config.py 读取）
 
 生成一个展示 Research OS 系统本身的 HTML 看板：
 - 系统怎么运作（可视化工作流）
@@ -16,6 +16,12 @@ import os
 from datetime import datetime
 from pathlib import Path
 from html import escape
+
+# 从 config 读取版本号——单一真相源，不在看板里硬编码
+try:
+    from config import SYSTEM_VERSION
+except ImportError:
+    SYSTEM_VERSION = "v1.1"  # fallback
 
 
 RESEARCH_OS_ROOT = Path(r"C:\Users\19932\research-os")
@@ -55,11 +61,27 @@ NAMED_DESKTOP_REPORTS = [
 
 # 项目目录名 → 类别 映射（research-os/projects/ 下的项目按这个分类）
 PROJECT_CATEGORY_MAP = {
+    # 系统设计
     "前端设计深度调研": "系统设计",
-    "AMD 参访准备": "求职",
-    "DeepSeek 六月岗位 JD 分析": "求职",
     "开源深度调研系统横向拆解v2": "系统设计",
     "深度调研开源项目横向拆解": "系统设计",
+    "技术科普与可视化表达调研": "系统设计",
+    "OpenCode深度拆解": "系统设计",
+    "opencode深度源码拆解": "系统设计",
+    "开源Agent与LLM深度拆解": "系统设计",
+    # 产品拆解
+    "Dealism 产品深度拆解": "产品拆解",
+    "Lev8 产品深度拆解": "产品拆解",
+    "MizzenAI 创新用法探索": "产品拆解",
+    "MizzenAI 技术栈拆解": "产品拆解",
+    "特赞科技 Tezign 深度调研": "产品拆解",
+    "特赞科技 v0.6 重新调研": "产品拆解",
+    # 求职
+    "AMD 参访准备": "求职",
+    "DeepSeek 六月岗位 JD 分析": "求职",
+    # 求学
+    "固体物理学习难点深度调研": "求学",
+    # 行业研究
     "芯片行业第一性原理": "行业研究",
 }
 
@@ -221,6 +243,20 @@ SYSTEM_EVOLUTION = [
         ],
         "why": "工具越界做语义判断（硬编码产品名、声称用了探索方法但 result=None）；信任链没有显式审计；版本号散落各处；工具硬编码核心生成器违反 Dumb Tools 原则",
     },
+    {
+        "version": "v1.1",
+        "date": "2026-07-10",
+        "title": "面向读者写作 + 读者画像 Agent 化",
+        "changes": [
+            "写作约束注入：模板从结构骨架升级为写作指令（6条全局约束+6个章节级约束）",
+            "读者画像 Agent 化：移除工具管理的 reader_model 空字段，读者画像由 Agent 从记忆+知识库获取",
+            "reader_simulation 修复：load_reader_persona 返回完整默认值（之前缺4个字段）",
+            "action 命名 bug 修复：write_reader_first_report → write_final_report_draft",
+            "知识库自动同步：build 时自动把 final-report.md 同步到 Obsidian",
+            "HTML 默认拷贝桌面：copy_desktop 从 opt-in 改为 opt-out",
+        ],
+        "why": "报告僵硬的根因不是缺一个解释设计步骤，是两个断裂——Agent 写报告时看不到写作指令，读者画像从创建到使用整条链路是断的。用加法解决减法问题",
+    },
 ]
 
 
@@ -229,16 +265,18 @@ SYSTEM_EVOLUTION = [
 # =====================================================================
 
 WORKFLOW_STEPS = [
-    {"step": 1, "name": "创建项目", "cmd": "ros new", "desc": "起调研任务，设定深度和模式，生成 intent_doc 骨架"},
+    {"step": 1, "name": "创建项目", "cmd": "ros new", "desc": "起调研任务，设定深度和模式，生成 intent_doc 骨架。工具初始化空字段，reader_model 不再由工具管理"},
     {"step": 2, "name": "意图探索", "cmd": "Agent 3轮探索", "desc": "宽泛探索→挖差距→固化问题说明书。Agent 提交真实结果，工具不做伪信任注入"},
-    {"step": 3, "name": "任务卡 + 降秩", "cmd": "Agent", "desc": "填 task-card + 用 ljg-rank 降秩核心生成器写入 research-plan.md"},
-    {"step": 4, "name": "收集证据", "cmd": "Agent", "desc": "候选源筛选、证据矩阵、假设账本（含置信度追踪）"},
-    {"step": 5, "name": "核心对象直采", "cmd": "Agent", "desc": "直接检查核心对象（产品/JD/技术栈），记录真实发现"},
-    {"step": 6, "name": "分析 + 红队", "cmd": "Agent", "desc": "深度分析 + 反方审计（主动攻击自己的结论）"},
-    {"step": 7, "name": "写报告", "cmd": "Agent", "desc": "读者优先报告模式：已知→桥梁→未知的认知阶梯结构"},
-    {"step": 8, "name": "独立审计", "cmd": "Agent", "desc": "独立审计 Agent 检查强论断溯源率，不参与写作只负责审计"},
-    {"step": 9, "name": "读者模拟", "cmd": "Agent", "desc": "LLM 扮演读者逐段读，读懂了才交付。写-读-改闭环"},
-    {"step": 10, "name": "溯源 + 验证", "cmd": "ros build", "desc": "生成 trace-manifest + view-model + HTML，跑 validate + meta_validator + trust_ledger"},
+    {"step": 3, "name": "路由 + 任务卡", "cmd": "Agent", "desc": "研究路由（决定view_type和visual_modules）+ 填 task-card + 降秩核心生成器写入 research-plan.md"},
+    {"step": 4, "name": "候选源筛选", "cmd": "Agent", "desc": "候选源收集、筛选、丢弃记录。输出 candidates.md + discarded.md"},
+    {"step": 5, "name": "证据矩阵 + 假设账本", "cmd": "Agent", "desc": "证据分级（A/B/C/D）、证据矩阵、假设账本（含置信度追踪）"},
+    {"step": 6, "name": "核心对象直采", "cmd": "Agent", "desc": "直接检查核心对象（产品/JD/技术栈），记录真实发现"},
+    {"step": 7, "name": "分析 + 红队", "cmd": "Agent", "desc": "深度分析 + 反方审计（主动攻击自己的结论）"},
+    {"step": 8, "name": "写报告", "cmd": "Agent", "desc": "遵循模板写作约束：术语首次出现用类比、已知→桥梁→未知结构、表格前写解释目的"},
+    {"step": 9, "name": "独立审计", "cmd": "Agent", "desc": "独立审计 Agent 检查强论断溯源率，不参与写作只负责审计"},
+    {"step": 10, "name": "读者模拟", "cmd": "Agent", "desc": "LLM 扮演读者逐段读，读懂了才交付。写-读-改闭环。读者画像由 Agent 从记忆获取"},
+    {"step": 11, "name": "溯源 + 视图模型", "cmd": "Agent", "desc": "生成 trace-manifest + view-model.json（按 visual_modules 过滤，只创建需要的字段）"},
+    {"step": 12, "name": "HTML + 验证 + 发布", "cmd": "ros build", "desc": "生成 HTML（默认拷贝桌面）+ 跑 validate + meta_validator + trust_ledger + 自动同步知识库 + 重建看板"},
 ]
 
 
@@ -274,6 +312,14 @@ DESIGN_PHILOSOPHY = [
     {
         "title": "信任账本",
         "desc": "5 环信任链加权打分：意图探索(0.20) + 核心生成器(0.15) + 独立审计(0.20) + 读者模拟(0.15) + 状态产物一致性(0.30)。>=0.7 才能 decision_ready。",
+    },
+    {
+        "title": "面向读者写作",
+        "desc": "写作约束注入模板而非加新步骤。技术术语首次出现用类比解释，核心章节用已知→桥梁→未知结构，表格前必须写解释目的。Agent 写报告时就遵循，不是写完再补。",
+    },
+    {
+        "title": "读者画像 Agent 化",
+        "desc": "读者画像不由工具管理，是 Agent 的内置能力。Agent 从记忆和知识库获取读者信息，比工具管理的空字段更全面、更实时。仅当读者≠用户本人时 Agent 手动声明覆盖。",
     },
 ]
 
@@ -732,7 +778,7 @@ body {
       <div class="stat-label">已完成</div>
     </div>
   </div>
-  <div class="version-badge">v1.0 · 信任转化器架构 · 四权分立</div>
+  <div class="version-badge">{SYSTEM_VERSION} · 信任转化器架构 · 四权分立 · 面向读者写作</div>
 </div>
 """)
 
@@ -740,7 +786,7 @@ body {
     html_parts.append("""
 <div class="section">
   <h2>这个系统怎么运作</h2>
-  <p class="section-desc">v1.0 流程：前 3 步防止方向错（意图探索+降秩），中间 3 步收集和验证证据（含核心对象直采），最后 4 步确保报告可信且能被读者读懂（独立审计+读者模拟+信任账本）。</p>
+  <p class="section-desc">{SYSTEM_VERSION} 流程：前 3 步防止方向错（意图探索+路由+降秩），中间 3 步收集和验证证据（含核心对象直采），最后 6 步确保报告可信且能被读者读懂（写作约束+独立审计+读者模拟+信任账本）。</p>
   <div class="workflow">
     <div class="workflow-steps">
 """)
@@ -847,7 +893,7 @@ body {
     html_parts.append("""
 <div class="section">
   <h2>为什么这样设计</h2>
-  <p class="section-desc">7 条核心原则，前 3 条是 v1.0 第一性原理重构新增——信任转化器、Smart Agent Dumb Tools、四权分立。</p>
+  <p class="section-desc">9 条核心原则。v1.0 新增信任转化器、Smart Agent Dumb Tools、四权分立；v1.1 新增面向读者写作、读者画像 Agent 化。</p>
   <div class="philosophy-grid">
 """)
     for ph in DESIGN_PHILOSOPHY:
@@ -903,7 +949,7 @@ body {
     # ===== Footer =====
     html_parts.append(f"""
 <div class="footer">
-  Research OS v1.0 · 生成于 {datetime.now().strftime('%Y-%m-%d %H:%M')}<br>
+  Research OS {SYSTEM_VERSION} · 生成于 {datetime.now().strftime('%Y-%m-%d %H:%M')}<br>
   深度调研工作台 · 让每条结论可溯源、可验证、可理解
 </div>
 
