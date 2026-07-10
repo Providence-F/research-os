@@ -21,7 +21,7 @@ MANUAL_ACTIONS = {
     "fill_evidence_matrix": "Fill 03-evidence/evidence_matrix.md with usable evidence, source independence, evidence grade, and limits.",
     "update_hypothesis_ledger": "Update 03-evidence/hypothesis_ledger.json so at least one hypothesis is revised, downgraded, or rejected based on evidence/red-team pressure.",
     "run_red_team_review": "Write 06-review/red_team.md and force at least one conclusion to be challenged, downgraded, or explicitly defended.",
-    "write_reader_first_report": "Write 07-output/final-report.md as a reader-first report supported by evidence_matrix and hypothesis_ledger.",
+    "write_final_report_draft": "Write 07-output/final-report.md following the writing constraints in templates/08-最终报告.md. You are doing research for the user — use your knowledge of the user (from memory + knowledge base) to write reader-facing content. If the reader is not the user themselves, declare reader_model in intent_doc.json v07. Key constraints: explain technical terms on first mention using analogies to what the reader already knows; use known→bridge→unknown structure for core sections; every table/chart must have a one-sentence explanation of what the reader should understand; do not use tables for hierarchical/temporal/causal relationships.",
     "write_trace_manifest": "Write 07-output/trace-manifest.json so strong final-report claims link to hypothesis_ids and evidence_ids or limitations.",
     "write_view_model": "Fill 07-output/view-model.json with hero, cards, tabs, matrices, and other visual modules needed by the HTML builder.",
     "fix_validator_failures": "Run validate_research_project.py, inspect FAIL items, and fix the underlying project files rather than bypassing validation.",

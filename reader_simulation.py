@@ -179,7 +179,14 @@ def llm_simulate_paragraph(paragraph, section_title, reader_persona):
 # =====================================================================
 
 def load_reader_persona(project: Path) -> dict[str, Any]:
-    """从 intent_doc.json 的 v07.reader_model 加载读者画像。"""
+    """加载读者画像。
+
+    读者画像由 Agent 内化（从记忆和知识库获取），不由工具管理。
+    intent_doc.json 的 v07.reader_model 仅用于"读者≠用户本人"的覆盖声明。
+
+    - reader_model 为 None 或不存在 → 返回完整默认画像
+    - reader_model 存在且非空 → 用覆盖值补全缺失字段后返回
+    """
     intent_path = project / "00-task" / "intent_doc.json"
     if not intent_path.exists():
         return _default_reader_persona()
@@ -188,7 +195,15 @@ def load_reader_persona(project: Path) -> dict[str, Any]:
     except json.JSONDecodeError:
         return _default_reader_persona()
     v07 = intent.get("v07", {})
-    reader = v07.get("reader_model", {})
+    reader = v07.get("reader_model")
+    if not reader:
+        # None 或 {} → Agent 用自己的画像，工具给完整默认值兜底
+        return _default_reader_persona()
+    # 覆盖声明：补全缺失字段
+    reader.setdefault("background", "")
+    reader.setdefault("role", "")
+    reader.setdefault("cognitive_style", "")
+    reader.setdefault("info_appetite", "")
     reader.setdefault("knowledge_blindspots", [])
     reader.setdefault("anti_patterns", [])
     reader.setdefault("comprehension_target", 0.75)

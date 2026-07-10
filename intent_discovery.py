@@ -129,7 +129,10 @@ def prepare(project_dir: str | Path) -> Path:
         "prompt_templates": EXPLORATION_ROUNDS,
         "exploration_history": [],
         "v07": {
-            "reader_model": {},
+            # reader_model 不由工具初始化——读者画像是 Agent 的内置能力
+            # Agent 从记忆和知识库获取读者信息，不需要工具管理
+            # 仅当读者≠用户本人时，Agent 手动在此声明 reader_model
+            "reader_model": None,
             "intent_tree": [],
             "concept_ladder_needed": True,
             "concept_ladder_seed": [],

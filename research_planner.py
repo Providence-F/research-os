@@ -183,14 +183,13 @@ def _build_v07_plan_section(v07: dict[str, Any], goal: dict[str, Any] | None) ->
         lines.append(f"  - scope: {', '.join(goal.get('scope', []) or [])}")
         lines.append("")
 
-    rm = v07.get("reader_model", {})
+    # reader_model 不再由工具读取——读者画像是 Agent 的内置能力
+    # Agent 写 research-plan 时直接从记忆中获取读者信息写入
+    # 仅当 intent_doc.json 显式声明了 reader_model（读者≠用户本人）时，工具透传
+    rm = v07.get("reader_model")
     if rm:
-        lines.append("### 读者模型")
+        lines.append("### 读者模型（覆盖声明：读者≠用户本人）")
         lines.append(f"- 背景: {rm.get('background', '')}")
-        unknown = rm.get("unknown_concepts", [])
-        if unknown:
-            lines.append(f"- 陌生概念: {', '.join(unknown)}")
-        lines.append(f"- 注意力预算: {rm.get('attention_budget', '?')} | 偏好: {rm.get('preferred_explanation_style', '?')}")
         lines.append("")
 
     tree = v07.get("intent_tree", [])
