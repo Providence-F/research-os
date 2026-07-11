@@ -2,6 +2,37 @@
 
 所有版本变更记录。日期格式：YYYY-MM-DD。
 
+## [v1.2] - 2026-07-11
+
+### 术语科普门禁系统（解决"知识的诅咒"）
+
+**问题**：Agent 写报告时默认读者已知行业术语，导致 GTM/ICP/Waterfall Enrichment 等核心概念未解释。用户读完报告才发现需要打补丁——这是"后置验证"范式的根本缺陷。
+
+**根因分析**：
+- intent_doc.json 的 concept_ladder_seed 经常为空（Agent 跳过 Round 3 填充）
+- reader_model 为空导致 reader_simulation 退化为默认画像
+- 验证器注释承诺"术语解释数检查"但未实现
+- plain_glossary.py（20+ 术语库）完全孤立，未被任何流程引用
+
+**解决方案**：从"后置验证"转向"前置约束 + 机械门禁"
+
+1. **验证器新增 3 项门禁**（validate_research_project.py）：
+   - `check_concept_ladder_seed`：seed >= 3 个术语
+   - `check_reader_model`：reader_model.background 非空
+   - `check_term_explanation_coverage`：seed 中每个术语在报告首次出现位置附近有解释标记
+
+2. **plain_glossary.py 集成**（concept_ladder_helper.py）：
+   - 合并 10 个孤立术语到 GLOSSARY 统一为 6 层结构
+   - 消除了 plain_glossary.py 的孤立状态
+
+3. **Lev8 项目修复**：
+   - 填充 concept_ladder_seed（10 个术语：GTM/ICP/Waterfall Enrichment 等）
+   - 填充 reader_model（background + knowledge_blindspots + comprehension_target）
+
+**验证结果**：62 PASS / 3 WARN / 0 FAIL
+
+---
+
 ## [v1.1] - 2026-07-10
 
 ### 核心修复：规范与实现断层

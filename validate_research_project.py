@@ -1,5 +1,5 @@
 ﻿#!/usr/bin/env python3
-"""Research OS v1.1 - Dumb Validator
+"""Research OS v1.2 - Dumb Validator
 
 v0.7 变更（从 v0.6.1）：
   - 新增 JSON 字段值非空检查（解决空 JSON 通过问题）
@@ -585,6 +585,111 @@ def check_action_plan_proportion(project, checks):
             f"行动方案占报告的 {proportion:.0%} ({action_chars}/{total_chars} chars)")
 
 
+
+
+def check_concept_ladder_seed(project, checks):
+    """v1.2 门禁1: concept_ladder_seed 非空检查。"""
+    intent = read_json(project / "00-task" / "intent_doc.json")
+    if not intent:
+        return
+    v07 = intent.get("v07", {})
+    needed = v07.get("concept_ladder_needed", False)
+    if not needed:
+        return
+    seed = v07.get("concept_ladder_seed", [])
+    if not isinstance(seed, list):
+        seed = []
+    if len(seed) >= 3:
+        add(checks, "PASS", "concept_ladder_seed", f"{len(seed)} 个种子术语 (>= 3)")
+    else:
+        add(checks, "FAIL", "concept_ladder_seed",
+            f"concept_ladder_needed=true 但 seed 只有 {len(seed)} 个术语 (需 >= 3)——"
+            f"Agent 在意图探索 Round 3 跳过了术语声明，整条概念解释链路将静默失效")
+
+
+def check_reader_model(project, checks):
+    """v1.2 门禁2: reader_model 非空检查。"""
+    intent = read_json(project / "00-task" / "intent_doc.json")
+    if not intent:
+        return
+    v07 = intent.get("v07", {})
+    needed = v07.get("concept_ladder_needed", False)
+    if not needed:
+        return
+    reader_model = v07.get("reader_model", {})
+    if not isinstance(reader_model, dict):
+        reader_model = {}
+    background = reader_model.get("background", "")
+    if isinstance(background, str) and background.strip():
+        add(checks, "PASS", "reader_model", f"background 已声明 ({len(background)} chars)")
+    else:
+        add(checks, "FAIL", "reader_model",
+            f"concept_ladder_needed=true 但 reader_model.background 为空——"
+            f"reader_simulation 将退化为默认画像无法针对性检测术语缺口")
+
+
+def check_term_explanation_coverage(project, checks):
+    """v1.2 门禁3: seed 中每个术语在 final-report 中是否被解释。"""
+    intent = read_json(project / "00-task" / "intent_doc.json")
+    if not intent:
+        return
+    v07 = intent.get("v07", {})
+    seed = v07.get("concept_ladder_seed", [])
+    if not seed:
+        return
+    report = read_text(project / "07-output" / "final-report.md")
+    if not report:
+        return
+    explanation_markers = [
+        r"即[：:]", r"也就是", r"通俗", r"类比", r"意思是", r"指的是",
+        r"本质是", r"简单说", r"大白话", r"换句话说", r"可以理解为",
+        r"相当于", r"就是", r"——", r"（[^）]*）",
+    ]
+    explained_count = 0
+    unexplained = []
+    for term in seed:
+        if not isinstance(term, str) or not term.strip():
+            continue
+        term_clean = term.strip()
+        positions = [m.start() for m in re.finditer(re.escape(term_clean), report, re.IGNORECASE)]
+        if not positions:
+            unexplained.append(f"{term_clean} (未出现)")
+            continue
+        first_pos = positions[0]
+        context_start = max(0, first_pos - 500)
+        context_end = min(len(report), first_pos + len(term_clean) + 500)
+        context = report[context_start:context_end]
+        has_explanation = False
+        for marker in explanation_markers:
+            if re.search(marker, context):
+                has_explanation = True
+                break
+        line_start = report.rfind("\n", 0, first_pos) + 1
+        line_end = report.find("\n", first_pos)
+        if line_end == -1:
+            line_end = len(report)
+        first_line = report[line_start:line_end]
+        if first_line.lstrip().startswith(">"):
+            has_explanation = True
+        if has_explanation:
+            explained_count += 1
+        else:
+            unexplained.append(f"{term_clean} (出现但无解释)")
+    total = len([t for t in seed if isinstance(t, str) and t.strip()])
+    if total == 0:
+        return
+    if explained_count == total:
+        add(checks, "PASS", "term_explanation_coverage",
+            f"{explained_count}/{total} 个种子术语在报告中有解释")
+    elif explained_count >= total * 0.6:
+        add(checks, "WARN", "term_explanation_coverage",
+            f"{explained_count}/{total} 个种子术语有解释，未解释: {unexplained}")
+    else:
+        add(checks, "FAIL", "term_explanation_coverage",
+            f"仅 {explained_count}/{total} 个种子术语有解释，未解释: {unexplained}")
+
+
+
 # ============================================================
 # v0.6 保留检查函数
 # ============================================================
@@ -831,6 +936,11 @@ def validate_project(project):
     check_view_model_reader_facing(project, checks)
     check_action_plan_proportion(project, checks)
 
+    # v1.2 术语科普门禁
+    check_concept_ladder_seed(project, checks)
+    check_reader_model(project, checks)
+    check_term_explanation_coverage(project, checks)
+
     # v1.1 HTML 必须结构检查
     check_html_required_structures(project, checks)
 
@@ -844,7 +954,7 @@ def validate_project(project):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Research OS v1.1 Dumb Validator")
+    parser = argparse.ArgumentParser(description="Research OS v1.2 Dumb Validator")
     parser.add_argument("project", help="项目路径")
     parser.add_argument("--json", action="store_true", help="JSON 输出")
     args = parser.parse_args()
@@ -864,7 +974,7 @@ def main():
         warn_count = sum(1 for c in checks if c.level == "WARN")
         fail_count = sum(1 for c in checks if c.level == "FAIL")
         print(f"\n{'=' * 60}")
-        print(f"Research OS v1.1 Dumb Validator")
+        print(f"Research OS v1.2 Dumb Validator")
         print(f"Project: {project.name}")
         print(f"{'=' * 60}\n")
         for c in checks:

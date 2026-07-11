@@ -4,18 +4,18 @@ import type { Stats } from "./types";
 
 export const stats: Stats = {
   hero: {
-    versions: 14,
+    versions: 15,
     outputs: 21,
     categories: 5,
-    currentVersion: "v1.1",
+    currentVersion: "v1.2",
   },
 };
 
 export const kpiBlocks = [
   { label: "调研产出", value: 21, suffix: "个" },
-  { label: "版本迭代", value: 14, suffix: "个" },
+  { label: "版本迭代", value: 15, suffix: "个" },
   { label: "主体分类", value: 5, suffix: "类" },
-  { label: "当前版本", value: "v1.1", suffix: "" },
+  { label: "当前版本", value: "v1.2", suffix: "" },
 ] as const;
 
 export const systemFeatures = [

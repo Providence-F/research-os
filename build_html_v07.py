@@ -228,6 +228,20 @@ aside.caution { background: var(--caution-bg); border-color: var(--caution); col
 aside.ok { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
 aside.note p, aside.tip p, aside.caution p, aside.ok p { color: var(--fg); margin-bottom: 0; }
 
+/* ===== v1.1: blockquote 样式 ===== */
+blockquote {
+  margin: 1.5rem 0;
+  padding: 1rem 1.5rem;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-bg);
+  border-radius: 0 6px 6px 0;
+  font-size: 15px;
+  color: var(--fg-soft);
+  font-style: italic;
+  line-height: 1.7;
+}
+blockquote strong { color: var(--accent); font-style: normal; }
+
 /* ===== LOCKED: 信息来源板块压缩（禁止放大字号） =====
  * 历史问题：6 个表格无折叠，占用 1/3 版面
  * v0.7 固化：source-section 内字号 12.5px，间距压缩
@@ -552,7 +566,22 @@ def md_to_html(md: str) -> str:
         elif stripped.startswith("> "):
             close_list()
             close_table()
-            out.append(f"<aside class='note'><p>{inline(stripped[2:])}</p></aside>")
+            # v1.1: 合并连续 > 行为单个 <blockquote>，符合标准 markdown 转换
+            bq_lines = [stripped[2:]]
+            i += 1
+            while i < len(lines):
+                bq_stripped = lines[i].strip()
+                if bq_stripped.startswith("> "):
+                    bq_lines.append(bq_stripped[2:])
+                    i += 1
+                elif bq_stripped == ">":
+                    bq_lines.append("")
+                    i += 1
+                else:
+                    break
+            bq_content = "<br>".join(inline(l) for l in bq_lines)
+            out.append(f"<blockquote>{bq_content}</blockquote>")
+            continue
         elif "|" in stripped and stripped.startswith("|") and i + 1 < len(lines) and re.match(r"^\|[\s\-:|]+\|$", lines[i + 1].strip()):
             close_list()
             close_table()

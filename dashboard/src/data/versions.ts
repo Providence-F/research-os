@@ -4,6 +4,17 @@ import type { Version } from "./types";
 
 export const versions: Version[] = [
   {
+    id: "v1.2",
+    date: "- 2026-07-11",
+    summary: "术语科普门禁系统：3 项新检查解决知识的诅咒，plain_glossary 集成",
+    changes: [
+      "验证器新增 3 项门禁：concept_ladder_seed / reader_model / term_explanation_coverage",
+      "plain_glossary.py 10 个术语合并到 concept_ladder_helper.py 统一 6 层结构",
+      "Lev8 项目填充 seed(10) + reader_model 作为首个合规案例",
+    ],
+    isCurrent: true,
+  },
+  {
     id: "v1.1",
     date: "- 2026-07-10",
     summary: "修复规范与实现断层：恢复 HTML 构建器，验证器增加 9 项必须结构检查",

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Research OS v1.0 concept_ladder_helper为 intent_doc.concept_ladder_seed 里的每个术语生成 6 层解释：
+"""Research OS v1.2 concept_ladder_helper为 intent_doc.concept_ladder_seed 里的每个术语生成 6 层解释：
   1. intuition       直觉比喻（用日常事物类比）
   2. definition      基础定义（一句话说清楚）
   3. mechanism       工作机制（怎么运转的）
@@ -107,6 +107,93 @@ GLOSSARY: dict[str, dict[str, str]] = {
     },
 }
 
+
+
+# v1.2: 合并 plain_glossary.py 的术语库（原孤立工具，统一为 6 层结构）
+_PLAIN_GLOSSARY_MIGRATED: dict[str, dict[str, str]] = {
+    "execution agent": {
+        "intuition": "像装修队的泥瓦工——队长让他贴客厅瓷砖，他就去贴",
+        "definition": "AI 里真正干活的员工，按项目经理分的任务去搜索和总结",
+        "mechanism": "接收 planner agent 分派的子任务 -> 调用搜索工具 -> 总结结果返回",
+        "industry_context": "GPT Researcher 和 STORM 都用这个分工模式",
+        "user_concern": "执行质量决定信息收集的全面性——漏搜了关键来源后面全歪",
+        "project_anchor": "GPT Researcher 的 execute_agent",
+    },
+    "LangChain": {
+        "intuition": "像乐高积木套装——不用从零造轮子，拼装即可",
+        "definition": "帮你写 AI 应用的工具箱，里面有现成的零件拼一拼就能用",
+        "mechanism": "提供 Chain/Agent/Memory/Tool 等组件 -> 开发者组合构建应用",
+        "industry_context": "LangChain open_deep_research 用它构建调研 pipeline",
+        "user_concern": "组件多但学习曲线陡——简单任务用它杀鸡用牛刀",
+        "project_anchor": "LangChain open_deep_research 项目",
+    },
+    "smolagents": {
+        "intuition": "像让员工自己写操作手册——不给他固定流程，让他看着办",
+        "definition": "HuggingFace 出的轻量 AI 框架，特色是让 AI 自己写 Python 代码调工具",
+        "mechanism": "LLM 收到任务 -> 直接生成 Python 代码 -> 框架执行 -> 返回结果",
+        "industry_context": "HuggingFace Open Deep Research 用它",
+        "user_concern": "轻量但功能少——适合快速原型，不适合复杂生产场景",
+        "project_anchor": "HF Open Deep Research",
+    },
+    "ToolCallingAgent": {
+        "intuition": "像点外卖——AI 看菜单点单，厨房按单做",
+        "definition": "传统 AI 调工具的方式——AI 输出一段 JSON 告诉系统调哪个工具",
+        "mechanism": "LLM 输出 JSON -> 框架解析 -> 调用工具 -> 返回结果",
+        "industry_context": "LangChain 默认模式，对比 CodeAgent 模式",
+        "user_concern": "比 CodeAgent 灵活性差——不能组合多个工具调用",
+        "project_anchor": "LangChain 的 AgentExecutor",
+    },
+    "Workforce": {
+        "intuition": "像公司组织架构——CEO 派活给市场/技术/财务各部门",
+        "definition": "把任务按层级分工——一个总调度派活给多个专职工种 AI",
+        "mechanism": "TaskPlanner 分解任务 -> 分派给 Specialist Agent -> 结果汇总",
+        "industry_context": "CAMEL Owl 用这个模式跑 GAIA benchmark",
+        "user_concern": "多 agent 协作的协调成本高——任务分配不当导致闲置或拥堵",
+        "project_anchor": "Owl 的 Workforce 模块",
+    },
+    "viewport": {
+        "intuition": "像看 PDF 翻页——不一次性全展开，一页页读",
+        "definition": "把长网页切成一页页的小窗口，AI 一页页翻着看",
+        "mechanism": "网页内容 -> 按视口高度分页 -> AI 逐页读取 -> 提取信息",
+        "industry_context": "STORM 用这个模式处理长网页",
+        "user_concern": "分页粒度决定信息完整性——太粗漏内容，太细成本高",
+        "project_anchor": "STORM 的网页处理模块",
+    },
+    "hypothesis ledger": {
+        "intuition": "像科学家做实验——先有假设再用数据验证",
+        "definition": "调研一开始先写下假设，随着证据进来修订或推翻",
+        "mechanism": "初始化假设列表 -> 每条证据进来打支持/反对 -> 假设状态动态更新",
+        "industry_context": "Research OS 的核心模块",
+        "user_concern": "防止确认偏误——人倾向于找支持自己结论的证据",
+        "project_anchor": "Research OS 的 03-evidence/hypothesis_ledger.json",
+    },
+    "反方审计": {
+        "intuition": "像法庭辩论——控方说完辩方必须反驳",
+        "definition": "派一个角色专门攻击自己结论——找漏洞、降级、推翻",
+        "mechanism": "Agent 写完报告 -> Red Team 逐条攻击 -> 标记脆弱结论 -> Agent 修订",
+        "industry_context": "Research OS 的 step_8_red_team",
+        "user_concern": "自己查自己很难客观——必须有制度化的对抗机制",
+        "project_anchor": "Research OS 的 06-review/red_team.md",
+    },
+    "证据等级": {
+        "intuition": "像新闻可信度——官方通报 A 级，大媒转述 B 级，路边消息 C 级",
+        "definition": "给每条信息打等级——A 一手权威、B 二手可靠、C 单源、D 未验证",
+        "mechanism": "每条证据标注来源类型 -> 按来源权威性打等级 -> 报告引用时标注",
+        "industry_context": "Research OS 的证据矩阵",
+        "user_concern": "低等级证据堆砌不等于高质量结论——必须看证据等级",
+        "project_anchor": "Research OS 的 03-evidence/evidence_matrix.md",
+    },
+    "来源独立性": {
+        "intuition": "像传话游戏——10 个人传同一句话，源头只有一个不算 10 个证据",
+        "definition": "两条证据如果都引用同一个原始来源，算一条不算两条",
+        "mechanism": "追溯每条证据的原始来源 -> 识别共同源头 -> 合并去重",
+        "industry_context": "Research OS 的证据矩阵",
+        "user_concern": "看起来证据很多但源头只有一个——这是常见的调研陷阱",
+        "project_anchor": "Research OS 的 evidence_matrix.md 独立性列",
+    },
+}
+
+GLOSSARY.update(_PLAIN_GLOSSARY_MIGRATED)
 
 def enrich_ladder(seed_terms: list[str]) -> list[dict[str, str]]:
     """为种子术语生成 6 层解释。优先用 GLOSSARY 预置库，找不到的留空待人工填。"""
