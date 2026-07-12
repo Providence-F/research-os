@@ -6,12 +6,8 @@ export const versions: Version[] = [
   {
     id: "v1.2",
     date: "- 2026-07-11",
-    summary: "术语科普门禁系统：3 项新检查解决知识的诅咒，plain_glossary 集成",
-    changes: [
-      "验证器新增 3 项门禁：concept_ladder_seed / reader_model / term_explanation_coverage",
-      "plain_glossary.py 10 个术语合并到 concept_ladder_helper.py 统一 6 层结构",
-      "Lev8 项目填充 seed(10) + reader_model 作为首个合规案例",
-    ],
+    summary: "intent_doc.json 的 concept_ladder_seed 经常为空（Agent 跳过 Round 3 填充）",
+    changes: ["reader_model 为空导致 reader_simulation 退化为默认画像", "验证器注释承诺\"术语解释数检查\"但未实现", "plain_glossary.py（20+ 术语库）完全孤立，未被任何流程引用", "`check_concept_ladder_seed`：seed >= 3 个术语", "`check_reader_model`：reader_model.background 非空", "`check_term_explanation_coverage`：seed 中每个术语在报告首次出现位置附近有解释标记", "合并 10 个孤立术语到 GLOSSARY 统一为 6 层结构", "消除了 plain_glossary.py 的孤立状态", "填充 concept_ladder_seed（10 个术语：GTM/ICP/Waterfall Enrichment 等）", "填充 reader_model（background + knowledge_blindspots + comprehension_target）", ""],
     isCurrent: true,
   },
   {
@@ -19,7 +15,6 @@ export const versions: Version[] = [
     date: "- 2026-07-10",
     summary: "修复规范与实现断层：恢复 HTML 构建器，验证器增加 9 项必须结构检查",
     changes: ["恢复 build_html_v07.py 到根目录，步骤 13 真正工具驱动，不再手写 HTML", "验证器新增 9 项 HTML 必须结构检查（page-shell/aside.toc/vm-hero/section.chapter 等）", "修复 Smart Agent Dumb Tools 哲学盲区：工具从只检查禁止什么扩展到也检查必须有什么", "使用说明重写为 v1.1，新增错误 11（手写HTML）和错误 12（规范引用已归档工具）"],
-    isCurrent: true,
   },
   {
     id: "v1.0",
