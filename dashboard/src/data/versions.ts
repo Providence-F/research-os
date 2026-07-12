@@ -4,11 +4,17 @@ import type { Version } from "./types";
 
 export const versions: Version[] = [
   {
+    id: "v1.4",
+    date: "- 2026-07-12",
+    summary: "模板被迫同时承担\"内容清单\"和\"行文思路\"两个职责，但它只能履行前者",
+    changes: ["第一性原理协议的\"在呈现数据前\"被误解为\"在介绍对象前\"", "人工确认点与 auto 模式设计哲学冲突", "新增 `templates/23-行文思路规划协议.md`", "在 step_7（分析）之后、step_8（反方审计）之前执行", "产出 `05-analysis/narrative-plan.md`", "借鉴 Kimi 深度研究的三级节点提纲法（共识→分歧→边界），适配为（对象本质→运作机制→决策约束）", "固定元原则（从具象到抽象、认知递进），放开具体结构（Agent 动态决定）", "templates/08 从\"必须遵循的模板\"降级为\"参考结构\"", "`templates/20-方向选择协议.md` 从\"≥2完整方向选择\"改为\"2个边界追问\"", "更轻量：Agent 只问 2 个边界问题，不设计完整方向", "更聚焦：问\"范围到哪/深度多深\"，不问\"你要走哪条路\"", "向后兼容 v1.3 的 directions_proposed 格式", "删除 step_2（任务卡）人工确认点", "删除 step_3（调研方案）人工确认点", "删除 step_13（HTML美学）人工确认点", "仅保留 step_1.5（方向选择）作为唯一用户参与点", "防止\"自己出题自己改答案\"：独立会话审计 + 审计范围扩展 + 读者模拟 + 对抗式审核", "`templates/22-第一性原理拆解协议.md` 修正措辞", "\"在呈现数据前\"改为\"在给出判断和决策前\"，消除语义歧义", "第一性原理位置从固定 §2.5 改为 narrative-plan.md 动态决定", "新增验证规则：第一性原理章节必须在\"调研对象\"章节之后", "新增 `check_narrative_plan`：检查存在性 + 关键词 + 元原则检查 section", "新增 `check_first_principles_position`：检查第一性原理位置", "STEP_ARTIFACTS 新增 step_7_5_narrative_plan", "STEP_DEPENDENCIES 新增依赖链：step_8/step_9 依赖 step_7_5", "MIN_CONTENT_CHARS_BY_DEPTH 新增 narrative-plan.md 阈值", "`templates/14-研究执行状态机.md`：15步→16步，7门禁→8门禁", "`templates/08-最终报告.md`：章节顺序调整，第一性原理从 §2.5 移到 §6", "`templates/00-使用说明.md`：全面更新到 v1.4", "`create_research_project.py`：steps 新增 step_7_5，confirmations 更新", "借鉴 Kimi 深度研究的 23 步推理流程思路（动态循环而非固定线性）", "v1.3：Smart Agent. Dumb Tools. + 结构化字段解决\"可跳过\" + 对抗测试解决\"可糊弄\"", "v1.4：+ 行文思路规划解决\"可填空\"（报告不再是模板填空，而是认知递进规划）", "不改变\"Dumb Tools\"原则——narrative-plan 检查仍是机械的（存在性+关键词+section）", ""],
+    isCurrent: true,
+  },
+  {
     id: "v1.3",
     date: "- 2026-07-12",
     summary: "\"可跳过\"是工程问题：结构化字段缺失，验证器无法检测\"是否执行了确认\"",
     changes: ["\"可糊弄\"是语义问题：即使有字段，Agent 也能填入浅层内容通过检查", "单纯的结构化字段只能解决\"可跳过\"，无法解决\"可糊弄\"", "新增 `templates/20-方向选择协议.md`", "Agent 给出 2-3 个方向，用户选择 + 修正", "比完整方案确认更便宜，更早纠偏", "产物：`00-task/direction_selection.json`", "R2/R3 强制，R0/R1 可跳过", "`STEP_ARTIFACTS` 新增 `step_1_5_direction_selection` 和 `step_9_6_adversarial_review`", "`STEP_DEPENDENCIES` 新增依赖链：step_2 依赖 step_1_5，step_10 依赖 step_9_6", "`JSON_FIELD_REQUIREMENTS` 新增 `first_principles_decomposition: list`", "新增 7 个检查函数（方向选择/对抗审核/第一性原理报告层/第一性原理意图层/人工确认强制/审计结构化/反方结构化）", "新增 `templates/21-对抗式审核协议.md`", "核心设计原理：**对抗比评判容易**", "subagent 不需要比主 Agent 更聪明，只需要能打破它的论点", "Context 隔离：对抗审核 subagent 只收到 final-report.md，不收到过程文件", "产物：`06-review/adversarial_review.json`", "验证规则：≥3 攻击 + 每个攻击有回应 + 含 first_principles 类型攻击", "新增 `templates/22-第一性原理拆解协议.md`", "三层结构：", "意图层：`intent_doc.json` 的 `first_principles_decomposition` 字段（≥3 条不可再分的底层逻辑）", "任务层：调研方案的元问题必填", "报告层：final-report.md 的\"第一性原理\"章节必填", "\"再分测试\"：subagent 对每条\"不可再分\"的原理尝试\"再分\"，如果能再分则不是真第一性原理", "补全 `templates/19-产品深度拆解标准.md`（v1.2 时是 placeholder）", "`intent_discovery.py`：Round 3 prompt 新增第 7 项 first_principles_decomposition 要求", "`finalize_exploration` 函数新增 `first_principles_decomposition` 参数", "`templates/14-研究执行状态机.md`：15 步 → 17 步，6 门禁 → 7 门禁", "`templates/08-最终报告.md`：新增 §2.5 第一性原理章节模板", "`templates/02-调研方案.md`：元问题标注为 v1.3 必填+验证", "增强独立审计检查：从\"PASS 字符串\"升级为\"5 问结构化检查\"", "增强反方审计检查：从\"字符数\"升级为\"攻击次数 + 降级次数\"", "5 个 FAIL 都是预期中的（现有项目缺少 v1.3 新增产物）", "新检查函数本身运行正常", "v1.2 之前：Smart Agent. Dumb Tools.（工具只做机械检查）", "v1.3 增强：结构化字段解决\"可跳过\"问题 + 对抗测试解决\"可糊弄\"问题", "不改变\"Dumb Tools\"原则——对抗测试仍是机械的（检查攻击次数、回应存在性）", ""],
-    isCurrent: true,
   },
   {
     id: "v1.2",

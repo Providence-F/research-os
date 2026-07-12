@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Research OS v1.0 - create_research_project.py
+Research OS v1.4 - create_research_project.py
 Scaffold a new research project from the template library.
 
 Changes from v0.1:
@@ -205,6 +205,7 @@ def build_state(name: str, rtype: str, depth: str) -> dict:
             "step_6_hypothesis": "pending",
             "step_6_5_core_objects_fetch": "pending",
             "step_7_analysis": "pending",
+            "step_7_5_narrative_plan": "pending",
             "step_8_red_team": "pending",
             "step_9_final_report_draft": "pending",
             "step_9_5_independent_audit": "pending",
@@ -216,6 +217,7 @@ def build_state(name: str, rtype: str, depth: str) -> dict:
             "step_15_publish": "pending",
         },
         "human_confirmation_points": {
+            "step_1_5_direction_selection": True,
             "step_2_task_card": False,
             "step_3_research_plan": False,
             "step_13_html_build": False,

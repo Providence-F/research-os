@@ -1,5 +1,5 @@
 ﻿#!/usr/bin/env python3
-"""Research OS v1.3 - Dumb Validator
+"""Research OS v1.4 - Dumb Validator
 
 v0.7 变更（从 v0.6.1）：
   - 新增 JSON 字段值非空检查（解决空 JSON 通过问题）
@@ -65,6 +65,7 @@ MIN_CONTENT_CHARS_BY_DEPTH = {
         "03-evidence/evidence_matrix.md": 800,
         "03-evidence/hypothesis_ledger.json": 50,
         "04-captures/core_objects_fetch_log.md": 200,
+        "05-analysis/narrative-plan.md": 500,
         "06-review/red_team.md": 300,
         "06-review/audit_report.md": 200,
         "07-output/final-report.md": 3000,
@@ -76,6 +77,7 @@ MIN_CONTENT_CHARS_BY_DEPTH = {
         "03-evidence/evidence_matrix.md": 1200,
         "03-evidence/hypothesis_ledger.json": 100,
         "04-captures/core_objects_fetch_log.md": 300,
+        "05-analysis/narrative-plan.md": 800,
         "06-review/red_team.md": 500,
         "06-review/audit_report.md": 300,
         "07-output/final-report.md": 5000,
@@ -117,6 +119,7 @@ STEP_ARTIFACTS = {
     "step_6_hypothesis": {"required": ["03-evidence/hypothesis_ledger.json"]},
     "step_6_5_core_objects_fetch": {"required": ["04-captures/core_objects_fetch_log.md"]},
     "step_7_analysis": {"required": ["05-analysis/"], "any_md": True},
+    "step_7_5_narrative_plan": {"required": ["05-analysis/narrative-plan.md"]},
     "step_8_red_team": {"required": ["06-review/red_team.md"]},
     "step_9_final_report_draft": {"required": ["07-output/final-report.md"]},
     "step_9_5_independent_audit": {"required": ["06-review/audit_report.md"]},
@@ -131,8 +134,9 @@ STEP_DEPENDENCIES = {
     "step_2_task_card": ["step_1_5_direction_selection"],
     "step_6_5_core_objects_fetch": ["step_2_task_card", "step_3_research_plan"],
     "step_7_analysis": ["step_6_5_core_objects_fetch", "step_5_evidence_matrix"],
-    "step_8_red_team": ["step_7_analysis"],
-    "step_9_final_report_draft": ["step_7_analysis", "step_8_red_team"],
+    "step_7_5_narrative_plan": ["step_7_analysis"],
+    "step_8_red_team": ["step_7_analysis", "step_7_5_narrative_plan"],
+    "step_9_final_report_draft": ["step_7_5_narrative_plan", "step_8_red_team"],
     "step_9_5_independent_audit": ["step_9_final_report_draft"],
     "step_9_6_adversarial_review": ["step_9_5_independent_audit"],
     "step_10_reader_simulation": ["step_9_6_adversarial_review"],
@@ -1200,6 +1204,10 @@ def validate_project(project):
     # v0.8 LaTeX公式渲染检查
     check_latex_rendering(project, checks)
 
+    # v1.4 新增检查
+    check_narrative_plan(project, checks)
+    check_first_principles_position(project, checks)
+
     return checks
 
 
@@ -1234,6 +1242,70 @@ def main():
         print(f"{'=' * 60}\n")
 
     return 1 if any(c.level == "FAIL" for c in checks) else 0
+
+
+# ============================================================
+# v1.4 新增：narrative-plan 检查
+# ============================================================
+
+def check_narrative_plan(project_root: Path, results: list):
+    """v1.4: 检查 narrative-plan.md 存在性 + 关键词 + 元原则检查 section"""
+    np_path = project_root / "05-analysis" / "narrative-plan.md"
+
+    # 检查 1: 文件存在性
+    if not np_path.exists():
+        add(results, "FAIL", "narrative_plan_exists", "narrative-plan.md 不存在（step_7.5 产物缺失）")
+        return
+
+    content = np_path.read_text(encoding="utf-8-sig", errors="ignore")
+
+    # 检查 2: 最小字符数
+    if len(content) < 500:
+        add(results, "FAIL", "narrative_plan_min_chars", f"narrative-plan.md 字符数 {len(content)} 小于 500")
+    else:
+        add(results, "PASS", "narrative_plan_min_chars", f"narrative-plan.md 字符数 {len(content)} 大于等于 500")
+
+    # 检查 3: 关键词检查
+    required_keywords = ["认知类型", "三级节点", "章节顺序", "第一性原理位置"]
+    missing_keywords = [kw for kw in required_keywords if kw not in content]
+
+    if missing_keywords:
+        add(results, "FAIL", "narrative_plan_keywords", f"narrative-plan.md 缺少关键词: {missing_keywords}")
+    else:
+        add(results, "PASS", "narrative_plan_keywords", "narrative-plan.md 关键词检查通过")
+
+    # 检查 4: 元原则检查 section
+    if "元原则检查" not in content:
+        add(results, "FAIL", "narrative_plan_principles_section", "narrative-plan.md 缺少元原则检查section")
+    else:
+        add(results, "PASS", "narrative_plan_principles_section", "narrative-plan.md 包含元原则检查section")
+
+
+def check_first_principles_position(project_root: Path, results: list):
+    """v1.4: 检查第一性原理章节是否在调研对象章节之后"""
+    report_path = project_root / "07-output" / "final-report.md"
+
+    if not report_path.exists():
+        return  # 报告不存在时其他检查会报错
+
+    content = report_path.read_text(encoding="utf-8-sig", errors="ignore")
+
+    # 查找调研对象章节位置
+    object_pattern = r'##.*(?:调研对象|对象到底|对象是什么)'
+    fp_pattern = r'##.*(?:第一性原理|本质|底层逻辑)'
+
+    object_match = re.search(object_pattern, content)
+    fp_match = re.search(fp_pattern, content)
+
+    if object_match and fp_match:
+        if fp_match.start() < object_match.start():
+            add(results, "FAIL", "first_principles_position", "第一性原理章节在调研对象章节之前（v1.4要求在之后）")
+        else:
+            add(results, "PASS", "first_principles_position", "第一性原理章节在调研对象章节之后")
+    elif fp_match and not object_match:
+        add(results, "WARN", "first_principles_position", "报告含第一性原理章节但未找到调研对象章节")
+
+
 
 
 if __name__ == "__main__":
