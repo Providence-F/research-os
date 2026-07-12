@@ -4,11 +4,17 @@ import type { Version } from "./types";
 
 export const versions: Version[] = [
   {
+    id: "v1.3",
+    date: "- 2026-07-12",
+    summary: "\"可跳过\"是工程问题：结构化字段缺失，验证器无法检测\"是否执行了确认\"",
+    changes: ["\"可糊弄\"是语义问题：即使有字段，Agent 也能填入浅层内容通过检查", "单纯的结构化字段只能解决\"可跳过\"，无法解决\"可糊弄\"", "新增 `templates/20-方向选择协议.md`", "Agent 给出 2-3 个方向，用户选择 + 修正", "比完整方案确认更便宜，更早纠偏", "产物：`00-task/direction_selection.json`", "R2/R3 强制，R0/R1 可跳过", "`STEP_ARTIFACTS` 新增 `step_1_5_direction_selection` 和 `step_9_6_adversarial_review`", "`STEP_DEPENDENCIES` 新增依赖链：step_2 依赖 step_1_5，step_10 依赖 step_9_6", "`JSON_FIELD_REQUIREMENTS` 新增 `first_principles_decomposition: list`", "新增 7 个检查函数（方向选择/对抗审核/第一性原理报告层/第一性原理意图层/人工确认强制/审计结构化/反方结构化）", "新增 `templates/21-对抗式审核协议.md`", "核心设计原理：**对抗比评判容易**", "subagent 不需要比主 Agent 更聪明，只需要能打破它的论点", "Context 隔离：对抗审核 subagent 只收到 final-report.md，不收到过程文件", "产物：`06-review/adversarial_review.json`", "验证规则：≥3 攻击 + 每个攻击有回应 + 含 first_principles 类型攻击", "新增 `templates/22-第一性原理拆解协议.md`", "三层结构：", "意图层：`intent_doc.json` 的 `first_principles_decomposition` 字段（≥3 条不可再分的底层逻辑）", "任务层：调研方案的元问题必填", "报告层：final-report.md 的\"第一性原理\"章节必填", "\"再分测试\"：subagent 对每条\"不可再分\"的原理尝试\"再分\"，如果能再分则不是真第一性原理", "补全 `templates/19-产品深度拆解标准.md`（v1.2 时是 placeholder）", "`intent_discovery.py`：Round 3 prompt 新增第 7 项 first_principles_decomposition 要求", "`finalize_exploration` 函数新增 `first_principles_decomposition` 参数", "`templates/14-研究执行状态机.md`：15 步 → 17 步，6 门禁 → 7 门禁", "`templates/08-最终报告.md`：新增 §2.5 第一性原理章节模板", "`templates/02-调研方案.md`：元问题标注为 v1.3 必填+验证", "增强独立审计检查：从\"PASS 字符串\"升级为\"5 问结构化检查\"", "增强反方审计检查：从\"字符数\"升级为\"攻击次数 + 降级次数\"", "5 个 FAIL 都是预期中的（现有项目缺少 v1.3 新增产物）", "新检查函数本身运行正常", "v1.2 之前：Smart Agent. Dumb Tools.（工具只做机械检查）", "v1.3 增强：结构化字段解决\"可跳过\"问题 + 对抗测试解决\"可糊弄\"问题", "不改变\"Dumb Tools\"原则——对抗测试仍是机械的（检查攻击次数、回应存在性）", ""],
+    isCurrent: true,
+  },
+  {
     id: "v1.2",
     date: "- 2026-07-11",
     summary: "intent_doc.json 的 concept_ladder_seed 经常为空（Agent 跳过 Round 3 填充）",
     changes: ["reader_model 为空导致 reader_simulation 退化为默认画像", "验证器注释承诺\"术语解释数检查\"但未实现", "plain_glossary.py（20+ 术语库）完全孤立，未被任何流程引用", "`check_concept_ladder_seed`：seed >= 3 个术语", "`check_reader_model`：reader_model.background 非空", "`check_term_explanation_coverage`：seed 中每个术语在报告首次出现位置附近有解释标记", "合并 10 个孤立术语到 GLOSSARY 统一为 6 层结构", "消除了 plain_glossary.py 的孤立状态", "填充 concept_ladder_seed（10 个术语：GTM/ICP/Waterfall Enrichment 等）", "填充 reader_model（background + knowledge_blindspots + comprehension_target）", ""],
-    isCurrent: true,
   },
   {
     id: "v1.1",

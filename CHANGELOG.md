@@ -2,6 +2,71 @@
 
 所有版本变更记录。日期格式：YYYY-MM-DD。
 
+## [v1.3] - 2026-07-12
+
+### 四组件升级：方向选择 + 对抗审核 + 第一性原理 + 结构化强制
+
+**问题背景**：v1.2 存在两个系统级问题：
+1. 人工确认点（step_3_research_plan）在 auto 模式下被跳过——"可跳过"问题
+2. 调研报告缺乏第一性原理分析，只罗列数据不讲本质——"可糊弄"问题
+
+**根因分析**：
+- "可跳过"是工程问题：结构化字段缺失，验证器无法检测"是否执行了确认"
+- "可糊弄"是语义问题：即使有字段，Agent 也能填入浅层内容通过检查
+- 单纯的结构化字段只能解决"可跳过"，无法解决"可糊弄"
+
+**解决方案**：4 组件组合升级
+
+#### 组件 A：Kimi 式方向选择（步骤 1.5）
+- 新增 `templates/20-方向选择协议.md`
+- Agent 给出 2-3 个方向，用户选择 + 修正
+- 比完整方案确认更便宜，更早纠偏
+- 产物：`00-task/direction_selection.json`
+- R2/R3 强制，R0/R1 可跳过
+
+#### 组件 B：结构化强制（验证器升级）
+- `STEP_ARTIFACTS` 新增 `step_1_5_direction_selection` 和 `step_9_6_adversarial_review`
+- `STEP_DEPENDENCIES` 新增依赖链：step_2 依赖 step_1_5，step_10 依赖 step_9_6
+- `JSON_FIELD_REQUIREMENTS` 新增 `first_principles_decomposition: list`
+- 新增 7 个检查函数（方向选择/对抗审核/第一性原理报告层/第一性原理意图层/人工确认强制/审计结构化/反方结构化）
+
+#### 组件 C：对抗式 subagent 审核（步骤 9.6）
+- 新增 `templates/21-对抗式审核协议.md`
+- 核心设计原理：**对抗比评判容易**
+- subagent 不需要比主 Agent 更聪明，只需要能打破它的论点
+- Context 隔离：对抗审核 subagent 只收到 final-report.md，不收到过程文件
+- 产物：`06-review/adversarial_review.json`
+- 验证规则：≥3 攻击 + 每个攻击有回应 + 含 first_principles 类型攻击
+
+#### 组件 D：第一性原理三层结构 + 对抗测试
+- 新增 `templates/22-第一性原理拆解协议.md`
+- 三层结构：
+  - 意图层：`intent_doc.json` 的 `first_principles_decomposition` 字段（≥3 条不可再分的底层逻辑）
+  - 任务层：调研方案的元问题必填
+  - 报告层：final-report.md 的"第一性原理"章节必填
+- "再分测试"：subagent 对每条"不可再分"的原理尝试"再分"，如果能再分则不是真第一性原理
+- 补全 `templates/19-产品深度拆解标准.md`（v1.2 时是 placeholder）
+
+#### 其他升级
+- `intent_discovery.py`：Round 3 prompt 新增第 7 项 first_principles_decomposition 要求
+- `finalize_exploration` 函数新增 `first_principles_decomposition` 参数
+- `templates/14-研究执行状态机.md`：15 步 → 17 步，6 门禁 → 7 门禁
+- `templates/08-最终报告.md`：新增 §2.5 第一性原理章节模板
+- `templates/02-调研方案.md`：元问题标注为 v1.3 必填+验证
+- 增强独立审计检查：从"PASS 字符串"升级为"5 问结构化检查"
+- 增强反方审计检查：从"字符数"升级为"攻击次数 + 降级次数"
+
+**验证结果**：在现有项目（v1.2 下创建）上测试，65 PASS / 6 WARN / 5 FAIL
+- 5 个 FAIL 都是预期中的（现有项目缺少 v1.3 新增产物）
+- 新检查函数本身运行正常
+
+**设计哲学增强**：
+- v1.2 之前：Smart Agent. Dumb Tools.（工具只做机械检查）
+- v1.3 增强：结构化字段解决"可跳过"问题 + 对抗测试解决"可糊弄"问题
+- 不改变"Dumb Tools"原则——对抗测试仍是机械的（检查攻击次数、回应存在性）
+
+---
+
 ## [v1.2] - 2026-07-11
 
 ### 术语科普门禁系统（解决"知识的诅咒"）

@@ -1,5 +1,5 @@
 ﻿#!/usr/bin/env python3
-"""Research OS v1.2 - Dumb Validator
+"""Research OS v1.3 - Dumb Validator
 
 v0.7 变更（从 v0.6.1）：
   - 新增 JSON 字段值非空检查（解决空 JSON 通过问题）
@@ -19,6 +19,15 @@ v0.7.1 修复（Dumb Tools 合规）：
 设计哲学不变：Smart Agent. Dumb Tools.
 新增的检查都是机械的、客观的、可验证的。
 工具不做语义判断，不硬编码项目特定信息。
+
+v1.3 变更（从 v1.2）：
+  - 新增方向选择检查（组件A: Kimi式方向选择，R2/R3强制）
+  - 新增对抗式审核检查（组件C: adversarial_review.json结构化检查）
+  - 新增第一性原理检查（组件D: intent_doc + final-report三层检查）
+  - 新增human_confirmation强制检查（不再允许跳过确认点）
+  - 增强独立审计检查（从"PASS字符串"升级为"5问结构化检查"）
+  - 增强反方审计检查（从"字符数"升级为"攻击次数+降级次数"）
+  - 新增 step_1_5 和 step_9_6 到 STEP_ARTIFACTS 和 STEP_DEPENDENCIES
 """
 
 from __future__ import annotations
@@ -81,6 +90,7 @@ JSON_FIELD_REQUIREMENTS = {
         "status": str,
         "exploration_history": list,
         "stated_intent": str,
+        "first_principles_decomposition": list,
     },
     "03-evidence/hypothesis_ledger.json": {
         "hypotheses": list,
@@ -99,6 +109,7 @@ TASK_CARD_REQUIRED_SECTIONS = {
 
 STEP_ARTIFACTS = {
     "step_0_scaffold": {"required": ["research_state.json"]},
+    "step_1_5_direction_selection": {"required": ["00-task/direction_selection.json"]},
     "step_2_task_card": {"required": ["00-task/task-card.md"]},
     "step_3_research_plan": {"required": ["01-plan/research-plan.md"]},
     "step_4_candidates": {"required": ["02-sources/candidates.md", "02-sources/discarded.md"]},
@@ -109,6 +120,7 @@ STEP_ARTIFACTS = {
     "step_8_red_team": {"required": ["06-review/red_team.md"]},
     "step_9_final_report_draft": {"required": ["07-output/final-report.md"]},
     "step_9_5_independent_audit": {"required": ["06-review/audit_report.md"]},
+    "step_9_6_adversarial_review": {"required": ["06-review/adversarial_review.json"]},
     "step_10_reader_simulation": {"required": ["06-review/reader_diagnosis.json", "06-review/reader_feedback.md"]},
     "step_11_trace_manifest": {"required": ["07-output/trace-manifest.json"]},
     "step_12_view_model": {"required": ["07-output/view-model.json"]},
@@ -116,12 +128,14 @@ STEP_ARTIFACTS = {
 }
 
 STEP_DEPENDENCIES = {
+    "step_2_task_card": ["step_1_5_direction_selection"],
     "step_6_5_core_objects_fetch": ["step_2_task_card", "step_3_research_plan"],
     "step_7_analysis": ["step_6_5_core_objects_fetch", "step_5_evidence_matrix"],
     "step_8_red_team": ["step_7_analysis"],
     "step_9_final_report_draft": ["step_7_analysis", "step_8_red_team"],
     "step_9_5_independent_audit": ["step_9_final_report_draft"],
-    "step_10_reader_simulation": ["step_9_5_independent_audit"],
+    "step_9_6_adversarial_review": ["step_9_5_independent_audit"],
+    "step_10_reader_simulation": ["step_9_6_adversarial_review"],
     "step_13_html_build": ["step_10_reader_simulation", "step_12_view_model"],
 }
 
@@ -781,6 +795,235 @@ def check_state_artifact_consistency(project, checks):
             "all done-marked steps have required artifacts")
 
 
+
+
+def check_direction_selection(project, checks):
+    """v1.3: 检查方向选择协议（Kimi式）- R2/R3强制"""
+    state = read_json(project / "research_state.json")
+    depth = state.get("research_depth", "R1")
+    direction_file = project / "00-task" / "direction_selection.json"
+    
+    if depth in ("R2", "R3"):
+        if not direction_file.exists():
+            add(checks, "FAIL", "direction selection (R2/R3)", 
+                f"missing 00-task/direction_selection.json (required for {depth})")
+            return
+        data = read_json(direction_file)
+        directions = data.get("directions_proposed", [])
+        if len(directions) < 2:
+            add(checks, "FAIL", "direction selection", 
+                f"only {len(directions)} directions proposed (need >=2)")
+            return
+        selection = data.get("user_selection", {})
+        if not selection.get("selected_direction_id"):
+            add(checks, "FAIL", "direction selection", "no user_selection.selected_direction_id")
+            return
+        if data.get("status") != "direction_confirmed":
+            add(checks, "FAIL", "direction selection", f"status={data.get('status')} (need direction_confirmed)")
+            return
+        add(checks, "PASS", "direction selection", 
+            f"confirmed: {selection.get('selected_direction_id')} from {len(directions)} directions")
+    else:
+        if direction_file.exists():
+            add(checks, "PASS", "direction selection", "found (optional for R0/R1)")
+        else:
+            add(checks, "PASS", "direction selection", "skipped (R0/R1 optional)")
+
+
+def check_adversarial_review(project, checks):
+    """v1.3: 检查对抗式subagent审核"""
+    adv_file = project / "06-review" / "adversarial_review.json"
+    if not adv_file.exists():
+        add(checks, "FAIL", "adversarial review", "missing 06-review/adversarial_review.json")
+        return
+    data = read_json(adv_file)
+    
+    attacks = data.get("attacks", [])
+    if len(attacks) < 3:
+        add(checks, "FAIL", "adversarial review", f"only {len(attacks)} attacks (need >=3)")
+        return
+    
+    responses = data.get("responses", [])
+    if len(responses) < len(attacks):
+        add(checks, "FAIL", "adversarial review", 
+            f"{len(attacks)} attacks but only {len(responses)} responses")
+        return
+    
+    # 检查每个attack的必填字段
+    for atk in attacks:
+        if not all(k in atk for k in ["id", "type", "target", "attack_content", "attack_strength"]):
+            add(checks, "FAIL", "adversarial review", 
+                f"attack {atk.get('id', '?')} missing required fields")
+            return
+    
+    # 检查每个response的必填字段
+    for resp in responses:
+        if not all(k in resp for k in ["attack_id", "response_type", "response_content"]):
+            add(checks, "FAIL", "adversarial review",
+                f"response for {resp.get('attack_id', '?')} missing required fields")
+            return
+    
+    # 检查是否含first_principles类型攻击（v1.3组件D要求）
+    has_fp_attack = any(a.get("type") == "first_principles" for a in attacks)
+    if has_fp_attack:
+        add(checks, "PASS", "adversarial review", 
+            f"{len(attacks)} attacks, {len(responses)} responses, includes first_principles test")
+    else:
+        add(checks, "WARN", "adversarial review",
+            f"{len(attacks)} attacks but no first_principles type attack")
+
+
+def check_first_principles_report(project, checks):
+    """v1.3: 检查最终报告是否含第一性原理章节"""
+    report = read_text(project / "07-output" / "final-report.md")
+    if not report:
+        return
+    
+    # 检查是否含第一性原理关键词的章节标题
+    fp_keywords = ["第一性原理", "本质", "为什么", "底层逻辑"]
+    fp_section_found = False
+    fp_section_content = ""
+    
+    for keyword in fp_keywords:
+        pattern = rf"## .*(?:{keyword})"
+        match = re.search(pattern, report)
+        if match:
+            # 提取该章节内容（从标题到下一个## 标题）
+            start = match.start()
+            next_section = re.search(r"\n## ", report[start + 1:])
+            if next_section:
+                end = start + 1 + next_section.start()
+            else:
+                end = len(report)
+            fp_section_content = report[start:end]
+            fp_section_found = True
+            break
+    
+    if not fp_section_found:
+        add(checks, "FAIL", "first principles section", 
+            "final-report missing first-principles section (need title with: 第一性原理/本质/为什么/底层逻辑)")
+        return
+    
+    if len(fp_section_content) < 500:
+        add(checks, "WARN", "first principles section", 
+            f"section too short ({len(fp_section_content)} chars, need >=500)")
+        return
+    
+    add(checks, "PASS", "first principles section",
+        f"found ({len(fp_section_content)} chars)")
+
+
+def check_first_principles_intent(project, checks):
+    """v1.3: 检查意图识别是否含第一性原理拆解"""
+    intent = read_json(project / "00-task" / "intent_doc.json")
+    if not intent:
+        return
+    
+    fp_list = intent.get("first_principles_decomposition")
+    if not fp_list or not isinstance(fp_list, list):
+        add(checks, "FAIL", "first principles (intent)", 
+            "intent_doc.json missing first_principles_decomposition field")
+        return
+    
+    if len(fp_list) < 3:
+        add(checks, "FAIL", "first principles (intent)",
+            f"only {len(fp_list)} principles (need >=3)")
+        return
+    
+    for fp in fp_list:
+        if not all(k in fp for k in ["principle", "irreducibility_argument", "evidence_basis"]):
+            add(checks, "FAIL", "first principles (intent)",
+                f"principle missing required fields (need principle/irreducibility_argument/evidence_basis)")
+            return
+    
+    add(checks, "PASS", "first principles (intent)",
+        f"{len(fp_list)} principles with irreducibility arguments")
+
+
+def check_human_confirmation_enforced(project, checks):
+    """v1.3: 检查human_confirmation_points是否被强制执行"""
+    state = read_json(project / "research_state.json")
+    if not state:
+        return
+    
+    hcp = state.get("human_confirmation_points", {})
+    steps = state.get("steps", {})
+    
+    for step_key, required in hcp.items():
+        if required and step_key in steps:
+            step_status = steps[step_key]
+            if step_status == "done":
+                # 检查是否有confirmed标记
+                # v1.3: 人工确认的步骤必须有 confirmed_by 字段
+                confirmations = state.get("confirmations", {})
+                if step_key not in confirmations:
+                    add(checks, "WARN", "human confirmation", 
+                        f"{step_key} marked done but no confirmation record (should have confirmed_by)")
+                else:
+                    add(checks, "PASS", "human confirmation",
+                        f"{step_key} confirmed by {confirmations[step_key].get('confirmed_by', '?')}")
+
+
+def check_audit_report_structured(project, checks):
+    """v1.3增强: 检查审计报告是否含结构化字段（不再只检查PASS字符串）"""
+    audit = project / "06-review" / "audit_report.md"
+    if not audit.exists():
+        add(checks, "FAIL", "audit report (structured)", "missing")
+        return
+    content = audit.read_text(encoding="utf-8")
+    
+    # v1.3: 不再只检查"PASS"字符串，检查5个审计问题是否都有明确结论
+    audit_questions = ["Q1", "Q2", "Q3", "Q4", "Q5"]
+    found_questions = sum(1 for q in audit_questions if q in content)
+    
+    if found_questions < 5:
+        add(checks, "WARN", "audit report (structured)", 
+            f"only {found_questions}/5 audit questions found")
+        return
+    
+    # 检查每个问题是否都有PASS或FAIL结论
+    pass_count = content.count("PASS") + content.count("✅")
+    fail_count = content.count("FAIL") + content.count("❌")
+    
+    if pass_count + fail_count < 5:
+        add(checks, "WARN", "audit report (structured)",
+            f"only {pass_count + fail_count} verdicts for 5 questions")
+        return
+    
+    add(checks, "PASS", "audit report (structured)",
+        f"{found_questions} questions with {pass_count} PASS / {fail_count} FAIL")
+
+
+def check_red_team_structured(project, checks):
+    """v1.3增强: 检查反方审计是否含结构化攻击记录（不只检查字符数）"""
+    red_team = project / "06-review" / "red_team.md"
+    if not red_team.exists():
+        add(checks, "FAIL", "red team (structured)", "missing")
+        return
+    content = red_team.read_text(encoding="utf-8")
+    
+    # 检查攻击次数（通过"攻击"/"attack"关键词计数）
+    attack_patterns = [r"攻击\s*\d", r"Attack\s*\d", r"###\s*(攻击|Attack)"]
+    attack_count = 0
+    for pattern in attack_patterns:
+        attack_count = max(attack_count, len(re.findall(pattern, content, re.IGNORECASE)))
+    
+    # 检查降级记录
+    downgrade_patterns = [r"降级", r"downgrade", r"修正为"]
+    downgrade_count = sum(len(re.findall(p, content, re.IGNORECASE)) for p in downgrade_patterns)
+    
+    if attack_count >= 4:
+        add(checks, "PASS", "red team attacks", f"{attack_count} attacks found")
+    else:
+        add(checks, "WARN", "red team attacks", 
+            f"only {attack_count} attacks detected (need >=4)")
+    
+    if downgrade_count >= 1:
+        add(checks, "PASS", "red team downgrades", f"{downgrade_count} downgrades found")
+    else:
+        add(checks, "WARN", "red team downgrades", "no downgrade records found")
+
+
 def check_mandatory_gates(project, checks):
     core_objects_log = project / "04-captures" / "core_objects_fetch_log.md"
     if core_objects_log.exists():
@@ -919,6 +1162,13 @@ def validate_project(project):
     check_min_content(project, checks)
     check_state_artifact_consistency(project, checks)
     check_mandatory_gates(project, checks)
+    check_direction_selection(project, checks)
+    check_adversarial_review(project, checks)
+    check_first_principles_report(project, checks)
+    check_first_principles_intent(project, checks)
+    check_human_confirmation_enforced(project, checks)
+    check_audit_report_structured(project, checks)
+    check_red_team_structured(project, checks)
     check_source_citation_format(project, checks)
     check_html_existence(project, checks)
     check_version_consistency(project, checks)

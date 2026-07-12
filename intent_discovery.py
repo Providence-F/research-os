@@ -6,6 +6,11 @@
     1. 创建 intent_doc.json 骨架，含 3 轮探索的 prompt 模板
     2. 提供 commit_exploration_result() 供 Agent 写回探索结果
 
+  v1.3 变更：
+    - Round 3 prompt 新增 first_principles_decomposition 要求（组件D）
+    - finalize_exploration 新增 first_principles_decomposition 参数
+    - 意图识别不再是"记录用户要什么"，还要拆解"问题的本质是什么"
+
   工具不做的事（交给 Agent）：
     - 不调 LLM 跑探索（探索是语义动作，由 Agent 做）
     - 不判断意图是否"完成"（由 Agent 的实际调用驱动 status）
@@ -91,6 +96,11 @@ EXPLORATION_ROUNDS = [
 4. agent 可解性：AI 拿到能独立推理吗？需要什么前置知识？
 5. concept_ladder_seed：需要解释的 5-10 个术语
 6. clarifying_questions：还需要澄清的问题（若有）
+7. **first_principles_decomposition（v1.3新增）**：这个问题的第一性原理拆解
+   - 列出 ≥3 条不可再分的底层逻辑
+   - 每条说明"为什么不可再分"（irreducibility_argument）
+   - 每条说明证据基础（evidence_basis）
+   - 示例：如果问题是"是否出海"，原理可以是"出海=用中国成本+赚海外收入+拿海外估值（三重套利，不可再分）"
 
 输出完整的 intent_doc 补充字段。""",
     },
@@ -214,6 +224,7 @@ def finalize_exploration(
     stated_intent: str,
     concept_ladder_seed: list[str] | None = None,
     clarifying_questions: list[str] | None = None,
+    first_principles_decomposition: list | None = None,
 ) -> None:
     """Agent 全部探索完成后，标记探索为已完成并固化最终意图。
 
@@ -250,6 +261,11 @@ def finalize_exploration(
 
     intent_doc["status"] = "exploration_complete"
     intent_doc["stated_intent"] = stated_intent
+    # v1.3: 第一性原理拆解（组件D）
+    if first_principles_decomposition:
+        intent_doc["first_principles_decomposition"] = first_principles_decomposition
+    else:
+        intent_doc["first_principles_decomposition"] = []
 
     if concept_ladder_seed is not None:
         intent_doc.setdefault("v07", {})["concept_ladder_seed"] = concept_ladder_seed
