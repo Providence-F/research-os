@@ -1,6 +1,6 @@
-<!-- ros-version: v1.2 | last-updated: 2026-07-11 | status: current -->
+<!-- ros-version: v1.4 | last-updated: 2026-07-11 | status: current -->
 
-# HTML 美学规范 v0.5
+# HTML 美学规范 v0.7
 
 > **单一真相源**：所有 Research OS 生成的 HTML 报告必须遵循本规范。
 > 本规范从 `build_research_html.py` 的 CSS（v0.8 + v0.9.1 + v0.9.2 + v0.10）抽取并固化。
@@ -114,15 +114,18 @@
 ### 3.6 布局
 
 ```css
---sidebar-width: 15rem;     /* 左侧目录栏 */
---reader-width: 56rem;       /* 正文阅读宽度 */
---shell-max-width: 1480px;   /* 页面最大宽度 */
+--sidebar-width: 16rem;     /* 左侧目录栏 */
+--reader-width: 72rem;       /* 正文阅读宽度 */
+--shell-max-width: 1600px;   /* 页面最大宽度 */
 ```
 
 **布局规则**：
-- `.page-shell`: `grid-template-columns: var(--sidebar-width) minmax(0, 1fr)`
+- `.page-shell`: `grid-template-columns: var(--sidebar-width) minmax(0, 1fr)`，gap: var(--space-7)，padding: var(--space-7) 28px var(--space-8)
 - `aside`: `position: sticky; top: 2rem`（固定侧栏 TOC）
-- `main`: 正文区，最大宽度 56rem
+- `main`: 正文区，**不设max-width限制**，填满grid剩余空间（min-width: 0; overflow-wrap: anywhere）
+- **重要**：main不要加max-width限制，否则会浪费PC端空间。正文宽度由grid布局自然决定。
+
+> **v0.6 更新（2026-07-15）**：reader-width从56rem升级到72rem，shell-max-width从1480px升级到1600px，sidebar从15rem升级到16rem。main移除max-width限制，让正文填满grid剩余空间。之前版本给main加了max-width:var(--reader-width)导致正文区被压缩到56rem（896px），浪费PC端空间。
 
 ## 4. 必须包含的视觉模块
 
@@ -336,7 +339,165 @@ function switchTab(pageId) {
 if (location.hash) switchTab(location.hash.slice(1));
 ```
 
-## 7. 美学合规自检清单
+## 7. 最小强制CSS基线（不可绕过）
+
+> **强制规则**：任何 Research OS 生成的 HTML 报告，`<style>` 标签内必须包含以下片段作为最小基线。**不允许手写替代、不允许简化、不允许用其他值替换**。在此基线之上才可以追加按需模块。
+>
+> **执行约束**：Step 13 生成 HTML 时，必须从此节直接复制此片段到 `<style>` 顶部，不得从记忆或推测重写。这是8个门禁之外新增的第9个门禁「美学合规验证」的判定依据。
+
+### 7.1 强制 CSS 片段
+
+```css
+:root {
+  --bg: #faf9f5;
+  --bg-card: #ffffff;
+  --bg-soft: #f5f4ee;
+  --bg-softer: #f0eee5;
+  --fg: #1a1a1a;
+  --fg-soft: #3d3d3d;
+  --muted: #6b6b6b;
+  --muted-2: #8e8e8e;
+  --line: #e5e3d8;
+  --line-soft: #ede9dd;
+  --accent: #b85b44;
+  --accent-soft: #f5e8e0;
+  --accent-bg: #fdf6f0;
+  --note: #2c5f8d; --note-bg: #eef4fa; --note-border: #b8d3eb;
+  --tip: #5d4ba0; --tip-bg: #f0ecf7; --tip-border: #c7b8e0;
+  --caution: #b8732e; --caution-bg: #fbf0e0; --caution-border: #e8c890;
+  --danger: #b85b44; --danger-bg: #fceeea; --danger-border: #e8b8a8;
+  --ok: #4a7a4a; --ok-bg: #eef5ee;
+  --font-serif: "Lora", "Noto Serif SC", "Source Han Serif SC", Georgia, serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "Geist Mono", Consolas, monospace;
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem;
+  --space-5: 1.5rem; --space-6: 2rem; --space-7: 3rem; --space-8: 4rem;
+  --radius: 6px; --radius-sm: 4px;
+  --sidebar-width: 16rem;
+  --reader-width: 72rem;
+  --shell-max-width: 1600px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--fg);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+.reading-progress {
+  position: fixed; top: 0; left: 0;
+  height: 2px; background: var(--accent);
+  width: 0; z-index: 50;
+  transition: width 0.1s ease-out;
+}
+
+.page-shell {
+  max-width: var(--shell-max-width);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  gap: var(--space-7);
+  padding: var(--space-7) 28px var(--space-8);
+}
+
+aside.toc {
+  position: sticky;
+  top: 2rem;
+  align-self: start;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+}
+aside.toc a.active { color: var(--accent); font-weight: 600; }
+
+h1 { font-size: 38px; line-height: 1.15; font-family: var(--font-serif); }
+h2 { font-size: 26px; line-height: 1.25; font-family: var(--font-serif); }
+h3 { font-size: 19px; font-family: var(--font-serif); }
+h4 { font-size: 14px; font-family: var(--font-sans); }
+
+.vm-hero {
+  border-left: 3px solid var(--accent);
+  padding: 0.5rem 0 0.5rem 1.5rem;
+  background: transparent;
+  margin-bottom: 3rem;
+}
+.kicker { font-size: 11.5px; font-family: var(--font-sans); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.hero-verdict { font-size: 30px; line-height: 1.25; font-weight: 600; font-family: var(--font-serif); }
+.hero-summary { font-size: 16px; line-height: 1.75; font-family: var(--font-serif); }
+.hero-meta { font-size: 13.5px; font-family: var(--font-sans); }
+
+.chapter { padding-top: var(--space-7); border-top: 1px solid var(--line); }
+.chapter:first-of-type { border-top: none; padding-top: 0; }
+
+table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: 14.5px; }
+th { border-bottom: 2px solid var(--fg); font-weight: 600; font-family: var(--font-sans); font-size: 13px; }
+td { border-bottom: 1px solid var(--line); padding: 8px 10px; }
+tbody tr:hover { background: var(--bg-soft); }
+
+details summary { cursor: pointer; font-family: var(--font-sans); }
+details summary::before { content: "▸"; display: inline-block; margin-right: 0.5rem; transition: transform 0.2s; }
+details[open] summary::before { transform: rotate(90deg); }
+```
+
+### 7.2 强制 `<head>` 片段
+
+```html
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+```
+
+### 7.3 强制 `<body>` 起始结构
+
+```html
+<div class="reading-progress"></div>
+<div class="page-shell">
+  <aside class="toc">...</aside>
+  <main>
+    <div class="vm-hero">
+      <div class="kicker">...</div>
+      <div class="hero-verdict">...</div>
+      <div class="hero-summary">...</div>
+      <div class="hero-meta">...</div>
+    </div>
+    <section class="chapter" id="s1">...</section>
+  </main>
+</div>
+```
+
+### 7.4 强制 JavaScript
+
+```javascript
+window.addEventListener('scroll', () => {
+  const h = document.documentElement;
+  const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+  const bar = document.querySelector('.reading-progress');
+  if (bar) bar.style.width = pct + '%';
+});
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      document.querySelectorAll('.toc a').forEach(a => a.classList.remove('active'));
+      const link = document.querySelector(`.toc a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+document.querySelectorAll('.chapter').forEach(c => observer.observe(c));
+```
+
+### 7.5 为什么需要最小基线
+
+**根因诊断**（2026-07-18）：原规范只有"自检清单"而无"最小基线"，Agent可以手写HTML绕过Design Tokens。AI眼镜深度调研报告就是因为HTML完全手写、未从规范读取CSS，导致10项严重违规（背景色错误、字体错误、无进度条、无sticky TOC、表格重边框等）。
+
+**预防机制**：本节作为不可绕过的最小基线，Step 13生成HTML时必须从此节直接复制CSS/HTML/JS片段，不得从记忆或推测重写。
+
+## 8. 美学合规自检清单
 
 生成 HTML 后，必须跑这个清单：
 
@@ -355,7 +516,7 @@ if (location.hash) switchTab(location.hash.slice(1));
 - [ ] 折叠区用 `<details>` + `▸` 旋转
 - [ ] 表格无重边框，th 双线底边
 
-## 8. 禁止事项
+## 9. 禁止事项
 
 - ❌ 不要用纯白背景（`#ffffff`）做主背景
 - ❌ 不要用旧版 accent `#8b5a3c`
@@ -365,11 +526,13 @@ if (location.hash) switchTab(location.hash.slice(1));
 - ❌ 不要只有卡片没有正文（卡片是辅助，正文是主体）
 - ❌ 不要用重边框表格（用 Stripe Press 风格）
 
-## 9. 版本治理
+## 10. 版本治理
 
 | 版本 | 变更 |
 |---|---|
+| v0.7 | 2026-07-18 新增第7节「最小强制CSS基线（不可绕过）」：固化Design Tokens、page-shell布局、Stripe Press表格、details▸旋转等不可妥协的CSS/HTML/JS片段。Agent生成HTML必须从此节直接复制，不得从记忆重写。原7/8/9节顺延为8/9/10节 |
 | v0.5 | 从 `build_research_html.py` 抽取并固化为独立文档 |
+| v0.6 | 2026-07-15 修正布局参数：reader-width 56→72rem，shell 1480→1600px，sidebar 15→16rem，main移除max-width限制 |
 | v0.8-v0.10 | 散落在 .py 代码里（已归档）|
 
 修改本文件后，必须同步更新 `build_research_html.py` 的 CSS 字符串，或改为从本文件读取。
