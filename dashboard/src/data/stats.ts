@@ -8,7 +8,7 @@ export const stats: SystemStats = {
   "blocked": 3,
   "untracked": 15,
   "totalEvidence": 512,
-  "totalReportChars": 648680,
+  "totalReportChars": 661944,
   "currentVersion": "v1.5",
-  "syncedAt": "2026-07-21 00:29"
+  "syncedAt": "2026-07-21 01:21"
 };

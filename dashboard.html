@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Research OS — 深度调研工作台</title>
+<style>
+:root {
+  --bg: #FAF9F5;
+  --surface: #FFFFFF;
+  --text: #1A1A1A;
+  --text-secondary: #5C5C5C;
+  --accent: #C96442;
+  --accent-light: #F4E4DE;
+  --border: #E5E2D9;
+  --green: #4A7C59;
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, "Segoe UI", "Noto Sans SC", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+/* ===== Hero ===== */
+.hero {
+  text-align: center;
+  padding: 60px 20px 40px;
+}
+.hero h1 {
+  font-size: 2.8em;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+.hero .tagline {
+  font-size: 1.2em;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+}
+.hero .stats {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+.hero .stat {
+  text-align: center;
+}
+.hero .stat-num {
+  font-size: 2.2em;
+  font-weight: 700;
+  color: var(--accent);
+}
+.hero .stat-label {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+.hero .version-badge {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 6px 16px;
+  background: var(--accent-light);
+  color: var(--accent);
+  border-radius: 20px;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+/* ===== Section ===== */
+.section {
+  margin-top: 60px;
+}
+.section h2 {
+  font-size: 1.6em;
+  font-weight: 700;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+}
+.section .section-desc {
+  color: var(--text-secondary);
+  font-size: 0.95em;
+  margin-bottom: 24px;
+}
+
+/* ===== 工作流 ===== */
+.workflow {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: var(--shadow);
+}
+.workflow-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.workflow-step {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  background: var(--bg);
+  border-radius: 0 8px 8px 0;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.workflow-step:hover {
+  transform: translateX(4px);
+  box-shadow: var(--shadow);
+}
+.workflow-step .step-num {
+  font-size: 0.75em;
+  color: var(--accent);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.workflow-step .step-name {
+  font-weight: 600;
+  margin: 4px 0;
+}
+.workflow-step .step-cmd {
+  font-family: "Cascadia Code", "Consolas", monospace;
+  font-size: 0.8em;
+  color: var(--text-secondary);
+  background: var(--border);
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+.workflow-step .step-desc {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+
+/* ===== 项目卡片 ===== */
+.category-group {
+  margin-bottom: 32px;
+}
+.category-group .cat-title {
+  font-size: 1.15em;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 16px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.category-group .cat-count {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+  font-weight: 500;
+  background: var(--accent-light);
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+.project-card {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+.project-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+.project-card .proj-name {
+  font-size: 1.15em;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.project-card .proj-verdict {
+  color: var(--text-secondary);
+  font-size: 0.9em;
+  margin-bottom: 16px;
+  flex-grow: 1;
+  line-height: 1.6;
+}
+.project-card .proj-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.project-card .badge {
+  font-size: 0.75em;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+.badge-depth { background: var(--accent-light); color: var(--accent); }
+.badge-status-done { background: #E8F5E9; color: var(--green); }
+.badge-status-failed { background: #FFEBEE; color: #C62828; }
+.badge-status-unknown { background: var(--border); color: var(--text-secondary); }
+.badge-evidence { background: #E3F2FD; color: #1565C0; }
+.badge-source {
+  background: #F3E5F5;
+  color: #6A1B9A;
+}
+.project-card .proj-link {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+.project-card .proj-link:hover {
+  text-decoration: underline;
+}
+
+/* ===== 时间线 ===== */
+.timeline {
+  position: relative;
+  padding-left: 32px;
+}
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.timeline-item {
+  position: relative;
+  margin-bottom: 32px;
+  padding: 20px;
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  left: -28px;
+  top: 24px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--bg);
+}
+.timeline-item .tl-version {
+  font-size: 0.8em;
+  color: var(--accent);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.timeline-item .tl-title {
+  font-size: 1.2em;
+  font-weight: 700;
+  margin: 4px 0 8px;
+}
+.timeline-item .tl-date {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+.timeline-item .tl-why {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  font-style: italic;
+}
+.timeline-item .tl-changes {
+  list-style: none;
+  padding: 0;
+}
+.timeline-item .tl-changes li {
+  padding: 4px 0 4px 20px;
+  position: relative;
+  font-size: 0.9em;
+}
+.timeline-item .tl-changes li::before {
+  content: "+";
+  position: absolute;
+  left: 0;
+  color: var(--green);
+  font-weight: 700;
+}
+
+/* ===== 设计哲学 ===== */
+.philosophy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+.philosophy-card {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  border-top: 3px solid var(--accent);
+}
+.philosophy-card .ph-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+  font-size: 1.05em;
+}
+.philosophy-card .ph-desc {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+
+/* ===== Trust Chain ===== */
+.trust-chain {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+.trust-stage {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.trust-stage:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(88, 166, 255, 0.15);
+}
+.trust-stage .stage-weight {
+  font-size: 1.8em;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.trust-stage .stage-name {
+  font-size: 0.95em;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.trust-stage .stage-desc {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.trust-formula {
+  text-align: center;
+  margin-top: 20px;
+  padding: 12px 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+  color: var(--accent);
+}
+
+/* ===== Footer ===== */
+.footer {
+  text-align: center;
+  margin-top: 60px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.85em;
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Research OS</h1>
+  <p class="tagline">深度调研工作台 — 让每条结论可溯源、可验证、可理解</p>
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num">63</div>
+      <div class="stat-label">调研项目</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">28</div>
+      <div class="stat-label">系统模块</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">512</div>
+      <div class="stat-label">证据条数</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">18</div>
+      <div class="stat-label">已完成</div>
+    </div>
+  </div>
+  <div class="version-badge">v1.1 · 信任转化器架构 · 四权分立 · 面向读者写作</div>
+</div>
+
+<div class="section">
+  <h2>这个系统怎么运作</h2>
+  <p class="section-desc">{SYSTEM_VERSION} 流程：前 3 步防止方向错（意图探索+路由+降秩），中间 3 步收集和验证证据（含核心对象直采），最后 6 步确保报告可信且能被读者读懂（写作约束+独立审计+读者模拟+信任账本）。</p>
+  <div class="workflow">
+    <div class="workflow-steps">
+
+      <div class="workflow-step">
+        <div class="step-num">第 1 步</div>
+        <div class="step-name">创建项目</div>
+        <div class="step-cmd">ros new</div>
+        <div class="step-desc">起调研任务，设定深度和模式，生成 intent_doc 骨架。工具初始化空字段，reader_model 不再由工具管理</div>
+      </div>
+
+      <div class="workflow-step">
+        <div class="step-num">第 2 步</div>
+        <div class="step-name">意图探索</div>
+        <div class="step-cmd">Agent 3轮探索</div>
+        <div class="step-desc">宽泛探索→挖差距→固化问题说明书。Agent 提交真实结果，工具不做伪信任注入</div>
+      </div>
+
+      <div class="workflow-step">
+        <div class="step-num">第 3 步</div>
+        <div class="step-name">路由 + 任务卡</div>
+        <div class="step-cmd">Agent</div>
+        <div class="step-desc">研究路由（决定view_type和visual_modules）+ 填 task-card + 降秩核心生成器写入 research-plan.md</div>
+      </div>
+
+      <div class="workflow-step">
+        <div class="step-num">第 4 步</div>
+        <div class="step-name">候选源筛选</div>
+        <div class="step-cmd">Agent</div>
+        <div class="step-desc">候选源收集、筛选、丢弃记录。输出 candidates.md + discarded.md</div>
+      </div>
+
+      <div class="workflow-step">
+        <div class="step-num">第 5 步</div>
+        <div class="step-name">证据矩阵 + 假设账本</div>
+        <div class="step-cmd">Agent</div>
+        <div class="step-desc">证据分级（A/B/C/D）、证据矩阵、假设账本（含置信度追踪）</div>
+      </div>
+
+      <div class="workflow-step">
+        <div class="step-num">第 6 步</div>
+        <div class="step-name">核心对象直采</div>
+        <div class="step-cmd">Agent</div>
+        <div class="step-desc">直接检查核心对象（产品/JD/技术栈），记录真实发现</div>
+      </div>
+
+      <div class="workflow-step">
+        <div class="step-num">第 7 步</div>
+        <div class="step-name">分析 + 红队</div>
+        <div class="step-cmd">Agent</div>
+        <div class="step-desc">深度分析 + 反方审计（主动攻击自己的结论）</div>
+      </div>
+
+      <div class="workflow-step">
+        <div class="step-num">第 8 步</div>
+        <div class="step-name">写报告</div>
+        <div class="step-cmd">Agent</div>
+        <div class="step-desc">遵循模板写作约束：术语首次出现用类比、已知→桥梁→未知结构、表格前写解释目的</div>
+      </div>
+
+      <div class="workflow-step">
+        <div class="step-num">第 9 步</div>
+        <div class="step-name">独立审计</div>
+        <div class="step-cmd">Agent</div>
+        <div class="step-desc">独立审计 Agent 检查强论断溯源率，不参与写作只负责审计</div>
+      </div>
+
+      <div class="workflow-step">
+        <div class="step-num">第 10 步</div>
+        <div class="step-name">读者模拟</div>
+        <div class="step-cmd">Agent</div>
+        <div class="step-desc">LLM 扮演读者逐段读，读懂了才交付。写-读-改闭环。读者画像由 Agent 从记忆获取</div>
+      </div>
+
+      <div class="workflow-step">
+        <div class="step-num">第 11 步</div>
+        <div class="step-name">溯源 + 视图模型</div>
+        <div class="step-cmd">Agent</div>
+        <div class="step-desc">生成 trace-manifest + view-model.json（按 visual_modules 过滤，只创建需要的字段）</div>
+      </div>
+
+      <div class="workflow-step">
+        <div class="step-num">第 12 步</div>
+        <div class="step-name">HTML + 验证 + 发布</div>
+        <div class="step-cmd">ros build</div>
+        <div class="step-desc">生成 HTML（默认拷贝桌面）+ 跑 validate + meta_validator + trust_ledger + 自动同步知识库 + 重建看板</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>调研产出</h2>
+  <p class="section-desc">每个项目是一份独立的深度调研。点击卡片打开完整报告。按类别分组，方便按场景查找。</p>
+
+  <div class="category-group">
+    <div class="cat-title">
+      <span>产品拆解</span>
+      <span class="cat-count">7 份</span>
+    </div>
+    <div class="projects-grid">
+
+      <div class="project-card">
+        <div class="proj-name">Dealism 产品深度拆解</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">published</span>
+          <span class="badge badge-evidence">76 条证据</span>
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/Dealism 产品深度拆解/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">Lev8 产品深度拆解</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">published</span>
+          <span class="badge badge-evidence">23 条证据</span>
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/Lev8 产品深度拆解/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">Mizzen Insight 产品深度拆解</div>
+        <div class="proj-verdict">对 Mizzen Insight 做产品层面的深度拆解。</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">桌面报告</span>
+          <span class="badge badge-depth">—</span>
+          <span class="badge badge-status-done">已完成</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">MizzenAI 创新用法探索</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-failed">进行中</span>
+          <span class="badge badge-evidence">31 条证据</span>
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/MizzenAI 创新用法探索/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">MizzenAI 技术栈拆解</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-failed">进行中</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/MizzenAI 技术栈拆解/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">特赞科技 Tezign 深度调研</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">planned</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/特赞科技 Tezign 深度调研/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">特赞科技 v0.6 重新调研</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-done">已完成</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/特赞科技 v0.6 重新调研/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="category-group">
+    <div class="cat-title">
+      <span>求职</span>
+      <span class="cat-count">1 份</span>
+    </div>
+    <div class="projects-grid">
+
+      <div class="project-card">
+        <div class="proj-name">Kai 下一阶段 AI 产品 FDE 作品集方向</div>
+        <div class="proj-verdict">研究 Kai 下一阶段作品集方向优先级，服务 FDE 岗位求职。</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">桌面报告</span>
+          <span class="badge badge-depth">—</span>
+          <span class="badge badge-status-done">已完成</span>
+          
+        </div>
+        
+      </div>
+
+    </div>
+  </div>
+
+  <div class="category-group">
+    <div class="cat-title">
+      <span>求学</span>
+      <span class="cat-count">2 份</span>
+    </div>
+    <div class="projects-grid">
+
+      <div class="project-card">
+        <div class="proj-name">固体物理学习难点深度调研</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-done">已完成</span>
+          <span class="badge badge-evidence">24 条证据</span>
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/固体物理学习难点深度调研/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">物理学师范毕业论文选题与导师推荐</div>
+        <div class="proj-verdict">为物理学师范毕业论文选题方向与导师选择做推荐。</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">桌面报告</span>
+          <span class="badge badge-depth">—</span>
+          <span class="badge badge-status-done">已完成</span>
+          
+        </div>
+        
+      </div>
+
+    </div>
+  </div>
+
+  <div class="category-group">
+    <div class="cat-title">
+      <span>系统设计</span>
+      <span class="cat-count">7 份</span>
+    </div>
+    <div class="projects-grid">
+
+      <div class="project-card">
+        <div class="proj-name">OpenCode深度拆解</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">task_card_pending</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/OpenCode深度拆解/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">opencode深度源码拆解</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-unknown">unknown</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">前端设计深度调研</div>
+        <div class="proj-verdict">不该做新 GUI。HTML 报告已经是足够好的入口，真正卡住的是 Python 路径配置和报告内部的信息架构。</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-failed">进行中</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/前端设计深度调研/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">开源Agent与LLM深度拆解</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-done">已完成</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/开源Agent与LLM深度拆解/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">开源深度调研系统横向拆解v2</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">planned</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/开源深度调研系统横向拆解v2/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">技术科普与可视化表达调研</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">task_card_pending</span>
+          <span class="badge badge-evidence">8 条证据</span>
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/技术科普与可视化表达调研/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">深度调研开源项目横向拆解</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">planned</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/深度调研开源项目横向拆解/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="category-group">
+    <div class="cat-title">
+      <span>技术科普</span>
+      <span class="cat-count">1 份</span>
+    </div>
+    <div class="projects-grid">
+
+      <div class="project-card">
+        <div class="proj-name">MemOS 核心记忆机制科普拆解</div>
+        <div class="proj-verdict">拆解 MemOS 记忆系统的核心机制，做技术科普。</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">桌面报告</span>
+          <span class="badge badge-depth">—</span>
+          <span class="badge badge-status-done">已完成</span>
+          
+        </div>
+        
+      </div>
+
+    </div>
+  </div>
+
+  <div class="category-group">
+    <div class="cat-title">
+      <span>行业研究</span>
+      <span class="cat-count">1 份</span>
+    </div>
+    <div class="projects-grid">
+
+      <div class="project-card">
+        <div class="proj-name">芯片行业第一性原理</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-done">已完成</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/芯片行业第一性原理/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="category-group">
+    <div class="cat-title">
+      <span>其他</span>
+      <span class="cat-count">44 份</span>
+    </div>
+    <div class="projects-grid">
+
+      <div class="project-card">
+        <div class="proj-name">AI深度调研工具竞品拆解</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">validated</span>
+          <span class="badge badge-evidence">14 条证据</span>
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/AI深度调研工具竞品拆解/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">AI眼镜深度调研</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">planned</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/AI眼镜深度调研/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">AMD参访准备</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-done">已完成</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/AMD参访准备/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">DeepSeek六月岗位JD分析</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-done">已完成</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/DeepSeek六月岗位JD分析/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">Manas深度调研</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">published</span>
+          <span class="badge badge-evidence">22 条证据</span>
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/Manas深度调研/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">Research OS市场空间与切入策略研究</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">validated</span>
+          <span class="badge badge-evidence">16 条证据</span>
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/Research OS市场空间与切入策略研究/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">Research OS系统提升路径深度调研</div>
+        <div class="proj-verdict">你自发重发明了 2025-2026 年 Agent 工程的三大主流范式——Harness Engineering、Spec-Driven Development、12-Factor Agents。你缺的不是抽象能力，是行业词汇和系统学习路径。</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">planned</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/Research OS系统提升路径深度调研/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">WAIC2026-产品拆解-Corvia AI</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-unknown">unknown</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">WAIC2026-产品拆解-CorviaAI</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-unknown">unknown</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">WAIC2026-产品拆解-GitStudy</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-unknown">unknown</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">WAIC2026-产品拆解-GitStudy-编程学习AI</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-done">已完成</span>
+          <span class="badge badge-evidence">8 条证据</span>
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/WAIC2026-产品拆解-GitStudy-编程学习AI/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">WAIC2026-产品拆解-Lumoverse</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-unknown">unknown</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">WAIC2026-产品拆解-PictaleAI</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-unknown">unknown</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">WAIC2026-产品拆解-PictaleAI-儿童绘本AI</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-done">已完成</span>
+          <span class="badge badge-evidence">8 条证据</span>
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/WAIC2026-产品拆解-PictaleAI-儿童绘本AI/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">WAIC2026-产品拆解-共绩科技</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-unknown">unknown</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">WAIC2026-产品拆解-启岸AI</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-unknown">unknown</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">WAIC2026-产品拆解-形界智维</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-unknown">unknown</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">WAIC2026-产品拆解-心洲科技</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-unknown">unknown</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">WAIC2026-产品拆解-心言机器人</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-unknown">unknown</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">WAIC2026-产品拆解-渊澈太初</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-unknown">unknown</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">WAIC2026-产品拆解-葱花投研</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-unknown">unknown</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">WAIC2026-产品拆解-追知工科</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-unknown">unknown</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">WAIC2026-产品拆解-量坤科技</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-unknown">unknown</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">WAIC2026-求职地图</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">planned</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/WAIC2026-求职地图/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">ZINC产品深度拆解</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">planned</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">b2b-ai-pm-knowledge-framework-20260715</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-done">已完成</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/b2b-ai-pm-knowledge-framework-20260715/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">kitkit-stello-topology-engine-research</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">planned</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/kitkit-stello-topology-engine-research/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">mizzen-multithread-probing-prd</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-done">已完成</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/mizzen-multithread-probing-prd/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">mizzen-offer-翻盘-20260715</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">unknown</span>
+          <span class="badge badge-status-done">已完成</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/mizzen-offer-翻盘-20260715/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">mizzen-team-business-logic-research</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">published</span>
+          <span class="badge badge-evidence">30 条证据</span>
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/mizzen-team-business-logic-research/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">outset-ai-deep-research</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-done">已完成</span>
+          <span class="badge badge-evidence">30 条证据</span>
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/outset-ai-deep-research/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">user-research-methodology-20260716</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-done">已完成</span>
+          <span class="badge badge-evidence">15 条证据</span>
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/user-research-methodology-20260716/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">yujun-product-methodology-ai-pm-20260716</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-done">已完成</span>
+          <span class="badge badge-evidence">18 条证据</span>
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/yujun-product-methodology-ai-pm-20260716/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">中国AI出海团队赛道调研</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">published</span>
+          <span class="badge badge-evidence">86 条证据</span>
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/中国AI出海团队赛道调研/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">元生万物产品深度拆解</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">planned</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">先见AI产品深度拆解</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">planned</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">入户访谈AI辅助形态调研</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">in_progress</span>
+          <span class="badge badge-evidence">55 条证据</span>
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/入户访谈AI辅助形态调研/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">冰鲸科技产品深度拆解</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">planned</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">商汤科技及同领域公司秋招投递策略研究</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">reader_simulating</span>
+          <span class="badge badge-evidence">48 条证据</span>
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/商汤科技及同领域公司秋招投递策略研究/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">小宿科技产品深度拆解</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">planned</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">数宗产品深度拆解</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">planned</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">觅深科技产品深度拆解</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">planned</span>
+          
+        </div>
+        
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">语言的统一本质-语言学编程语言与大模型的三层同构</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">planned</span>
+          
+        </div>
+        <a class="proj-link" href="file:///C:/Users/19932/research-os/projects/语言的统一本质-语言学编程语言与大模型的三层同构/08-html/index.html" target="_blank">查看报告 →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="proj-name">远见琢识产品深度拆解</div>
+        <div class="proj-verdict">（结论待提取）</div>
+        <div class="proj-meta">
+          <span class="badge badge-source">本地项目</span>
+          <span class="badge badge-depth">R2</span>
+          <span class="badge badge-status-unknown">planned</span>
+          
+        </div>
+        
+      </div>
+
+    </div>
+  </div>
+</div>
+<div class="section">
+  <h2>系统怎么长大的</h2>
+  <p class="section-desc">每个版本解决一个具体问题，不是预先设计出来的。</p>
+  <div class="timeline">
+
+    <div class="timeline-item">
+      <div class="tl-version">v0.1-v0.5</div>
+      <div class="tl-title">基础工作台</div>
+      <div class="tl-date">2026 Q1</div>
+      <div class="tl-why">解决调研过程中来源不可验证、结论断裂、过程与交付混杂的问题</div>
+      <ul class="tl-changes">
+        <li>命令行工具（ros new/plan/run/build）</li><li>10 步调研流程</li><li>JSON 配置 + Markdown 模板</li><li>HTML 报告生成器</li>
+      </ul>
+    </div>
+
+    <div class="timeline-item">
+      <div class="tl-version">v0.9</div>
+      <div class="tl-title">意图挖掘 + 反方审计</div>
+      <div class="tl-date">2026 Q2</div>
+      <div class="tl-why">用户嘴上说的需求跟真实需求常有差距，需要系统挖掘；每条结论需要被反方审计才能交付</div>
+      <ul class="tl-changes">
+        <li>意图挖掘模块（3 轮结构化探索）</li><li>反方审计（11 维度攻击）</li><li>读者优先报告模式</li><li>证据分级（A/B/C/D）</li><li>假设账本（含置信度追踪）</li>
+      </ul>
+    </div>
+
+    <div class="timeline-item">
+      <div class="tl-version">v0.5</div>
+      <div class="tl-title">读者代理 + 看板</div>
+      <div class="tl-date">2026-07</div>
+      <div class="tl-why">报告读起来像 XML（幕后信息泄漏正文）；LLM 只当生产者不当读者；意图挖掘过度拟合历史 pattern；缺少系统级的展示和自省入口</div>
+      <ul class="tl-changes">
+        <li>reader_simulation 模块（LLM 扮演读者逐段验证可读性）</li><li>写-读-改闭环（最多 2 轮重写）</li><li>用户确认门禁（ros confirm，输入端防方向错）</li><li>AI 味检测（detect_ai_tell）</li><li>意图挖掘反确认偏误（允许无 gap）</li><li>系统看板（本文件）</li>
+      </ul>
+    </div>
+
+    <div class="timeline-item">
+      <div class="tl-version">v1.0</div>
+      <div class="tl-title">信任转化器架构 + 四权分立</div>
+      <div class="tl-date">2026-07-09</div>
+      <div class="tl-why">工具越界做语义判断（硬编码产品名、声称用了探索方法但 result=None）；信任链没有显式审计；版本号散落各处；工具硬编码核心生成器违反 Dumb Tools 原则</div>
+      <ul class="tl-changes">
+        <li>第一性原理重构：系统本质是&#x27;信任转化器&#x27;——把不可信的 AI 认知劳动转化为人类敢拿真实后果下注的决策输入</li><li>四权分立：研究 Agent + 审计 Agent + 工具 + 元审计层（meta_validator）</li><li>Smart Agent. Dumb Tools.：工具只做机械检查，语义判断交给 Agent</li><li>意图探索诚实化：消除伪信任注入（exploration_method 字段造假）</li><li>核心生成器降秩：Agent 用 ljg-rank 现场降秩，工具不硬编码</li><li>信任账本（trust_ledger.json）：5 环信任链加权打分，&gt;=0.7 才能 decision_ready</li><li>深度档位感知验证：R0/R1/R2/R3 四档阈值</li><li>路径契约统一：intent_doc 和 goal_ledger 统一到 00-task/</li><li>版本治理：单一 SYSTEM_VERSION 源</li>
+      </ul>
+    </div>
+
+    <div class="timeline-item">
+      <div class="tl-version">v1.1</div>
+      <div class="tl-title">面向读者写作 + 读者画像 Agent 化</div>
+      <div class="tl-date">2026-07-10</div>
+      <div class="tl-why">报告僵硬的根因不是缺一个解释设计步骤，是两个断裂——Agent 写报告时看不到写作指令，读者画像从创建到使用整条链路是断的。用加法解决减法问题</div>
+      <ul class="tl-changes">
+        <li>写作约束注入：模板从结构骨架升级为写作指令（6条全局约束+6个章节级约束）</li><li>读者画像 Agent 化：移除工具管理的 reader_model 空字段，读者画像由 Agent 从记忆+知识库获取</li><li>reader_simulation 修复：load_reader_persona 返回完整默认值（之前缺4个字段）</li><li>action 命名 bug 修复：write_reader_first_report → write_final_report_draft</li><li>知识库自动同步：build 时自动把 final-report.md 同步到 Obsidian</li><li>HTML 默认拷贝桌面：copy_desktop 从 opt-in 改为 opt-out</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<div class="section">
+  <h2>为什么这样设计</h2>
+  <p class="section-desc">9 条核心原则。v1.0 新增信任转化器、Smart Agent Dumb Tools、四权分立；v1.1 新增面向读者写作、读者画像 Agent 化。</p>
+  <div class="philosophy-grid">
+
+    <div class="philosophy-card">
+      <div class="ph-title">信任转化器</div>
+      <div class="ph-desc">系统本质是把不可信的 AI 认知劳动转化为人类敢拿真实后果下注的决策输入。每条产出都要回答：这个结论的信任分是多少？</div>
+    </div>
+
+    <div class="philosophy-card">
+      <div class="ph-title">Smart Agent. Dumb Tools.</div>
+      <div class="ph-desc">工具只做机械检查（文件存不存在、字段非空、字符数够不够），语义判断全部交给 Agent。工具不硬编码产品名，不做关键词路由。</div>
+    </div>
+
+    <div class="philosophy-card">
+      <div class="ph-title">四权分立</div>
+      <div class="ph-desc">研究 Agent（生产）+ 审计 Agent（攻击）+ 工具（机械验证）+ 元审计层（审计工具自身）。四权互相制衡，任何一方作弊都会被其他方检出。</div>
+    </div>
+
+    <div class="philosophy-card">
+      <div class="ph-title">可溯源</div>
+      <div class="ph-desc">每条结论都能追溯到证据。不是&#x27;我觉得&#x27;，是&#x27;证据显示&#x27;。trace-manifest.json 记录每个 claim 的证据链。</div>
+    </div>
+
+    <div class="philosophy-card">
+      <div class="ph-title">读者优先</div>
+      <div class="ph-desc">报告写给读者看，不是写给研究者自己看。幕后信息不进正文。reader_simulation 逐段验证可读性。</div>
+    </div>
+
+    <div class="philosophy-card">
+      <div class="ph-title">反方审计</div>
+      <div class="ph-desc">每条核心结论必须经过反方攻击。R2 深度要求至少降级 1 个结论。独立审计 Agent 不参与写作，只负责审计。</div>
+    </div>
+
+    <div class="philosophy-card">
+      <div class="ph-title">信任账本</div>
+      <div class="ph-desc">5 环信任链加权打分：意图探索(0.20) + 核心生成器(0.15) + 独立审计(0.20) + 读者模拟(0.15) + 状态产物一致性(0.30)。&gt;=0.7 才能 decision_ready。</div>
+    </div>
+
+    <div class="philosophy-card">
+      <div class="ph-title">面向读者写作</div>
+      <div class="ph-desc">写作约束注入模板而非加新步骤。技术术语首次出现用类比解释，核心章节用已知→桥梁→未知结构，表格前必须写解释目的。Agent 写报告时就遵循，不是写完再补。</div>
+    </div>
+
+    <div class="philosophy-card">
+      <div class="ph-title">读者画像 Agent 化</div>
+      <div class="ph-desc">读者画像不由工具管理，是 Agent 的内置能力。Agent 从记忆和知识库获取读者信息，比工具管理的空字段更全面、更实时。仅当读者≠用户本人时 Agent 手动声明覆盖。</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section">
+  <h2>信任账本（Trust Ledger）</h2>
+  <p class="section-desc">每个调研项目都有 5 环信任链加权打分。>=0.7 才能 decision_ready（敢拿真实后果下注）。跑 <code>python meta_validator.py --project &lt;项目&gt; --trust-ledger</code> 生成。</p>
+  <div class="trust-chain">
+    <div class="trust-stage">
+      <div class="stage-weight">0.20</div>
+      <div class="stage-name">B1 意图探索</div>
+      <div class="stage-desc">3 轮真实探索已提交，无伪信任注入</div>
+    </div>
+    <div class="trust-stage">
+      <div class="stage-weight">0.15</div>
+      <div class="stage-name">B2 核心生成器</div>
+      <div class="stage-desc">Agent 用 ljg-rank 降秩，工具不硬编码</div>
+    </div>
+    <div class="trust-stage">
+      <div class="stage-weight">0.20</div>
+      <div class="stage-name">B3 独立审计</div>
+      <div class="stage-desc">独立审计 Agent 引用报告原文检查强论断</div>
+    </div>
+    <div class="trust-stage">
+      <div class="stage-weight">0.15</div>
+      <div class="stage-name">B4 读者模拟</div>
+      <div class="stage-desc">LLM 扮演读者逐段验证，写-读-改闭环</div>
+    </div>
+    <div class="trust-stage">
+      <div class="stage-weight">0.30</div>
+      <div class="stage-name">B5 状态-产物一致</div>
+      <div class="stage-desc">所有 done 步骤的产物文件全部存在</div>
+    </div>
+  </div>
+  <div class="trust-formula">
+    Overall Trust = Σ(stage_score × weight) &nbsp;|&nbsp; Decision Ready = Overall >= 0.7
+  </div>
+</div>
+
+<div class="footer">
+  Research OS v1.1 · 生成于 2026-07-21 01:21<br>
+  深度调研工作台 · 让每条结论可溯源、可验证、可理解
+</div>
+
+</body>
+</html>

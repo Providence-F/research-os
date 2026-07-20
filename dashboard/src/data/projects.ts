@@ -151,13 +151,13 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_9",
-        "passed": false
+        "passed": true
       }
     ],
-    "gatesPassed": 7,
+    "gatesPassed": 8,
     "blockedGate": null,
-    "hasHtml": false,
-    "reportChars": 35867,
+    "hasHtml": true,
+    "reportChars": 49131,
     "evidenceCount": 0,
     "lastActivity": "2026-07-21",
     "summary": "语言的统一本质——语言学、编程语言与大语言模型的三层同构"
