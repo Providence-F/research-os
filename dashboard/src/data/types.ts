@@ -1,71 +1,85 @@
 // src/data/types.ts
-// v5.0 数据模型：按调研主体分类，不按成功失败分
+// Research OS v1.5 看板数据模型 —— 流水线中心（pipeline-centric）
+// 看板定位：报告生产线的控制塔，不是项目宣传页。
 
-export type ProjectCategory =
-  | "product"    // 产品拆解
-  | "industry"   // 行业赛道
-  | "tech"       // 技术深度
-  | "personal"   // 个人决策
-  | "system";    // 系统自身
+export type PhaseId = "define" | "collect" | "analyze" | "review" | "deliver";
 
-export type DeliveryStatus =
-  | "trae"         // 在 Trae 上执行
-  | "claude-code"; // 在 Claude Code 上执行
-
-export interface Project {
-  id: string;
+export interface Phase {
+  id: PhaseId;
   name: string;
-  category: ProjectCategory;
-  version: string;          // 诞生版本 "v0.5"
-  deliveryStatus: DeliveryStatus;
-  summary: string;          // 一句话主题
-  htmlPath?: string;        // 产出 HTML 路径
-  relations: string[];      // 关联项目 id
-  iteration?: {             // 迭代关系（可选）
-    precursorId?: string;
-    successorId?: string;
-    note?: string;
-  };
-  date?: string;            // 交付日期 "06-26" / "07-01"
-  // 详情抽屉内容
-  overview?: string;        // 大致内容（2-3 句话描述调研做了什么）
-  keyTopics?: string[];     // 主要主题（3-5 个关键词）
-  keyFindings?: string[];   // 核心发现/结论（2-4 条）
+  color: string;
 }
 
-// 工作流阶段
-export interface WorkflowPhase {
-  id: string;
-  number: string;           // "1.0" / "2.0" ...
-  name: string;
-  purpose: string;         // 阶段目的
-  keySteps: string[];      // 关键步骤（2-3 个）
-  output: string;          // 产出
-  isCore?: boolean;        // 核心阶段标记
+export interface WorkflowStep {
+  id: string;            // step_9_6_adversarial_review
+  num: string;           // "9.6"
+  label: string;         // 对抗式审核
+  phase: PhaseId;
+  artifact: string;      // 06-review/adversarial_review.json
+  gateAfter?: string | null; // 该步骤完成后触发的门禁 id
 }
 
-export interface Version {
-  id: string;               // "v0.5"
-  date: string;             // "07-04"
-  summary: string;          // 一句话总结
-  changes: string[];        // 变更摘要（来自 CHANGELOG）
+export interface WorkflowGate {
+  id: string;            // gate_5
+  number: number;        // 与状态机文档「门禁 N」一致
+  name: string;          // 对抗式审核
+  afterStep: string;     // 触发步骤 id
+  requirement: string;   // 一句话通过条件
+}
+
+export interface WorkflowDef {
+  phases: Phase[];
+  steps: WorkflowStep[];
+  gates: WorkflowGate[];
+}
+
+export type StepStatus = "done" | "pending";
+
+export interface ProjectGate {
+  id: string;
+  passed: boolean;
+}
+
+export interface ProjectPipeline {
+  id: string;
+  name: string;
+  category: string;        // 中文分类名
+  depth: string;           // R0/R1/R2/R3 或 —
+  status: string;          // research_state.json 原始 status 或机械推断
+  tracked: boolean;        // 是否有 research_state.json
+  currentStepIndex: number; // 首个未完成步骤下标；22 = 全部完成
+  progress: number;         // 0..1
+  doneSteps: number;
+  steps: Record<string, StepStatus>;
+  gates: ProjectGate[];
+  gatesPassed: number;
+  blockedGate: string | null; // 卡点门禁 id（当前位置前首个未过门禁）
+  hasHtml: boolean;
+  reportChars: number;
+  evidenceCount: number;
+  lastActivity: string;    // YYYY-MM-DD
+  summary: string;         // 一句话主题
+}
+
+export interface VersionInfo {
+  id: string;
+  date: string;
+  summary: string;
+  changes: string[];
   isCurrent?: boolean;
-  isRollback?: boolean;     // v0.10 → v0.5 回退
 }
 
-export interface Stats {
-  hero: {
-    versions: number;
-    outputs: number;
-    categories: number;
-    currentVersion: string;
-  };
+export interface SystemStats {
+  totalProjects: number;
+  published: number;
+  inPipeline: number;
+  blocked: number;
+  untracked: number;
+  totalEvidence: number;
+  totalReportChars: number;
+  currentVersion: string;
+  syncedAt: string;
 }
 
-// 分类元信息（颜色、中文名）
-export interface CategoryMeta {
-  id: ProjectCategory;
-  name: string;       // 中文名
-  color: string;      // 主色
-  description: string; // 一句话描述
-}
+// 项目健康度（派生展示态）
+export type Health = "published" | "active" | "blocked" | "stale" | "untracked";

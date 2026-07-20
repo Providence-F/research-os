@@ -1,95 +1,275 @@
-// src/data/workflow.ts
-// 调研工作流 v1.4 - 16 步 + 8 门禁
+// 本文件由 scripts/sync_dashboard.py 自动生成，请勿手改
+import type { WorkflowDef } from './types';
 
-import type { WorkflowPhase } from "./types";
-
-export const workflowPhases: WorkflowPhase[] = [
-  {
-    id: "intent",
-    number: "1.0",
-    name: "意图挖掘 + 方向选择",
-    purpose: "从用户描述中反推真实问题，通过 Kimi 式边界追问锁定调研方向",
-    keySteps: [
-      "解析用户原始请求，区分表面诉求与真实目的",
-      "Agent 提出 2 个边界问题（范围/深度/时间/决策），用户回答",
-      "生成 direction_selection.json 记录方向确认结果",
-    ],
-    output: "intent_doc.json + direction_selection.json",
-    isCore: true,
-  },
-  {
-    id: "planning",
-    number: "2.0",
-    name: "调研规划",
-    purpose: "将调研意图拆解为可执行的步骤清单，Agent 自主完成（无人工确认）",
-    keySteps: [
-      "生成 task-card.md 作为本次调研的契约",
-      "规划调研路径：先扫什么、后深什么、如何交叉验证",
-      "确定调研深度（R0/R1/R2/R3）和证据标准",
-    ],
-    output: "task-card.md + research-plan.md",
-  },
-  {
-    id: "execution",
-    number: "3.0",
-    name: "深度执行 + 核心对象直采",
-    purpose: "按规划执行调研，多源采集并结构化信息，强制核心对象直采",
-    keySteps: [
-      "多源采集：官网 / 源码 / 论文 / 财报 / JD",
-      "核心对象直采（门禁1）：≥3 个对象 + ≥3 个 URL，不能只靠二手资料",
-      "交叉验证：至少 2 个独立来源确认关键事实",
-    ],
-    output: "candidates.md + evidence_matrix.md + core_objects_fetch_log.md",
-    isCore: true,
-  },
-  {
-    id: "analysis",
-    number: "4.0",
-    name: "多 Agent 分析 + 行文思路规划",
-    purpose: "多 Agent 并行分析（产品/技术/团队/岗位），然后规划报告行文思路",
-    keySteps: [
-      "4 个 Agent 并行产出分析文件",
-      "行文思路规划（v1.4 新增，门禁7）：判断认知类型，设计三级节点结构",
-      "产出 narrative-plan.md 决定章节顺序和第一性原理位置",
-    ],
-    output: "05-analysis/*.md + narrative-plan.md",
-    isCore: true,
-  },
-  {
-    id: "audit",
-    number: "5.0",
-    name: "反方审计 + 独立审计 + 对抗式审核",
-    purpose: "三层质量把关：反方攻击、独立审计、对抗式审核",
-    keySteps: [
-      "反方 Agent 攻击结论，触发降级",
-      "独立审计 Agent（独立会话）5 问全 PASS（门禁2）",
-      "对抗式审核 subagent 执行再分测试（门禁5），≥3 攻击 + 回应",
-    ],
-    output: "red_team.md + audit_report.md + adversarial_review.json",
-  },
-  {
-    id: "reader",
-    number: "6.0",
-    name: "读者模拟 + 写-读-改闭环",
-    purpose: "AI 写完后换角色当读者自检，模拟真实读者的理解过程",
-    keySteps: [
-      "切换为读者视角，逐段检查理解盲区（门禁3）",
-      "对每段打分：0.91+ 通过 / 0.7-0.9 需要重写 / <0.7 推倒重来",
-      "写-读-改闭环（门禁8）：最多 2 轮迭代，第 3 轮 fail 转人工",
-    ],
-    output: "reader_diagnosis.json + rewrite_instructions.json",
-    isCore: true,
-  },
-  {
-    id: "delivery",
-    number: "7.0",
-    name: "交付与发布",
-    purpose: "产出可交付的 HTML 报告，验证后发布",
-    keySteps: [
-      "构建 HTML 报告（Anthropic 美学，工具自动生成）",
-      "验证器全量检查（v1.4：含 narrative-plan + 第一性原理位置检查）",
-      "发布到桌面 + 同步 Obsidian 知识库 + 推送 GitHub 看板",
-    ],
-    output: "index.html + validation_report + 桌面副本",
-  },
-];
+export const workflow: WorkflowDef = {
+  "phases": [
+    {
+      "id": "define",
+      "name": "定义",
+      "color": "#8a6d3b"
+    },
+    {
+      "id": "collect",
+      "name": "采集",
+      "color": "#4a7a6f"
+    },
+    {
+      "id": "analyze",
+      "name": "分析",
+      "color": "#7a5a8a"
+    },
+    {
+      "id": "review",
+      "name": "审核",
+      "color": "#b85b44"
+    },
+    {
+      "id": "deliver",
+      "name": "交付",
+      "color": "#3d6b8e"
+    }
+  ],
+  "steps": [
+    {
+      "id": "step_0_scaffold",
+      "num": "0",
+      "label": "脚手架",
+      "phase": "define",
+      "artifact": "research_state.json",
+      "gateAfter": null
+    },
+    {
+      "id": "step_1_route",
+      "num": "1",
+      "label": "主题路由",
+      "phase": "define",
+      "artifact": "01-plan/route_result.json",
+      "gateAfter": null
+    },
+    {
+      "id": "step_1_5_direction_selection",
+      "num": "1.5",
+      "label": "方向选择",
+      "phase": "define",
+      "artifact": "00-task/direction_selection.json",
+      "gateAfter": "gate_4"
+    },
+    {
+      "id": "step_2_task_card",
+      "num": "2",
+      "label": "任务卡",
+      "phase": "define",
+      "artifact": "00-task/task-card.md",
+      "gateAfter": null
+    },
+    {
+      "id": "step_3_research_plan",
+      "num": "3",
+      "label": "调研方案",
+      "phase": "define",
+      "artifact": "01-plan/research-plan.md",
+      "gateAfter": null
+    },
+    {
+      "id": "step_4_candidates",
+      "num": "4",
+      "label": "候选源采集",
+      "phase": "collect",
+      "artifact": "02-sources/candidates.md",
+      "gateAfter": null
+    },
+    {
+      "id": "step_5_evidence_matrix",
+      "num": "5",
+      "label": "证据矩阵",
+      "phase": "collect",
+      "artifact": "03-evidence/evidence_matrix.md",
+      "gateAfter": null
+    },
+    {
+      "id": "step_6_hypothesis",
+      "num": "6",
+      "label": "假设账本",
+      "phase": "collect",
+      "artifact": "03-evidence/hypothesis_ledger.json",
+      "gateAfter": null
+    },
+    {
+      "id": "step_6_5_core_objects_fetch",
+      "num": "6.5",
+      "label": "核心对象直采",
+      "phase": "collect",
+      "artifact": "04-captures/core_objects_fetch_log.md",
+      "gateAfter": "gate_1"
+    },
+    {
+      "id": "step_7_analysis",
+      "num": "7",
+      "label": "多Agent分析",
+      "phase": "analyze",
+      "artifact": "05-analysis/",
+      "gateAfter": null
+    },
+    {
+      "id": "step_7_5_narrative_plan",
+      "num": "7.5",
+      "label": "行文思路规划",
+      "phase": "analyze",
+      "artifact": "05-analysis/narrative-plan.md",
+      "gateAfter": "gate_7"
+    },
+    {
+      "id": "step_8_red_team",
+      "num": "8",
+      "label": "反方审计",
+      "phase": "analyze",
+      "artifact": "06-review/red_team.md",
+      "gateAfter": null
+    },
+    {
+      "id": "step_9_final_report_draft",
+      "num": "9",
+      "label": "报告初稿",
+      "phase": "review",
+      "artifact": "07-output/final-report.md",
+      "gateAfter": null
+    },
+    {
+      "id": "step_9_5_independent_audit",
+      "num": "9.5",
+      "label": "独立审计",
+      "phase": "review",
+      "artifact": "06-review/audit_report.md",
+      "gateAfter": "gate_2"
+    },
+    {
+      "id": "step_9_6_adversarial_review",
+      "num": "9.6",
+      "label": "对抗式审核",
+      "phase": "review",
+      "artifact": "06-review/adversarial_review.json",
+      "gateAfter": "gate_5"
+    },
+    {
+      "id": "step_10_reader_simulation",
+      "num": "10",
+      "label": "读者模拟",
+      "phase": "review",
+      "artifact": "06-review/reader_diagnosis.json",
+      "gateAfter": "gate_3"
+    },
+    {
+      "id": "step_10_5_write_read_rewrite",
+      "num": "10.5",
+      "label": "写-读-改闭环",
+      "phase": "review",
+      "artifact": "06-review/iteration_state.json",
+      "gateAfter": "gate_8"
+    },
+    {
+      "id": "step_11_trace_manifest",
+      "num": "11",
+      "label": "溯源清单",
+      "phase": "deliver",
+      "artifact": "07-output/trace-manifest.json",
+      "gateAfter": null
+    },
+    {
+      "id": "step_12_view_model",
+      "num": "12",
+      "label": "视图模型",
+      "phase": "deliver",
+      "artifact": "07-output/view-model.json",
+      "gateAfter": null
+    },
+    {
+      "id": "step_13_html_build",
+      "num": "13",
+      "label": "HTML构建",
+      "phase": "deliver",
+      "artifact": "08-html/index.html",
+      "gateAfter": "gate_9"
+    },
+    {
+      "id": "step_14_validate",
+      "num": "14",
+      "label": "验证",
+      "phase": "deliver",
+      "artifact": "validation report",
+      "gateAfter": null
+    },
+    {
+      "id": "step_15_publish",
+      "num": "15",
+      "label": "发布",
+      "phase": "deliver",
+      "artifact": "桌面副本",
+      "gateAfter": null
+    }
+  ],
+  "gates": [
+    {
+      "id": "gate_1",
+      "number": 1,
+      "name": "核心对象直采",
+      "afterStep": "step_6_5_core_objects_fetch",
+      "requirement": "直采日志存在且达标"
+    },
+    {
+      "id": "gate_2",
+      "number": 2,
+      "name": "独立审计",
+      "afterStep": "step_9_5_independent_audit",
+      "requirement": "audit_report.md 5 问全 PASS"
+    },
+    {
+      "id": "gate_3",
+      "number": 3,
+      "name": "读者模拟",
+      "afterStep": "step_10_reader_simulation",
+      "requirement": "reader_diagnosis.json + reader_feedback.md"
+    },
+    {
+      "id": "gate_4",
+      "number": 4,
+      "name": "方向选择",
+      "afterStep": "step_1_5_direction_selection",
+      "requirement": "≥2 边界问题 + 用户回答"
+    },
+    {
+      "id": "gate_5",
+      "number": 5,
+      "name": "对抗式审核",
+      "afterStep": "step_9_6_adversarial_review",
+      "requirement": "≥3 攻击 + 每个攻击有回应"
+    },
+    {
+      "id": "gate_6",
+      "number": 6,
+      "name": "第一性原理",
+      "afterStep": "step_9_final_report_draft",
+      "requirement": "意图层/任务层/报告层三层齐备"
+    },
+    {
+      "id": "gate_7",
+      "number": 7,
+      "name": "行文思路规划",
+      "afterStep": "step_7_5_narrative_plan",
+      "requirement": "narrative-plan.md ≥500 字符 + 4 关键词"
+    },
+    {
+      "id": "gate_8",
+      "number": 8,
+      "name": "写-读-改闭环",
+      "afterStep": "step_10_5_write_read_rewrite",
+      "requirement": "rewrite_instructions.json + 执行重写（≤2 轮）"
+    },
+    {
+      "id": "gate_9",
+      "number": 9,
+      "name": "美学合规验证",
+      "afterStep": "step_13_html_build",
+      "requirement": "禁止模式 + 必须结构 + 视觉量化"
+    }
+  ]
+};
