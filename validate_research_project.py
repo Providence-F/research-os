@@ -28,6 +28,12 @@ v1.3 变更（从 v1.2）：
   - 增强独立审计检查（从"PASS字符串"升级为"5问结构化检查"）
   - 增强反方审计检查（从"字符数"升级为"攻击次数+降级次数"）
   - 新增 step_1_5 和 step_9_6 到 STEP_ARTIFACTS 和 STEP_DEPENDENCIES
+
+v1.5 变更（从 v1.4）：
+  - 新增 step_10_5 写-读-改闭环产物检查（rewrite_instructions.json + iteration_state.json）
+  - 补全 step_10.5/11/12/13 依赖链（11 依赖 10.5，12 依赖 11，13 依赖 10.5+12）
+  - JSON_FIELD_REQUIREMENTS 新增 rewrite_instructions/iteration_state 字段非空检查
+  - 版本头统一 v1.5（治理修复）
 """
 
 from __future__ import annotations
@@ -100,6 +106,12 @@ JSON_FIELD_REQUIREMENTS = {
     "02-sources/candidate_pool.json": {
         "items": list,
     },
+    "06-review/rewrite_instructions.json": {
+        "instructions": list,
+    },
+    "06-review/iteration_state.json": {
+        "history": list,
+    },
 }
 
 TASK_CARD_REQUIRED_SECTIONS = {
@@ -125,6 +137,7 @@ STEP_ARTIFACTS = {
     "step_9_5_independent_audit": {"required": ["06-review/audit_report.md"]},
     "step_9_6_adversarial_review": {"required": ["06-review/adversarial_review.json"]},
     "step_10_reader_simulation": {"required": ["06-review/reader_diagnosis.json", "06-review/reader_feedback.md"]},
+    "step_10_5_write_read_rewrite": {"required": ["06-review/rewrite_instructions.json", "06-review/iteration_state.json"]},
     "step_11_trace_manifest": {"required": ["07-output/trace-manifest.json"]},
     "step_12_view_model": {"required": ["07-output/view-model.json"]},
     "step_13_html_build": {"required": ["08-html/index.html"]},
@@ -140,7 +153,10 @@ STEP_DEPENDENCIES = {
     "step_9_5_independent_audit": ["step_9_final_report_draft"],
     "step_9_6_adversarial_review": ["step_9_5_independent_audit"],
     "step_10_reader_simulation": ["step_9_6_adversarial_review"],
-    "step_13_html_build": ["step_10_reader_simulation", "step_12_view_model"],
+    "step_10_5_write_read_rewrite": ["step_10_reader_simulation"],
+    "step_11_trace_manifest": ["step_10_5_write_read_rewrite"],
+    "step_12_view_model": ["step_11_trace_manifest"],
+    "step_13_html_build": ["step_10_5_write_read_rewrite", "step_12_view_model"],
 }
 
 DEPTH_METRICS = {
@@ -531,7 +547,7 @@ def check_prerequisite_gate(project, checks):
 DEVELOPER_TERMS = [
     "step_", "final-report", "view-model", ".json", "schema_version",
     "_design", "intent_doc", "research_state", "meta_validator",
-    "trust_ledger", "build_research_html", "dumb_tools",
+    "trust_ledger", "build_html", "dumb_tools",
     "07-output", "00-task", "01-plan", "06-review",
 ]
 

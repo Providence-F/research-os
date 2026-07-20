@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Research OS — 深度调研工作流系统 · 产品作品集</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#faf9f5;--bg-card:#fff;--bg-soft:#f5f4ee;--fg:#1a1a1a;--fg-soft:#3d3d3d;--muted:#6b6b6b;--muted-2:#8e8e8e;--line:#e5e3d8;--line-soft:#ede9dd;--accent:#b85b44;--accent-soft:#f5e8e0;--accent-bg:#fdf6f0;--ok:#4a7a4a;--ok-bg:#eef5ee;--caution:#b8732e;--caution-bg:#fbf0e0;--font-serif:"Lora","Noto Serif SC",Georgia,serif;--font-sans:"Inter",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;--font-mono:"JetBrains Mono",Consolas,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-serif);font-size:16px;line-height:1.75;-webkit-font-smoothing:antialiased}
+.reading-progress{position:fixed;top:0;left:0;height:2px;background:var(--accent);width:0;z-index:50;transition:width .1s ease-out}
+.nav{position:sticky;top:0;z-index:40;background:rgba(250,249,245,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:.75rem 2rem}
+.nav-inner{max-width:72rem;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:2rem}
+.nav-logo{font-family:var(--font-sans);font-size:14px;font-weight:700;color:var(--accent)}
+.nav-links{display:flex;gap:1.5rem;font-family:var(--font-sans);font-size:13px}
+.nav-links a{color:var(--fg-soft);text-decoration:none;transition:color .15s}
+.nav-links a:hover{color:var(--accent)}
+.hero{max-width:72rem;margin:0 auto;padding:5rem 2rem 3rem}
+.hero-kicker{font-family:var(--font-sans);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:1rem}
+.hero-title{font-family:var(--font-serif);font-size:42px;font-weight:700;line-height:1.2;letter-spacing:-.02em;margin-bottom:1.5rem}
+.hero-verdict{font-size:20px;font-weight:500;line-height:1.6;color:var(--fg-soft);margin-bottom:1.5rem}
+.hero-summary{font-size:16px;color:var(--muted);line-height:1.75;max-width:52rem}
+.hero-meta{display:flex;flex-wrap:wrap;gap:2rem;margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--line);font-family:var(--font-sans);font-size:13px;color:var(--muted)}
+.hero-meta-item{display:flex;flex-direction:column;gap:.25rem}
+.hero-meta-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted-2)}
+.hero-meta-value{font-size:14px;color:var(--fg-soft);font-weight:500}
+.section{max-width:72rem;margin:0 auto;padding:3rem 2rem}
+.section-tag{font-family:var(--font-sans);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.75rem}
+.section-title{font-size:28px;font-weight:700;line-height:1.3;margin-bottom:1.5rem;letter-spacing:-.01em}
+.section-intro{font-size:16px;color:var(--muted);line-height:1.75;margin-bottom:2rem;max-width:52rem}
+.body-text{font-size:16px;color:var(--fg-soft);line-height:1.8;max-width:52rem;margin-bottom:1.25rem}
+.body-text strong{color:var(--fg);font-weight:600}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(20rem,1fr));gap:1.5rem;margin-bottom:2rem}
+.card{background:var(--bg-card);border:1px solid var(--line);border-radius:8px;padding:1.75rem;transition:box-shadow .2s,border-color .2s}
+.card:hover{border-color:var(--accent);box-shadow:0 4px 16px rgba(0,0,0,.06)}
+.card-icon{font-family:var(--font-sans);font-size:12px;font-weight:600;color:var(--accent);margin-bottom:.75rem;letter-spacing:.05em}
+.card-title{font-size:18px;font-weight:600;margin-bottom:.75rem}
+.card-body{font-size:14.5px;color:var(--fg-soft);line-height:1.7}
+.card-body ul{margin:.5rem 0 0 1.25rem;padding:0}
+.card-body li{margin-bottom:.4rem}
+.principle{background:var(--bg-card);border-left:3px solid var(--accent);padding:1.5rem 1.75rem;margin-bottom:1.5rem;border-radius:0 6px 6px 0}
+.principle-label{font-family:var(--font-sans);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:.5rem}
+.principle-text{font-size:17px;font-weight:600;line-height:1.6;margin-bottom:.75rem}
+.principle-explain{font-size:14.5px;color:var(--muted);line-height:1.75}
+.workflow-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:1rem;margin-bottom:2rem}
+.workflow-step{background:var(--bg-soft);border:1px solid var(--line-soft);border-radius:6px;padding:1rem 1.25rem}
+.workflow-step-num{font-family:var(--font-sans);font-size:11px;font-weight:600;color:var(--accent);margin-bottom:.25rem}
+.workflow-step-name{font-family:var(--font-sans);font-size:14px;font-weight:600;margin-bottom:.25rem}
+.workflow-step-desc{font-size:13px;color:var(--muted);line-height:1.5}
+.gate-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));gap:1rem;margin-bottom:2rem}
+.gate-item{background:var(--bg-card);border:1px solid var(--line);border-radius:6px;padding:1.25rem 1.5rem;border-left:3px solid var(--accent)}
+.gate-name{font-family:var(--font-sans);font-size:14px;font-weight:600;color:var(--fg);margin-bottom:.4rem}
+.gate-check{font-size:13.5px;color:var(--fg-soft);line-height:1.6;margin-bottom:.4rem}
+.gate-why{font-size:12.5px;color:var(--muted);line-height:1.55}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:1rem;margin-bottom:2rem}
+.stat-item{text-align:center;padding:1.5rem 1rem;background:var(--bg-card);border:1px solid var(--line);border-radius:8px}
+.stat-num{font-size:32px;font-weight:700;color:var(--accent);line-height:1;margin-bottom:.5rem}
+.stat-label{font-family:var(--font-sans);font-size:13px;color:var(--muted)}
+.timeline{position:relative;padding-left:2rem;margin-bottom:2rem}
+.timeline::before{content:'';position:absolute;left:.5rem;top:0;bottom:0;width:2px;background:var(--line)}
+.timeline-item{position:relative;margin-bottom:2rem}
+.timeline-item::before{content:'';position:absolute;left:-1.625rem;top:.375rem;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.timeline-version{font-family:var(--font-sans);font-size:12px;font-weight:600;color:var(--accent);margin-bottom:.25rem}
+.timeline-title{font-size:17px;font-weight:600;margin-bottom:.5rem}
+.timeline-body{font-size:14.5px;color:var(--fg-soft);line-height:1.7}
+strong{font-weight:600;color:var(--fg)}
+.footer{max-width:72rem;margin:0 auto;padding:3rem 2rem 4rem;border-top:1px solid var(--line);margin-top:2rem}
+.footer-text{font-family:var(--font-sans);font-size:13px;color:var(--muted);line-height:1.7}
+@media(max-width:768px){.hero{padding:3rem 1.5rem 2rem}.hero-title{font-size:30px}.hero-verdict{font-size:17px}.section{padding:2rem 1.5rem}.section-title{font-size:22px}.card-grid{grid-template-columns:1fr}.nav-links{display:none}}
+</style>
+</head>
+<body>
+<div class="reading-progress" id="progress"></div>
+<nav class="nav"><div class="nav-inner"><div class="nav-logo">Research OS</div><div class="nav-links"><a href="#overview">概览</a><a href="#background">背景</a><a href="#philosophy">设计哲学</a><a href="#system">系统设计</a><a href="#iteration">迭代</a></div></div></nav>
+
+<header class="hero">
+  <div class="hero-kicker">深度调研工作流系统 · 产品作品集</div>
+  <h1 class="hero-title">Research OS</h1>
+  <p class="hero-verdict">一个用于发现和填补知识盲区的深度调研系统。<br>把 LLM 的生成能力转化为可追溯、可审计的研究工作流。</p>
+  <p class="hero-summary">Research OS 把深度调研拆解成 16 个步骤和 8 个质量门禁，通过三权分立机制让调研过程白盒化。系统采用 Smart Agent. Dumb Tools. 设计哲学，已迭代至 v1.4，累计产出 20+ 份深度调研报告。</p>
+  <div class="hero-meta">
+    <div class="hero-meta-item"><span class="hero-meta-label">当前版本</span><span class="hero-meta-value">v1.4</span></div>
+    <div class="hero-meta-item"><span class="hero-meta-label">迭代轮次</span><span class="hero-meta-value">约 20 轮</span></div>
+    <div class="hero-meta-item"><span class="hero-meta-label">累计报告</span><span class="hero-meta-value">20+ 份</span></div>
+    <div class="hero-meta-item"><span class="hero-meta-label">核心流程</span><span class="hero-meta-value">16 步 + 8 门禁</span></div>
+  </div>
+</header>
+
+<section class="section" id="overview">
+  <div class="section-tag">产品概览</div>
+  <h2 class="section-title">这是什么</h2>
+  <p class="body-text">Research OS 是一套深度调研工作流系统。输入一个调研主题，系统会走完从方向选择、候选源采集、证据矩阵、反方审计到最终报告的完整流程，每一步都有明确的输入输出和质量检查点。</p>
+  <p class="body-text">和直接用大模型做调研的区别在于：每一段结论都能溯源到来源，每一个假设都记录了置信度，每一个核心判断都经过独立审计 Agent 的攻击验证。整个研究过程是白盒的，读者可以独立验证任何一个环节。</p>
+  <div class="stats-row">
+    <div class="stat-item"><div class="stat-num">16</div><div class="stat-label">工作流步骤</div></div>
+    <div class="stat-item"><div class="stat-num">8</div><div class="stat-label">质量门禁</div></div>
+    <div class="stat-item"><div class="stat-num">3</div><div class="stat-label">权分立机制</div></div>
+    <div class="stat-item"><div class="stat-num">20+</div><div class="stat-label">累计报告</div></div>
+  </div>
+</section>
+
+<section class="section" id="background">
+  <div class="section-tag">做这个产品的原因</div>
+  <h2 class="section-title">现有工具解决不了的问题</h2>
+  <p class="section-intro">这个产品起源于我自己做调研时遇到的困难，以及排查现有工具后发现的缺口。</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon">直接使用体验</div>
+      <div class="card-title">Kimi Deep Research 的局限</div>
+      <div class="card-body">
+        <ul>
+          <li>高质量产出强依赖提示词设计，使用门槛在用户侧</li>
+          <li>绑定 Kimi 网页端生态，通过 API 调用时质量不可控</li>
+          <li>产出偏论文风格，可读性弱</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-icon">开源工具排查</div>
+      <div class="card-title">开源 Deep Research 工具的缺口</div>
+      <div class="card-body">
+        <ul>
+          <li>部分工具内部流程黑盒，交叉验证和反向审计不足，数据可信度低</li>
+          <li>部分工具仍需精心设计提示词，且缺少意图识别模块</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-icon">核心痛点</div>
+      <div class="card-title">知识盲区的发现问题</div>
+      <div class="card-body">
+        <ul>
+          <li>做调研时经常不清楚自己有哪些知识盲区</li>
+          <li>例如面试涉及 B2B 产品知识框架、SaaS 权限分级等，事先并不知道自己缺这些知识</li>
+          <li>现有工具都假设用户能提出明确问题，但知识缺口往往在提问之前</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <p class="body-text">这三个层面的问题指向同一个需求：需要一个能帮助发现知识盲区、且研究过程可追溯的调研系统。现有工具在这个需求上都有缺口，这是做 Research OS 的直接原因。</p>
+</section>
+
+<section class="section" id="philosophy">
+  <div class="section-tag">设计哲学</div>
+  <h2 class="section-title">Smart Agent. Dumb Tools.</h2>
+  <p class="section-intro">这个原则是在迭代过程中形成的，不是一开始就设计好的。</p>
+
+  <p class="body-text">系统初版采用大量模板和规则约束 Agent 产出。实际使用中发现，规则越多，Agent 越容易找到绕过规则的方式，产出质量反而下降。每增加一条规则，都会被 Agent 以非预期的方式规避。</p>
+
+  <p class="body-text">这里存在一个矛盾：从第一性原理拆解技术栈时，要求 Agent 有自主推理和判断能力；但在工具层面堆叠规则要求 Agent 机械遵守，又是在压制这种能力。两者在方向上冲突，产出质量受制于这个矛盾。</p>
+
+  <div class="principle">
+    <div class="principle-label">原则</div>
+    <div class="principle-text">工具只做机械检查，语义判断交给 Agent</div>
+    <div class="principle-explain">工具只执行单一功能：存在性检查、字数统计、格式校验、字段值非空、正则匹配。所有涉及"好不好、要不要重写、质量高低"的判断由 Agent 推理完成。工具不硬编码项目特定信息，不用阈值做语义决策。</div>
+  </div>
+
+  <p class="body-text">这个原则和 Kimi 等端到端产品的思路不同。Kimi 在预训练和后训练阶段完成 Agent 调教，推理时不需要外部框架约束。Research OS 作为工作流系统，无法干预模型训练，因此在工具层保持简单，把推理空间留给 Agent。</p>
+
+  <p class="body-text">这个方向调整后，工具维护成本下降，Agent 产出质量回升。后续的迭代都围绕这个原则展开：发现工具做了语义判断就重构，发现规则可以被绕过就简化而不是加规则。</p>
+</section>
+
+<section class="section" id="system">
+  <div class="section-tag">系统设计</div>
+  <h2 class="section-title">工作流与质量门禁</h2>
+  <p class="section-intro">Smart Agent. Dumb Tools. 原则落地为三个机制：三权分立、16 步工作流、8 个质量门禁。</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon">机制一</div>
+      <div class="card-title">三权分立</div>
+      <div class="card-body">
+        <ul>
+          <li><strong>调研 Agent</strong>（生产权）：负责生成内容</li>
+          <li><strong>独立审计 Agent</strong>（验证权）：负责质疑结论，与生产 Agent 隔离</li>
+          <li><strong>工具</strong>（记录权）：只做机械检查，不做语义判断</li>
+        </ul>
+        <p style="margin-top:.75rem;color:var(--muted);font-size:13.5px">Agent 不能审计自己的产出，工具不能越权做语义判断。</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-icon">机制二</div>
+      <div class="card-title">内容与美学规范</div>
+      <div class="card-body">
+        <ul>
+          <li>内容层面：每段结论可溯源到来源和推理链</li>
+          <li>美学层面：Anthropic 米色风格、Lora 衬线正文、结构化块穿插</li>
+          <li>目标：产出本身有可读性，支持后续迭代</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:20px;font-weight:600;margin:2.5rem 0 1rem">16 步工作流（关键步骤）</h3>
+  <div class="workflow-grid">
+    <div class="workflow-step"><div class="workflow-step-num">Step 1.5</div><div class="workflow-step-name">方向选择</div><div class="workflow-step-desc">Kimi 式边界追问，防止范围过宽或过窄</div></div>
+    <div class="workflow-step"><div class="workflow-step-num">Step 5</div><div class="workflow-step-name">证据矩阵</div><div class="workflow-step-desc">交叉验证关键事实</div></div>
+    <div class="workflow-step"><div class="workflow-step-num">Step 6</div><div class="workflow-step-name">假设账本</div><div class="workflow-step-desc">记录假设和置信度</div></div>
+    <div class="workflow-step"><div class="workflow-step-num">Step 7.5</div><div class="workflow-step-name">行文思路规划</div><div class="workflow-step-desc">按认知递进组织章节</div></div>
+    <div class="workflow-step"><div class="workflow-step-num">Step 8</div><div class="workflow-step-name">反方审计</div><div class="workflow-step-desc">Agent 攻击自己的结论</div></div>
+    <div class="workflow-step"><div class="workflow-step-num">Step 9.6</div><div class="workflow-step-name">对抗式审核</div><div class="workflow-step-desc">第一性原理再分测试</div></div>
+  </div>
+
+  <h3 style="font-size:20px;font-weight:600;margin:2.5rem 0 1rem">8 个质量门禁（核心四个）</h3>
+  <div class="gate-grid">
+    <div class="gate-item">
+      <div class="gate-name">方向选择门禁</div>
+      <div class="gate-check">深度调研必须完成 Kimi 式边界追问</div>
+      <div class="gate-why">防止调研范围过宽或过窄</div>
+    </div>
+    <div class="gate-item">
+      <div class="gate-name">行动方案门禁</div>
+      <div class="gate-check">行动方案占报告比例 >= 15%</div>
+      <div class="gate-why">防止只分析不行动的倾向</div>
+    </div>
+    <div class="gate-item">
+      <div class="gate-name">对抗式审核门禁</div>
+      <div class="gate-check">对第一性原理执行再分测试，攻击数量 >= 3</div>
+      <div class="gate-why">确保核心原理不可再分，结论经过压力测试</div>
+    </div>
+    <div class="gate-item">
+      <div class="gate-name">独立审计门禁</div>
+      <div class="gate-check">5 问结构化检查</div>
+      <div class="gate-why">Agent 不能审计自己的产出</div>
+    </div>
+  </div>
+  <p class="body-text">这些门禁都是机械检查：工具只验证"有没有"、"够不够数"、"格式对不对"，不判断"好不好"。质量判断交给 Agent 和独立审计环节。</p>
+</section>
+
+<section class="section" id="iteration">
+  <div class="section-tag">迭代历程</div>
+  <h2 class="section-title">从 v0.1 到 v1.4</h2>
+  <p class="section-intro">系统的演进由实际使用驱动，没有预设路线图。每发现一个产出问题就迭代一轮。</p>
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-version">v0.1 — v0.3（2026-07-02）</div>
+      <div class="timeline-title">项目脚手架与第一份报告</div>
+      <div class="timeline-body">建立项目目录结构、任务卡模板、候选源采集流程。产出第一份报告，验证基本可行性。核心问题：输出不可信、过程不可追溯。</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-version">v0.4 — v0.6（2026-07-03 ~ 07-04）</div>
+      <div class="timeline-title">引入证据矩阵与独立审计</div>
+      <div class="timeline-body">新增证据矩阵、假设账本、核心对象直采协议、独立审计 Agent。第一次让调研质量可被机械检查。发现问题：Agent 自说自话，缺少反方视角。</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-version">v0.7（2026-07-05）</div>
+      <div class="timeline-title">Smart Agent. Dumb Tools. 原则确立</div>
+      <div class="timeline-body">经过初版堆叠规则失败的实践，确立工具只做机械检查、语义判断交给 Agent 的原则。修复 2 处违规（硬编码产品名）。通用 HTML 构建器上线。</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-version">v1.0 — v1.1（2026-07-09 ~ 07-10）</div>
+      <div class="timeline-title">行动方案门禁与 HTML 结构检查</div>
+      <div class="timeline-body">新增行动方案比例检查（>=15%），解决报告只分析不行动的问题。HTML 构建器增加 9 项结构检查，确保美学规范落地。</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-version">v1.2 — v1.3（2026-07-11 ~ 07-12）</div>
+      <div class="timeline-title">方向选择协议与对抗式审核</div>
+      <div class="timeline-body">新增 Kimi 式边界追问方向选择协议、对抗式审核协议、第一性原理三层检查。调研结论从 Agent 主观判断升级为经过攻击验证的存活结论。</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-version">v1.4（2026-07-12 ~ 07-15）</div>
+      <div class="timeline-title">行文思路规划与三级节点提纲法</div>
+      <div class="timeline-body">新增 step_7.5 行文思路规划，章节按认知递进组织。删除低价值人工确认点，改为 Agent 自主加独立审计验证。</div>
+    </div>
+  </div>
+  <p class="body-text">到目前为止系统已产出 20+ 份深度调研报告，每份报告都经过反方审计、独立审计和对抗式审核。每发现一个产出问题就迭代系统本身，累计约 20 轮迭代。</p>
+</section>
+
+<footer class="footer">
+  <p class="footer-text">Research OS v1.4 · 深度调研工作流系统<br>设计哲学：Smart Agent. Dumb Tools.</p>
+</footer>
+
+<script>
+window.addEventListener('scroll',function(){var h=window.innerHeight,d=document.documentElement.scrollHeight,s=window.scrollY||document.documentElement.scrollTop;document.getElementById('progress').style.width=(s/(d-h)*100)+'%'});
+</script>
+</body>
+</html>

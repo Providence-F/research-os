@@ -14,7 +14,7 @@ from research_status import inspect_project
 
 ROOT = Path(__file__).resolve().parent
 PLANNER = ROOT / "research_planner.py"
-BUILDER = ROOT / "build_research_html.py"
+BUILDER = ROOT / "build_html_v07.py"
 
 MANUAL_ACTIONS = {
     "fill_candidate_pool": "Fill 02-sources/candidate_pool.json with recalled sources/objects, then explicitly discard weak or irrelevant candidates with discard_reason.",
@@ -52,8 +52,8 @@ def run_step(project: Path, copy_desktop: bool = True) -> int:
     if action == "run_research_planner":
         return run_python(PLANNER, project)
     if action == "build_html":
-        args = ("--copy-desktop",) if copy_desktop else ()
-        return run_python(BUILDER, project, *args)
+        # v1.5: build_html_v07.py 不支持 --copy-desktop；桌面副本由 ros.py cmd_build 负责
+        return run_python(BUILDER, project)
     if action in MANUAL_ACTIONS:
         print(MANUAL_ACTIONS[action])
         return 2

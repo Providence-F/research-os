@@ -2,6 +2,63 @@
 
 所有版本变更记录。日期格式：YYYY-MM-DD。
 
+## [v1.5] - 2026-07-20
+
+### 系统级审核与治理修复（架构收敛 + 术语统一 + 看板重做）
+
+**问题背景**：全局审核发现 4 类系统性问题——
+1. **治理规则未强制执行**：版本号碎片化（13 个模板 v1.2 / 4 个 v1.3 / 7 个 v1.4），门禁数口径冲突（使用说明 8 vs 状态机 9），config.py 停在 v1.1，README 停在 v1.2
+2. **同一职责多个实现**：build_research_html.py 与 build_html_v07.py 双构建器并存，ros build 调旧构建器；dashboard.html / portfolio.html / test-write.txt 等死文件散落根目录
+3. **数据链断裂**：看板 React 应用数据靠手维护（projects.ts 硬编码），sync_dashboard.py 与在线看板脱节
+4. **规范与实现脱节**：验证器缺 step_10.5 产物检查与依赖链；术语混入外部品牌词；反方审计与对抗式审核职责边界不清
+
+**修复内容**：
+
+#### 组件 A：治理统一
+- config.py SYSTEM_VERSION：v1.1 → v1.5（恢复单一真相源地位）
+- 24 个模板 ros-version 头全部统一 v1.5
+- 00-使用说明：8 门禁 → 9 门禁（补门禁9 美学合规验证），模板数 19 → 24
+- README 从 v1.2 全面重写至 v1.5
+
+#### 组件 B：术语统一
+- 规范去外部品牌词：「Kimi式边界追问」→「边界追问」（规范应自包含）
+- 07-反方审计 / 21-对抗式审核协议：各自补充职责边界定义
+  - 反方审计（step_8）：**写报告前**攻击分析过程与证据链，产出 red_team.md
+  - 对抗式审核（step_9.6）：**报告写完后** subagent context 隔离攻击成稿，产出 adversarial_review.json
+
+#### 组件 C：架构收敛
+- HTML 构建器只留 build_html_v07.py；build_research_html.py 归档 archive/v1.5/
+- ros.py `ros build` 改调 build_html_v07
+- 死文件归档：dashboard.html / portfolio.html / test-write.txt → archive/v1.5/
+
+#### 组件 D：验证器补齐
+- STEP_ARTIFACTS 新增 step_10_5_write_read_rewrite（rewrite_instructions.json + iteration_state.json）
+- STEP_DEPENDENCIES 补齐：step_10_5 依赖 step_10；step_11/12 依赖 step_10_5；step_13 依赖 step_10_5
+- docstring 更新至 v1.5
+
+#### 组件 E：看板推倒重做
+- 看板重新定位为**系统运行状态的监视器**（不是宣传页）
+- 数据链：sync_dashboard.py 从 projects/ 自动生成 dashboard 数据，消除手维护
+- React 全重写：工作流形象化展示（16 步 + 9 门禁可视化）+ 项目真实状态（步骤进度/门禁通过情况/验证结果）
+
+**设计哲学不变**：Smart Agent. Dumb Tools.——所有新增检查仍是机械的，语义判断仍归 Agent。
+
+---
+
+## [v1.4.1] - 2026-07-18
+
+### 新增门禁 9：美学合规验证
+
+**问题背景**：AI眼镜深度调研报告 HTML 完全手写绕过美学规范，导致 10 项严重违规。原 HTML 门禁只列 9 项必须结构，未强制 Agent 从美学规范读取 CSS，未引用最小强制基线，导致 Agent 可以"凭记忆"生成不合规 HTML。
+
+**修复**：
+- 14-研究执行状态机：8 门禁 → 9 门禁，新增门禁9「美学合规验证」（步骤 13）
+- 要求 Agent 构建 HTML 时必须从 09-HTML美学规范.md 读取 CSS，禁止手写
+
+**遗留问题（v1.5 已修复）**：00-使用说明.md 未同步门禁数，造成 8 vs 9 口径冲突。
+
+---
+
 ## [v1.4] - 2026-07-12
 
 ### 核心升级：行文思路规划 + Kimi式边界追问 + 人工确认点精简

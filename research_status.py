@@ -28,6 +28,7 @@ VALIDATOR = Path(__file__).with_name("validate_research_project.py")
 STEP_ORDER = [
     ("scaffold", "research_state.json", True),
     ("route", "01-plan/route_result.json", True),
+    ("direction_selection", "00-task/direction_selection.json", True),
     ("task_card", "00-task/task-card.md", True),
     ("research_plan", "01-plan/research-plan.md", True),
     ("candidates", "02-sources/candidates.md", True),
@@ -36,8 +37,13 @@ STEP_ORDER = [
     ("hypothesis", "03-evidence/hypothesis_ledger.json", True),
     ("conflicts", "03-evidence/conflicts.md", True),
     ("analysis", "05-analysis", True),
+    ("narrative_plan", "05-analysis/narrative-plan.md", True),
     ("red_team", "06-review/red_team.md", True),
     ("report", "07-output/final-report.md", True),
+    ("audit", "06-review/audit_report.md", True),
+    ("adversarial_review", "06-review/adversarial_review.json", True),
+    ("reader_simulation", "06-review/reader_diagnosis.json", True),
+    ("rewrite_loop", "06-review/iteration_state.json", False),
     ("trace", "07-output/trace-manifest.json", True),
     ("view_model", "07-output/view-model.json", False),  # narrative 报告可空
     ("html", "08-html/index.html", False),  # R0/R1 可不要 HTML
@@ -47,6 +53,7 @@ STEP_ORDER = [
 NEXT_ACTION_BY_STEP = {
     "scaffold": "create_or_fix_research_state",
     "route": "run_research_router",
+    "direction_selection": "run_boundary_questioning_with_user",
     "task_card": "fill_task_card_then_wait_for_human_confirmation",
     "research_plan": "run_research_planner_then_wait_for_human_confirmation",
     "candidates": "fill_candidates_md",
@@ -55,9 +62,13 @@ NEXT_ACTION_BY_STEP = {
     "hypothesis": "update_hypothesis_ledger",
     "conflicts": "fill_conflicts_md",
     "analysis": "run_multi_agent_analysis",
+    "narrative_plan": "write_narrative_plan",
     "red_team": "run_red_team_review",
     "report": "write_final_report_draft",
+    "audit": "run_independent_audit",
+    "adversarial_review": "run_adversarial_subagent_review",
     "reader_simulation": "run_reader_simulation_and_rewrite",
+    "rewrite_loop": "execute_rewrite_instructions",
     "trace": "write_trace_manifest",
     "view_model": "write_view_model",
     "html": "build_html_then_check_aesthetics",

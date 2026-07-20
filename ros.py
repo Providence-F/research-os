@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Research OS unified CLI.
+"""Research OS unified CLI (v1.5: HTML build 走 build_html_v07，看板走 scripts/sync_dashboard.py).
 
 Single entry point that dispatches to the underlying workflow scripts.
 
@@ -25,9 +25,26 @@ from create_research_project import create_project, DEPTH_CHOICES, TYPE_CHOICES
 from research_planner import plan_project
 from research_status import inspect_project
 from research_run_step import run_step
-from validate_research_project import validate_project, print_checks
-from build_research_html import build
+from validate_research_project import validate_project
+from build_html_v07 import build_html
 from intent_discovery import discover as discover_intent
+
+
+def print_checks(checks):
+    """Render validator results in the same format as validate_research_project.py main()."""
+    pass_count = sum(1 for c in checks if c.level == "PASS")
+    warn_count = sum(1 for c in checks if c.level == "WARN")
+    fail_count = sum(1 for c in checks if c.level == "FAIL")
+    print(f"\n{'=' * 60}")
+    print(f"Research OS Dumb Validator")
+    print(f"{'=' * 60}\n")
+    for c in checks:
+        print(f"[{c.level:5}] {c.name}: {c.message}")
+    print(f"\n{'=' * 60}")
+    print(f"Summary: {pass_count} PASS / {warn_count} WARN / {fail_count} FAIL")
+    print(f"{'=' * 60}\n")
+    return 1 if fail_count else 0
+
 
 def _check_clarification_gate(project: Path) -> tuple[bool, str]:
     """v0.8 澄清门禁：检查 intent_doc 是否含未回答的 clarifying_questions
@@ -54,6 +71,7 @@ def _check_clarification_gate(project: Path) -> tuple[bool, str]:
     msg = "intent_doc 含未回答的澄清问题且标记阻塞 plan/run:\n" + "\n".join(reasons)
     msg += "\n\n请用 `ros discover` 重新跑意图发现并回答这些问题，或手动编辑 intent_doc.json 把对应问题的 answered 字段设为 true。"
     return False, msg
+
 
 
 
@@ -134,8 +152,19 @@ def cmd_build(args: argparse.Namespace) -> int:
                     print(f"[ok] 读者门禁通过（整体读懂度 {diag.overall_score:.2f}）")
             except Exception as exc:
                 print(f"[warn] reader_simulation 跳过：{exc}", file=sys.stderr)
-    out = build(project, not args.no_copy_desktop)
-    print(f"Wrote {out}")
+    html = build_html(project)
+    out = project / "08-html" / "index.html"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(html, encoding="utf-8")
+    print(f"Wrote {out} ({len(html):,} chars)")
+    if not args.no_copy_desktop:
+        import shutil
+        desktop_copy = Path.home() / "Desktop" / f"{project.name}.html"
+        try:
+            shutil.copy(out, desktop_copy)
+            print(f"Copied to {desktop_copy}")
+        except Exception as e:
+            print(f"[WARN] desktop copy failed: {e}", file=sys.stderr)
     return 0
 
 
@@ -304,6 +333,86 @@ def cmd_iterate(args: argparse.Namespace) -> int:
     return 1
 
 
+def cmd_confirm(args: argparse.Namespace) -> int:
+    """v0.10: 用户确认门禁。把 agent 理解的意图给用户确认，防止方向错。"""
+    import json
+    project = Path(args.project)
+    intent_path = project / "00-task" / "intent_doc.json"
+    if not intent_path.exists():
+        print(f"[FAIL] intent_doc.json not found: {intent_path}", file=sys.stderr)
+        return 1
+
+    intent = json.loads(intent_path.read_text(encoding="utf-8-sig"))
+    stated = intent.get("stated_intent", "")
+    resolved = intent.get("resolved_intent", "")
+    confidence = intent.get("confidence", "")
+
+    print("\n" + "=" * 60)
+    print("意图确认门禁 — 请确认 agent 对你需求的理解")
+    print("=" * 60)
+    print(f"\n你说的需求：")
+    print(f"  {stated}")
+    print(f"\nagent 理解你实际要的：")
+    print(f"  {resolved}")
+    print(f"\nagent 置信度：{confidence}")
+    print("\n" + "-" * 60)
+    print("请回答以下问题（直接输入，回车确认）：")
+    print("-" * 60)
+
+    # 收集用户确认
+    answers = {}
+    answers["understanding_correct"] = input("\n1. agent 的理解对吗？(y/n/部分): ").strip()
+    if answers["understanding_correct"].lower() in ("n", "部分", "no", "不对", "部分对"):
+        answers["corrected_intent"] = input("   请修正 agent 的理解：").strip()
+    else:
+        answers["corrected_intent"] = ""
+
+    answers["missing_needs"] = input("2. 有没有 agent 没理解到的需求？(没有则回车跳过): ").strip()
+    answers["priority_clarification"] = input("3. 这次调研最不能错的结论是什么？: ").strip()
+    answers["scope_confirmation"] = input("4. 范围确认：有什么是明确不要的？: ").strip()
+
+    # 写入 user_confirmation 字段
+    intent["user_confirmation"] = {
+        "confirmed_at": __import__("datetime").datetime.now().isoformat(),
+        "understanding_correct": answers["understanding_correct"],
+        "corrected_intent": answers["corrected_intent"],
+        "missing_needs": answers["missing_needs"],
+        "priority_clarification": answers["priority_clarification"],
+        "scope_confirmation": answers["scope_confirmation"],
+    }
+    intent_path.write_text(
+        json.dumps(intent, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    print(f"\n[ok] 确认已写入 {intent_path}")
+    print(f"  后续 ros plan 会读取 user_confirmation 字段")
+    return 0
+
+
+def cmd_dashboard(args: argparse.Namespace) -> int:
+    """v1.5: 同步看板数据（projects/ + CHANGELOG -> dashboard/src/data/*.ts）。
+
+    看板已改为 React 应用（dashboard/），本命令只负责数据链：
+    调用 scripts/sync_dashboard.py 生成数据文件，然后提示 npm build。
+    """
+    import subprocess
+    script = Path(__file__).parent / "scripts" / "sync_dashboard.py"
+    if not script.exists():
+        print(f"[FAIL] sync script not found: {script}", file=sys.stderr)
+        return 1
+    result = subprocess.run([sys.executable, str(script)], cwd=Path(__file__).parent)
+    if result.returncode != 0:
+        print("[FAIL] sync_dashboard.py failed", file=sys.stderr)
+        return 1
+    dash_dir = Path(__file__).parent / "dashboard"
+    print(f"[ok] 数据已同步到 {dash_dir / 'src' / 'data'}")
+    print("[next] 构建看板：cd dashboard && npm run build")
+    print("[next] 本地预览：cd dashboard && npm run dev")
+    if args.open:
+        print("[hint] --open 已废弃：React 看板需先 npm run build，或用 npm run dev 预览")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ros",
@@ -359,10 +468,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_dashboard = sub.add_parser(
         "dashboard",
-        help="v0.10: 生成系统看板 HTML（项目列表 + 系统演化 + 工作流可视化）",
+        help="v1.5: 同步看板数据到 dashboard/src/data（React 看板需另行 npm run build）",
     )
-    p_dashboard.add_argument("--no-copy-desktop", action="store_true", help="不拷贝到桌面（默认拷贝）")
-    p_dashboard.add_argument("--open", action="store_true", help="生成后浏览器打开")
+    p_dashboard.add_argument("--open", action="store_true", help="已废弃（保留兼容，不再生效）")
     p_dashboard.set_defaults(func=cmd_dashboard)
 
     p_config = sub.add_parser("config", help="Show current configuration")
@@ -455,74 +563,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-
-
-def cmd_confirm(args: argparse.Namespace) -> int:
-    """v0.10: 用户确认门禁。把 agent 理解的意图给用户确认，防止方向错。"""
-    import json
-    project = Path(args.project)
-    intent_path = project / "00-task" / "intent_doc.json"
-    if not intent_path.exists():
-        print(f"[FAIL] intent_doc.json not found: {intent_path}", file=sys.stderr)
-        return 1
-
-    intent = json.loads(intent_path.read_text(encoding="utf-8-sig"))
-    stated = intent.get("stated_intent", "")
-    resolved = intent.get("resolved_intent", "")
-    confidence = intent.get("confidence", "")
-
-    print("\n" + "=" * 60)
-    print("意图确认门禁 — 请确认 agent 对你需求的理解")
-    print("=" * 60)
-    print(f"\n你说的需求：")
-    print(f"  {stated}")
-    print(f"\nagent 理解你实际要的：")
-    print(f"  {resolved}")
-    print(f"\nagent 置信度：{confidence}")
-    print("\n" + "-" * 60)
-    print("请回答以下问题（直接输入，回车确认）：")
-    print("-" * 60)
-
-    # 收集用户确认
-    answers = {}
-    answers["understanding_correct"] = input("\n1. agent 的理解对吗？(y/n/部分): ").strip()
-    if answers["understanding_correct"].lower() in ("n", "部分", "no", "不对", "部分对"):
-        answers["corrected_intent"] = input("   请修正 agent 的理解：").strip()
-    else:
-        answers["corrected_intent"] = ""
-
-    answers["missing_needs"] = input("2. 有没有 agent 没理解到的需求？(没有则回车跳过): ").strip()
-    answers["priority_clarification"] = input("3. 这次调研最不能错的结论是什么？: ").strip()
-    answers["scope_confirmation"] = input("4. 范围确认：有什么是明确不要的？: ").strip()
-
-    # 写入 user_confirmation 字段
-    intent["user_confirmation"] = {
-        "confirmed_at": __import__("datetime").datetime.now().isoformat(),
-        "understanding_correct": answers["understanding_correct"],
-        "corrected_intent": answers["corrected_intent"],
-        "missing_needs": answers["missing_needs"],
-        "priority_clarification": answers["priority_clarification"],
-        "scope_confirmation": answers["scope_confirmation"],
-    }
-    intent_path.write_text(
-        json.dumps(intent, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-    print(f"\n[ok] 确认已写入 {intent_path}")
-    print(f"  后续 ros plan 会读取 user_confirmation 字段")
-    return 0
-
-
-def cmd_dashboard(args: argparse.Namespace) -> int:
-    """v0.10: 生成系统看板 HTML。"""
-    import build_dashboard
-    out = build_dashboard.build_dashboard(copy_desktop=not args.no_copy_desktop)
-    print(f"看板已生成：{out}")
-    if not args.no_copy_desktop:
-        import shutil
-        desktop = Path.home() / "Desktop" / "Research OS 看板.html"
-        print(f"桌面副本：{desktop}")
-    if args.open:
-        import webbrowser
-        webbrowser.open(f"file:///{out.as_posix()}")
-    return 0

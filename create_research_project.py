@@ -198,6 +198,7 @@ def build_state(name: str, rtype: str, depth: str) -> dict:
         "steps": {
             "step_0_scaffold": "done",
             "step_1_route": "pending",
+            "step_1_5_direction_selection": "pending",
             "step_2_task_card": "pending",
             "step_3_research_plan": "pending",
             "step_4_candidates": "pending",
@@ -209,7 +210,9 @@ def build_state(name: str, rtype: str, depth: str) -> dict:
             "step_8_red_team": "pending",
             "step_9_final_report_draft": "pending",
             "step_9_5_independent_audit": "pending",
+            "step_9_6_adversarial_review": "pending",
             "step_10_reader_simulation": "pending",
+            "step_10_5_write_read_rewrite": "pending",
             "step_11_trace_manifest": "pending",
             "step_12_view_model": "pending",
             "step_13_html_build": "pending",
