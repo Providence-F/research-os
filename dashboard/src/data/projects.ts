@@ -3,6 +3,192 @@ import type { ProjectPipeline } from './types';
 
 export const projects: ProjectPipeline[] = [
   {
+    "id": "agentic-os-smartphone",
+    "name": "agentic-os-smartphone",
+    "category": "主题研究",
+    "depth": "R2",
+    "status": "planned",
+    "tracked": true,
+    "currentStepIndex": 1,
+    "progress": 0.043,
+    "doneSteps": 1,
+    "steps": {
+      "step_0_scaffold": "done",
+      "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
+      "step_1_5_direction_selection": "pending",
+      "step_2_task_card": "pending",
+      "step_3_research_plan": "pending",
+      "step_4_candidates": "pending",
+      "step_5_evidence_matrix": "pending",
+      "step_6_hypothesis": "pending",
+      "step_6_5_core_objects_fetch": "pending",
+      "step_7_analysis": "pending",
+      "step_7_5_narrative_plan": "pending",
+      "step_8_red_team": "pending",
+      "step_9_final_report_draft": "pending",
+      "step_9_5_independent_audit": "pending",
+      "step_9_6_adversarial_review": "pending",
+      "step_10_reader_simulation": "pending",
+      "step_10_5_write_read_rewrite": "pending",
+      "step_11_trace_manifest": "pending",
+      "step_12_view_model": "pending",
+      "step_13_html_build": "pending",
+      "step_14_validate": "pending",
+      "step_15_publish": "pending"
+    },
+    "gates": [
+      {
+        "id": "gate_1",
+        "passed": true
+      },
+      {
+        "id": "gate_2",
+        "passed": true
+      },
+      {
+        "id": "gate_3",
+        "passed": true
+      },
+      {
+        "id": "gate_4",
+        "passed": true
+      },
+      {
+        "id": "gate_5",
+        "passed": true
+      },
+      {
+        "id": "gate_6",
+        "passed": true
+      },
+      {
+        "id": "gate_7",
+        "passed": true
+      },
+      {
+        "id": "gate_8",
+        "passed": false
+      },
+      {
+        "id": "gate_9",
+        "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": true
+      },
+      {
+        "id": "gate_12",
+        "passed": true
+      }
+    ],
+    "gatesPassed": 11,
+    "blockedGate": null,
+    "hasHtml": true,
+    "reportChars": 13693,
+    "evidenceCount": 0,
+    "lastActivity": "2026-07-21",
+    "summary": "Agentic OS 与智能体手机：架构革命还是营销概念"
+  },
+  {
+    "id": "embodied-intelligence-form-factor-debate",
+    "name": "embodied-intelligence-form-factor-debate",
+    "category": "行业赛道",
+    "depth": "R2",
+    "status": "planned",
+    "tracked": true,
+    "currentStepIndex": 20,
+    "progress": 0.913,
+    "doneSteps": 21,
+    "steps": {
+      "step_0_scaffold": "done",
+      "step_1_route": "done",
+      "step_1_2_intent_discovery": "done",
+      "step_1_5_direction_selection": "done",
+      "step_2_task_card": "done",
+      "step_3_research_plan": "done",
+      "step_4_candidates": "done",
+      "step_5_evidence_matrix": "done",
+      "step_6_hypothesis": "done",
+      "step_6_5_core_objects_fetch": "done",
+      "step_7_analysis": "done",
+      "step_7_5_narrative_plan": "done",
+      "step_8_red_team": "done",
+      "step_9_final_report_draft": "done",
+      "step_9_5_independent_audit": "done",
+      "step_9_6_adversarial_review": "done",
+      "step_10_reader_simulation": "done",
+      "step_10_5_write_read_rewrite": "done",
+      "step_11_trace_manifest": "done",
+      "step_12_view_model": "done",
+      "step_13_html_build": "pending",
+      "step_14_validate": "pending",
+      "step_15_publish": "done"
+    },
+    "gates": [
+      {
+        "id": "gate_1",
+        "passed": true
+      },
+      {
+        "id": "gate_2",
+        "passed": true
+      },
+      {
+        "id": "gate_3",
+        "passed": true
+      },
+      {
+        "id": "gate_4",
+        "passed": true
+      },
+      {
+        "id": "gate_5",
+        "passed": true
+      },
+      {
+        "id": "gate_6",
+        "passed": true
+      },
+      {
+        "id": "gate_7",
+        "passed": true
+      },
+      {
+        "id": "gate_8",
+        "passed": true
+      },
+      {
+        "id": "gate_9",
+        "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": true
+      },
+      {
+        "id": "gate_12",
+        "passed": true
+      }
+    ],
+    "gatesPassed": 12,
+    "blockedGate": null,
+    "hasHtml": true,
+    "reportChars": 20003,
+    "evidenceCount": 30,
+    "lastActivity": "2026-07-21",
+    "summary": "具身智能形态选择之争——拟人路径是技术理性还是资本叙事"
+  },
+  {
     "id": "入户访谈AI辅助形态调研",
     "name": "入户访谈AI辅助形态调研",
     "category": "用户研究",
@@ -100,11 +286,11 @@ export const projects: ProjectPipeline[] = [
     "name": "用户访谈行业弊端深度调研",
     "category": "行业赛道",
     "depth": "R2",
-    "status": "in_progress",
+    "status": "completed",
     "tracked": true,
     "currentStepIndex": 2,
-    "progress": 0.304,
-    "doneSteps": 7,
+    "progress": 0.957,
+    "doneSteps": 22,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "done",
@@ -114,34 +300,34 @@ export const projects: ProjectPipeline[] = [
       "step_3_research_plan": "done",
       "step_4_candidates": "done",
       "step_5_evidence_matrix": "done",
-      "step_6_hypothesis": "pending",
-      "step_6_5_core_objects_fetch": "pending",
-      "step_7_analysis": "pending",
-      "step_7_5_narrative_plan": "pending",
-      "step_8_red_team": "pending",
-      "step_9_final_report_draft": "pending",
-      "step_9_5_independent_audit": "pending",
-      "step_9_6_adversarial_review": "pending",
-      "step_10_reader_simulation": "pending",
-      "step_10_5_write_read_rewrite": "pending",
-      "step_11_trace_manifest": "pending",
-      "step_12_view_model": "pending",
-      "step_13_html_build": "pending",
-      "step_14_validate": "pending",
-      "step_15_publish": "pending"
+      "step_6_hypothesis": "done",
+      "step_6_5_core_objects_fetch": "done",
+      "step_7_analysis": "done",
+      "step_7_5_narrative_plan": "done",
+      "step_8_red_team": "done",
+      "step_9_final_report_draft": "done",
+      "step_9_5_independent_audit": "done",
+      "step_9_6_adversarial_review": "done",
+      "step_10_reader_simulation": "done",
+      "step_10_5_write_read_rewrite": "done",
+      "step_11_trace_manifest": "done",
+      "step_12_view_model": "done",
+      "step_13_html_build": "done",
+      "step_14_validate": "done",
+      "step_15_publish": "done"
     },
     "gates": [
       {
         "id": "gate_1",
-        "passed": false
+        "passed": true
       },
       {
         "id": "gate_2",
-        "passed": false
+        "passed": true
       },
       {
         "id": "gate_3",
-        "passed": false
+        "passed": true
       },
       {
         "id": "gate_4",
@@ -149,7 +335,7 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_5",
-        "passed": false
+        "passed": true
       },
       {
         "id": "gate_6",
@@ -157,15 +343,15 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_7",
-        "passed": false
+        "passed": true
       },
       {
         "id": "gate_8",
-        "passed": false
+        "passed": true
       },
       {
         "id": "gate_9",
-        "passed": false
+        "passed": true
       },
       {
         "id": "gate_10",
@@ -173,17 +359,17 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_11",
-        "passed": false
+        "passed": true
       },
       {
         "id": "gate_12",
         "passed": true
       }
     ],
-    "gatesPassed": 4,
+    "gatesPassed": 12,
     "blockedGate": null,
-    "hasHtml": false,
-    "reportChars": 1379,
+    "hasHtml": true,
+    "reportChars": 17733,
     "evidenceCount": 105,
     "lastActivity": "2026-07-21",
     "summary": "重构 Mizzen insight 人类访谈辅助功能方案的底层认知依据（第一性原理拆解 + AI 不可替代性论证 + 机会点清单）"
