@@ -5,10 +5,10 @@ export const stats: SystemStats = {
   "totalProjects": 59,
   "published": 21,
   "inPipeline": 23,
-  "blocked": 3,
+  "blocked": 0,
   "untracked": 15,
   "totalEvidence": 512,
   "totalReportChars": 661944,
-  "currentVersion": "v1.5",
-  "syncedAt": "2026-07-21 01:21"
+  "currentVersion": "v2.0",
+  "syncedAt": "2026-07-21 12:42"
 };

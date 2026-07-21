@@ -14,9 +14,18 @@
   python concept_ladder_helper.py <project_dir>
   → 读取 00-task/intent_doc.json 的 concept_ladder_seed
   → 输出 07-output/view-model.json 的 concept_ladder 字段（6 层解释）
+
+数据流（v2.0 明确，已联通）：
+  intent_discovery 固化 00-task/intent_doc.json 的 v07.concept_ladder_seed（术语种子）
+  → 本工具 update_view_model 读 seed、生成 6 层解释，写入 07-output/view-model.json
+    的 concept_ladder 字段
+  → check_term_explanations 对 final-report.md 做报告术语解释检查：
+    机械判断每个种子术语后 100 字符内是否带解释性标点（：或（或——）。
+    纯字符匹配，不判断解释质量（质量判断是 Agent 的事，符合 Dumb Tools）。
 """
 from __future__ import annotations
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -254,6 +263,37 @@ def update_view_model(project: Path) -> int:
     filled = sum(1 for e in enriched if not e.get("_needs_manual_fill"))
     print(f"[ok] concept_ladder written: {filled}/{len(enriched)} 已填，{len(enriched)-filled} 待人工")
     return 0
+
+
+# 解释性标点：全角冒号、半角冒号、全角括号、半角括号、破折号（—— 含单个 —）
+EXPLANATION_MARKS = "：:（(—–"
+
+
+def check_term_explanations(report_text: str, terms: list) -> dict:
+    """机械检查报告里每个术语是否带解释（v2.0 报告术语解释检查）。
+
+    规则：术语任意一次出现后 100 字符内存在解释性标点（：或（或——）
+    即视为 covered。纯字符匹配，不判断解释质量——质量判断是 Agent 的事。
+
+    返回 {"covered": [...], "missing": [...], "coverage": float}
+    """
+    covered: list[str] = []
+    missing: list[str] = []
+    for term in terms:
+        term = str(term).strip()
+        if not term:
+            continue
+        pattern = re.compile(re.escape(term) + r"[\s\S]{0,100}[" + EXPLANATION_MARKS + "]")
+        if pattern.search(report_text):
+            covered.append(term)
+        else:
+            missing.append(term)
+    total = len(covered) + len(missing)
+    return {
+        "covered": covered,
+        "missing": missing,
+        "coverage": round(len(covered) / total, 3) if total else 0.0,
+    }
 
 
 if __name__ == "__main__":

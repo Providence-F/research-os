@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""sync_dashboard.py — Research OS v1.5 看板数据链
+"""sync_dashboard.py — Research OS v2.0 看板数据链
 
 从 projects/ 真实数据 + workflow_def.py 工作流定义，生成看板数据文件：
-  dashboard/src/data/workflow.ts   工作流定义（22 步 + 9 门禁 + 5 阶段）
+  dashboard/src/data/workflow.ts   工作流定义（23 步 + 12 门禁 + 5 阶段）
   dashboard/src/data/projects.ts   项目流水线状态（位置/进度/门禁/健康度）
   dashboard/src/data/versions.ts   版本时间线（从 CHANGELOG.md）
   dashboard/src/data/stats.ts      系统级统计

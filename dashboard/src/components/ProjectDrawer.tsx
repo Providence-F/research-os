@@ -1,5 +1,5 @@
 // src/components/ProjectDrawer.tsx
-// 项目详情抽屉：22 步清单 + 9 门禁状态 + 元信息
+// 项目详情抽屉：23 步清单 + 12 门禁状态 + 元信息
 import type { ProjectPipeline } from "@/data/types";
 import { workflow } from "@/data/workflow";
 import { deriveHealth, HEALTH_META } from "@/lib/health";

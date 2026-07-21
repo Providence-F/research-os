@@ -1,5 +1,5 @@
 // src/data/types.ts
-// Research OS v1.5 看板数据模型 —— 流水线中心（pipeline-centric）
+// Research OS v2.0 看板数据模型 —— 流水线中心（pipeline-centric）
 // 看板定位：报告生产线的控制塔，不是项目宣传页。
 
 export type PhaseId = "define" | "collect" | "analyze" | "review" | "deliver";

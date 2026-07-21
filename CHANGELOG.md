@@ -2,6 +2,30 @@
 
 所有版本变更记录。日期格式：YYYY-MM-DD。
 
+## [v2.0] - 2026-07-21
+
+### 新增
+- 意图拆解协议（24 号模板）：5 轮探索（R1 字面 → R2 差距 → R3 意图树 → R4 路径 → R5 问题说明书），意图树 L0-L4 分层，候选路径剪枝机制
+- 洞察账本协议（25 号模板）：insight_ledger.json，洞察判定三条件（反共识/可证伪/决策力），状态流转 draft→verified/downgraded/rejected
+- 叙事原型系统（23 号重构）：6 种 archetype 替代单一行文思路，选择矩阵 + why_not 防默认
+- 双读者模拟（reader_simulation v2.0）：outsider + layman 双视角，独立阈值
+- 3 个新门禁：gate_10 意图树完整性、gate_11 洞察账本、gate_12 跨产物一致性
+- 验证器 7 个新检查函数（intent_tree / insight_ledger / archetype / reader_v2 / term_coverage / hard_constraints / cross_artifact）
+
+### 变更
+- 08-最终报告瘦身至原 40%，H1-H12 硬约束清单替代混合内容
+- intent_discovery.py 从 3 轮扩到 5 轮，新增 revise_intent_tree 支持中途修订
+- workflow_def.py 22→23 步，9→12 门禁
+- 14-研究执行状态机.md 追加 v2.0 变更摘要
+- 全部模板版本头统一 v2.0
+- config.py SYSTEM_VERSION v1.5 → v2.0
+- 00-使用说明 / README / CHANGELOG / 看板数据同步至 v2.0
+
+### 修复
+- （无 bug 修复，本次为计划性大版本升级）
+
+---
+
 ## [v1.5] - 2026-07-20
 
 ### 系统级审核与治理修复（架构收敛 + 术语统一 + 看板重做）

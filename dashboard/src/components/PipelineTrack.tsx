@@ -1,5 +1,5 @@
 // src/components/PipelineTrack.tsx
-// 流水线轨道：22 步 + 9 门禁 + 项目 token 落点 —— 看板主视觉
+// 流水线轨道：23 步 + 12 门禁 + 项目 token 落点 —— 看板主视觉
 import { useMemo } from "react";
 import { workflow } from "@/data/workflow";
 import type { ProjectPipeline } from "@/data/types";

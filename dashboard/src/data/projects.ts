@@ -9,12 +9,13 @@ export const projects: ProjectPipeline[] = [
     "depth": "R2",
     "status": "in_progress",
     "tracked": true,
-    "currentStepIndex": 14,
-    "progress": 0.864,
+    "currentStepIndex": 2,
+    "progress": 0.826,
     "doneSteps": 19,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "done",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "done",
       "step_2_task_card": "done",
       "step_3_research_plan": "done",
@@ -72,10 +73,22 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 4,
-    "blockedGate": "gate_1",
+    "gatesPassed": 6,
+    "blockedGate": null,
     "hasHtml": true,
     "reportChars": 20900,
     "evidenceCount": 55,
@@ -90,11 +103,12 @@ export const projects: ProjectPipeline[] = [
     "status": "planned",
     "tracked": true,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -152,9 +166,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 8,
+    "gatesPassed": 10,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 49131,
@@ -170,11 +196,12 @@ export const projects: ProjectPipeline[] = [
     "status": "planned",
     "tracked": true,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -232,9 +259,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 1,
+    "gatesPassed": 3,
     "blockedGate": null,
     "hasHtml": false,
     "reportChars": 3469,
@@ -250,11 +289,12 @@ export const projects: ProjectPipeline[] = [
     "status": "planned",
     "tracked": true,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -312,9 +352,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 1,
+    "gatesPassed": 3,
     "blockedGate": null,
     "hasHtml": false,
     "reportChars": 3469,
@@ -330,11 +382,12 @@ export const projects: ProjectPipeline[] = [
     "status": "planned",
     "tracked": true,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -392,9 +445,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 1,
+    "gatesPassed": 3,
     "blockedGate": null,
     "hasHtml": false,
     "reportChars": 3469,
@@ -410,11 +475,12 @@ export const projects: ProjectPipeline[] = [
     "status": "planned",
     "tracked": true,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -472,9 +538,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 1,
+    "gatesPassed": 3,
     "blockedGate": null,
     "hasHtml": false,
     "reportChars": 3469,
@@ -490,11 +568,12 @@ export const projects: ProjectPipeline[] = [
     "status": "planned",
     "tracked": true,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -552,9 +631,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 1,
+    "gatesPassed": 3,
     "blockedGate": null,
     "hasHtml": false,
     "reportChars": 3469,
@@ -570,11 +661,12 @@ export const projects: ProjectPipeline[] = [
     "status": "planned",
     "tracked": true,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -632,9 +724,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 1,
+    "gatesPassed": 3,
     "blockedGate": null,
     "hasHtml": false,
     "reportChars": 3467,
@@ -650,11 +754,12 @@ export const projects: ProjectPipeline[] = [
     "status": "planned",
     "tracked": true,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -712,9 +817,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 1,
+    "gatesPassed": 3,
     "blockedGate": null,
     "hasHtml": false,
     "reportChars": 3469,
@@ -730,11 +847,12 @@ export const projects: ProjectPipeline[] = [
     "status": "planned",
     "tracked": true,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -792,9 +910,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 1,
+    "gatesPassed": 3,
     "blockedGate": null,
     "hasHtml": false,
     "reportChars": 3469,
@@ -810,11 +940,12 @@ export const projects: ProjectPipeline[] = [
     "status": "planned",
     "tracked": true,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -872,9 +1003,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 8,
+    "gatesPassed": 10,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 27715,
@@ -890,11 +1033,12 @@ export const projects: ProjectPipeline[] = [
     "status": "untracked",
     "tracked": false,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -951,6 +1095,18 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_9",
+        "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
         "passed": false
       }
     ],
@@ -969,12 +1125,13 @@ export const projects: ProjectPipeline[] = [
     "depth": "R2",
     "status": "completed",
     "tracked": true,
-    "currentStepIndex": 16,
-    "progress": 0.955,
+    "currentStepIndex": 2,
+    "progress": 0.913,
     "doneSteps": 21,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "done",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "done",
       "step_2_task_card": "done",
       "step_3_research_plan": "done",
@@ -1032,9 +1189,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 8,
+    "gatesPassed": 10,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 6519,
@@ -1050,11 +1219,12 @@ export const projects: ProjectPipeline[] = [
     "status": "untracked",
     "tracked": false,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -1111,6 +1281,18 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_9",
+        "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
         "passed": false
       }
     ],
@@ -1129,12 +1311,13 @@ export const projects: ProjectPipeline[] = [
     "depth": "R2",
     "status": "completed",
     "tracked": true,
-    "currentStepIndex": 16,
-    "progress": 0.955,
+    "currentStepIndex": 2,
+    "progress": 0.913,
     "doneSteps": 21,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "done",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "done",
       "step_2_task_card": "done",
       "step_3_research_plan": "done",
@@ -1192,9 +1375,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 8,
+    "gatesPassed": 10,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 7616,
@@ -1210,11 +1405,12 @@ export const projects: ProjectPipeline[] = [
     "status": "untracked",
     "tracked": false,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -1271,6 +1467,18 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_9",
+        "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
         "passed": false
       }
     ],
@@ -1290,11 +1498,12 @@ export const projects: ProjectPipeline[] = [
     "status": "untracked",
     "tracked": false,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -1351,6 +1560,18 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_9",
+        "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
         "passed": false
       }
     ],
@@ -1370,11 +1591,12 @@ export const projects: ProjectPipeline[] = [
     "status": "untracked",
     "tracked": false,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -1431,6 +1653,18 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_9",
+        "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
         "passed": false
       }
     ],
@@ -1450,11 +1684,12 @@ export const projects: ProjectPipeline[] = [
     "status": "untracked",
     "tracked": false,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -1511,6 +1746,18 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_9",
+        "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
         "passed": false
       }
     ],
@@ -1530,11 +1777,12 @@ export const projects: ProjectPipeline[] = [
     "status": "untracked",
     "tracked": false,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -1591,6 +1839,18 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_9",
+        "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
         "passed": false
       }
     ],
@@ -1610,11 +1870,12 @@ export const projects: ProjectPipeline[] = [
     "status": "untracked",
     "tracked": false,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -1671,6 +1932,18 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_9",
+        "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
         "passed": false
       }
     ],
@@ -1690,11 +1963,12 @@ export const projects: ProjectPipeline[] = [
     "status": "untracked",
     "tracked": false,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -1751,6 +2025,18 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_9",
+        "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
         "passed": false
       }
     ],
@@ -1770,11 +2056,12 @@ export const projects: ProjectPipeline[] = [
     "status": "untracked",
     "tracked": false,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -1831,6 +2118,18 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_9",
+        "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
         "passed": false
       }
     ],
@@ -1850,11 +2149,12 @@ export const projects: ProjectPipeline[] = [
     "status": "untracked",
     "tracked": false,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -1911,6 +2211,18 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_9",
+        "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
         "passed": false
       }
     ],
@@ -1930,11 +2242,12 @@ export const projects: ProjectPipeline[] = [
     "status": "untracked",
     "tracked": false,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -1991,6 +2304,18 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_9",
+        "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
         "passed": false
       }
     ],
@@ -2010,11 +2335,12 @@ export const projects: ProjectPipeline[] = [
     "status": "untracked",
     "tracked": false,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -2071,6 +2397,18 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_9",
+        "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
         "passed": false
       }
     ],
@@ -2090,11 +2428,12 @@ export const projects: ProjectPipeline[] = [
     "status": "untracked",
     "tracked": false,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -2151,6 +2490,18 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_9",
+        "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
         "passed": false
       }
     ],
@@ -2170,11 +2521,12 @@ export const projects: ProjectPipeline[] = [
     "status": "planned",
     "tracked": true,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -2232,9 +2584,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 5,
+    "gatesPassed": 7,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 14254,
@@ -2250,11 +2614,12 @@ export const projects: ProjectPipeline[] = [
     "status": "planned",
     "tracked": true,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -2312,9 +2677,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 8,
+    "gatesPassed": 10,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 19590,
@@ -2329,12 +2706,13 @@ export const projects: ProjectPipeline[] = [
     "depth": "R2",
     "status": "published",
     "tracked": true,
-    "currentStepIndex": 22,
-    "progress": 1.0,
+    "currentStepIndex": 2,
+    "progress": 0.957,
     "doneSteps": 22,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "done",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "done",
       "step_2_task_card": "done",
       "step_3_research_plan": "done",
@@ -2392,10 +2770,22 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 8,
-    "blockedGate": "gate_8",
+    "gatesPassed": 10,
+    "blockedGate": null,
     "hasHtml": true,
     "reportChars": 13564,
     "evidenceCount": 30,
@@ -2409,12 +2799,13 @@ export const projects: ProjectPipeline[] = [
     "depth": "R2",
     "status": "completed",
     "tracked": true,
-    "currentStepIndex": 22,
-    "progress": 1.0,
+    "currentStepIndex": 2,
+    "progress": 0.957,
     "doneSteps": 22,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "done",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "done",
       "step_2_task_card": "done",
       "step_3_research_plan": "done",
@@ -2472,10 +2863,22 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 8,
-    "blockedGate": "gate_8",
+    "gatesPassed": 10,
+    "blockedGate": null,
     "hasHtml": true,
     "reportChars": 17943,
     "evidenceCount": 30,
@@ -2489,12 +2892,13 @@ export const projects: ProjectPipeline[] = [
     "depth": "R2",
     "status": "completed",
     "tracked": true,
-    "currentStepIndex": 16,
-    "progress": 0.955,
+    "currentStepIndex": 2,
+    "progress": 0.913,
     "doneSteps": 21,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "done",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "done",
       "step_2_task_card": "done",
       "step_3_research_plan": "done",
@@ -2552,9 +2956,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 8,
+    "gatesPassed": 10,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 16428,
@@ -2569,12 +2985,13 @@ export const projects: ProjectPipeline[] = [
     "depth": "R2",
     "status": "completed",
     "tracked": true,
-    "currentStepIndex": 16,
-    "progress": 0.955,
+    "currentStepIndex": 2,
+    "progress": 0.913,
     "doneSteps": 21,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "done",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "done",
       "step_2_task_card": "done",
       "step_3_research_plan": "done",
@@ -2632,9 +3049,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 8,
+    "gatesPassed": 10,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 21799,
@@ -2649,12 +3078,13 @@ export const projects: ProjectPipeline[] = [
     "depth": "R2",
     "status": "validated",
     "tracked": true,
-    "currentStepIndex": 16,
-    "progress": 0.955,
+    "currentStepIndex": 2,
+    "progress": 0.913,
     "doneSteps": 21,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "done",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "done",
       "step_2_task_card": "done",
       "step_3_research_plan": "done",
@@ -2712,9 +3142,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 8,
+    "gatesPassed": 10,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 8840,
@@ -2735,6 +3177,7 @@ export const projects: ProjectPipeline[] = [
     "steps": {
       "step_0_scaffold": "pending",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -2792,9 +3235,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": false
       }
     ],
-    "gatesPassed": 8,
+    "gatesPassed": 9,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 17151,
@@ -2815,6 +3270,7 @@ export const projects: ProjectPipeline[] = [
     "steps": {
       "step_0_scaffold": "pending",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -2872,6 +3328,18 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": false
       }
     ],
     "gatesPassed": 1,
@@ -2895,6 +3363,7 @@ export const projects: ProjectPipeline[] = [
     "steps": {
       "step_0_scaffold": "pending",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -2952,9 +3421,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 7,
+    "gatesPassed": 8,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 13316,
@@ -2969,12 +3450,13 @@ export const projects: ProjectPipeline[] = [
     "depth": "R2",
     "status": "validated",
     "tracked": true,
-    "currentStepIndex": 16,
-    "progress": 0.955,
+    "currentStepIndex": 2,
+    "progress": 0.913,
     "doneSteps": 21,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "done",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "done",
       "step_2_task_card": "done",
       "step_3_research_plan": "done",
@@ -3032,9 +3514,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 8,
+    "gatesPassed": 10,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 18291,
@@ -3050,11 +3544,12 @@ export const projects: ProjectPipeline[] = [
     "status": "planned",
     "tracked": true,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -3112,9 +3607,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 9,
+    "gatesPassed": 11,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 21855,
@@ -3129,12 +3636,13 @@ export const projects: ProjectPipeline[] = [
     "depth": "R2",
     "status": "published",
     "tracked": true,
-    "currentStepIndex": 10,
-    "progress": 0.909,
+    "currentStepIndex": 2,
+    "progress": 0.87,
     "doneSteps": 20,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "done",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "done",
       "step_2_task_card": "done",
       "step_3_research_plan": "done",
@@ -3192,9 +3700,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 7,
+    "gatesPassed": 9,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 11944,
@@ -3210,11 +3730,12 @@ export const projects: ProjectPipeline[] = [
     "status": "published",
     "tracked": true,
     "currentStepIndex": 2,
-    "progress": 0.818,
+    "progress": 0.783,
     "doneSteps": 18,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "done",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "done",
       "step_3_research_plan": "done",
@@ -3272,9 +3793,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 5,
+    "gatesPassed": 7,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 16456,
@@ -3290,11 +3823,12 @@ export const projects: ProjectPipeline[] = [
     "status": "published",
     "tracked": true,
     "currentStepIndex": 2,
-    "progress": 0.818,
+    "progress": 0.783,
     "doneSteps": 18,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "done",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "done",
       "step_3_research_plan": "done",
@@ -3352,9 +3886,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 5,
+    "gatesPassed": 7,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 23095,
@@ -3370,11 +3916,12 @@ export const projects: ProjectPipeline[] = [
     "status": "reader_simulating",
     "tracked": true,
     "currentStepIndex": 2,
-    "progress": 0.636,
+    "progress": 0.609,
     "doneSteps": 14,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "done",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "done",
       "step_3_research_plan": "done",
@@ -3432,9 +3979,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 2,
+    "gatesPassed": 4,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 25931,
@@ -3450,11 +4009,12 @@ export const projects: ProjectPipeline[] = [
     "status": "task_card_pending",
     "tracked": true,
     "currentStepIndex": 1,
-    "progress": 0.5,
+    "progress": 0.478,
     "doneSteps": 11,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "done",
       "step_3_research_plan": "done",
@@ -3512,9 +4072,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 5,
+    "gatesPassed": 7,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 13569,
@@ -3530,11 +4102,12 @@ export const projects: ProjectPipeline[] = [
     "status": "completed",
     "tracked": true,
     "currentStepIndex": 2,
-    "progress": 0.818,
+    "progress": 0.783,
     "doneSteps": 18,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "done",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "done",
       "step_3_research_plan": "done",
@@ -3592,9 +4165,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 5,
+    "gatesPassed": 7,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 21018,
@@ -3610,11 +4195,12 @@ export const projects: ProjectPipeline[] = [
     "status": "task_card_pending",
     "tracked": true,
     "currentStepIndex": 2,
-    "progress": 0.818,
+    "progress": 0.783,
     "doneSteps": 18,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "done",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "done",
       "step_3_research_plan": "done",
@@ -3672,9 +4258,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 5,
+    "gatesPassed": 7,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 14295,
@@ -3695,6 +4293,7 @@ export const projects: ProjectPipeline[] = [
     "steps": {
       "step_0_scaffold": "pending",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -3752,9 +4351,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 2,
+    "gatesPassed": 4,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 21087,
@@ -3775,6 +4386,7 @@ export const projects: ProjectPipeline[] = [
     "steps": {
       "step_0_scaffold": "pending",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -3832,9 +4444,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 2,
+    "gatesPassed": 4,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 31883,
@@ -3850,11 +4474,12 @@ export const projects: ProjectPipeline[] = [
     "status": "completed",
     "tracked": true,
     "currentStepIndex": 1,
-    "progress": 0.455,
+    "progress": 0.435,
     "doneSteps": 10,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -3912,9 +4537,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 5,
+    "gatesPassed": 7,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 5015,
@@ -3930,11 +4567,12 @@ export const projects: ProjectPipeline[] = [
     "status": "published",
     "tracked": true,
     "currentStepIndex": 1,
-    "progress": 0.682,
+    "progress": 0.652,
     "doneSteps": 15,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "done",
       "step_3_research_plan": "done",
@@ -3992,9 +4630,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 2,
+    "gatesPassed": 4,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 12907,
@@ -4015,6 +4665,7 @@ export const projects: ProjectPipeline[] = [
     "steps": {
       "step_0_scaffold": "pending",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -4072,9 +4723,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 2,
+    "gatesPassed": 4,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 9160,
@@ -4090,11 +4753,12 @@ export const projects: ProjectPipeline[] = [
     "status": "in_progress",
     "tracked": false,
     "currentStepIndex": 1,
-    "progress": 0.091,
+    "progress": 0.087,
     "doneSteps": 2,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -4151,6 +4815,18 @@ export const projects: ProjectPipeline[] = [
       },
       {
         "id": "gate_9",
+        "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
         "passed": false
       }
     ],
@@ -4175,6 +4851,7 @@ export const projects: ProjectPipeline[] = [
     "steps": {
       "step_0_scaffold": "pending",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -4232,9 +4909,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": false
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 1,
+    "gatesPassed": 2,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 36333,
@@ -4250,11 +4939,12 @@ export const projects: ProjectPipeline[] = [
     "status": "planned",
     "tracked": true,
     "currentStepIndex": 1,
-    "progress": 0.045,
+    "progress": 0.043,
     "doneSteps": 1,
     "steps": {
       "step_0_scaffold": "done",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -4312,9 +5002,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 2,
+    "gatesPassed": 4,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 5144,
@@ -4335,6 +5037,7 @@ export const projects: ProjectPipeline[] = [
     "steps": {
       "step_0_scaffold": "pending",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -4392,9 +5095,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 3,
+    "gatesPassed": 5,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 5306,
@@ -4415,6 +5130,7 @@ export const projects: ProjectPipeline[] = [
     "steps": {
       "step_0_scaffold": "pending",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -4472,9 +5188,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 2,
+    "gatesPassed": 4,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 15417,
@@ -4495,6 +5223,7 @@ export const projects: ProjectPipeline[] = [
     "steps": {
       "step_0_scaffold": "pending",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -4552,9 +5281,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 2,
+    "gatesPassed": 4,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 12336,
@@ -4575,6 +5316,7 @@ export const projects: ProjectPipeline[] = [
     "steps": {
       "step_0_scaffold": "pending",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -4632,9 +5374,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 2,
+    "gatesPassed": 4,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 16210,
@@ -4655,6 +5409,7 @@ export const projects: ProjectPipeline[] = [
     "steps": {
       "step_0_scaffold": "pending",
       "step_1_route": "pending",
+      "step_1_2_intent_discovery": "pending",
       "step_1_5_direction_selection": "pending",
       "step_2_task_card": "pending",
       "step_3_research_plan": "pending",
@@ -4712,9 +5467,21 @@ export const projects: ProjectPipeline[] = [
       {
         "id": "gate_9",
         "passed": true
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
       }
     ],
-    "gatesPassed": 2,
+    "gatesPassed": 4,
     "blockedGate": null,
     "hasHtml": true,
     "reportChars": 32938,

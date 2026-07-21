@@ -72,7 +72,7 @@ export function ProjectTable({ projects, selectedId, onSelect }: Props) {
                     {blocked && <span className="blocked-badge" title={`卡在门禁 ${blocked.number}：${blocked.name}`}>卡{blocked.number}</span>}
                   </td>
                   <td>
-                    <span className="gate-mini" title={`门禁通过 ${p.gatesPassed}/9`}>
+                    <span className="gate-mini" title={`门禁通过 ${p.gatesPassed}/${workflow.gates.length}`}>
                       {p.gates.map((g) => (
                         <span key={g.id} className={`gate-pip${g.passed ? " pass" : ""}`} />
                       ))}

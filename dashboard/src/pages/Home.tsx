@@ -17,7 +17,7 @@ export function Home() {
       <header className="topbar">
         <div>
           <div className="topbar-title font-display">Research OS 控制塔</div>
-          <div className="topbar-sub">深度调研生产线：22 步 · 9 门禁 · 项目实时落点</div>
+          <div className="topbar-sub">深度调研生产线：23 步 · 12 门禁 · 项目实时落点</div>
         </div>
         <div className="topbar-meta">
           <div className="version-badge">{stats.currentVersion}</div>

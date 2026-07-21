@@ -3,6 +3,19 @@ import type { VersionInfo } from './types';
 
 export const versions: VersionInfo[] = [
   {
+    "id": "v2.0",
+    "date": "2026-07-21",
+    "summary": "新增",
+    "changes": [
+      "意图拆解协议（24 号模板）：5 轮探索（R1 字面 → R2 差距 → R3 意图树 → R4 路径 → R5 问题说明书），意图树 L0-L4 分层，候选路径剪枝机制",
+      "洞察账本协议（25 号模板）：insight_ledger.json，洞察判定三条件（反共识/可证伪/决策力），状态流转 draft→verified/downgraded/rejected",
+      "叙事原型系统（23 号重构）：6 种 archetype 替代单一行文思路，选择矩阵 + why_not 防默认",
+      "双读者模拟（reader_simulation v2.0）：outsider + layman 双视角，独立阈值",
+      "3 个新门禁：gate_10 意图树完整性、gate_11 洞察账本、gate_12 跨产物一致性"
+    ],
+    "isCurrent": true
+  },
+  {
     "id": "v1.5",
     "date": "2026-07-20",
     "summary": "系统级审核与治理修复（架构收敛 + 术语统一 + 看板重做）",
@@ -12,8 +25,7 @@ export const versions: VersionInfo[] = [
       "00-使用说明：8 门禁 → 9 门禁（补门禁9 美学合规验证），模板数 19 → 24",
       "README 从 v1.2 全面重写至 v1.5",
       "规范去外部品牌词：「Kimi式边界追问」→「边界追问」（规范应自包含）"
-    ],
-    "isCurrent": true
+    ]
   },
   {
     "id": "v1.4.1",

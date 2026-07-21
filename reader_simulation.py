@@ -1,8 +1,30 @@
-"""reader_simulation.py - Research OS v1.0 模块LLM 不只是生产者，更要扮演读者代理。在 final-report.md 写完后、ros build 之前，
-让 LLM 扮演 reader persona 逐段读报告，反馈读懂度 + 卡点 + 改写建议，
-触发写-读-改闭环。
+"""reader_simulation.py - Research OS 读者模拟模块（v2.0）
 
-设计原则：
+LLM 不只是生产者，更要扮演读者代理。在 final-report.md 写完后、ros build 之前，
+让 LLM 扮演 reader persona 读报告，反馈读懂度 + 卡点 + 改写建议，触发写-读-改闭环。
+
+v2.0 变更：
+- 双读者模拟：READER_PERSONAS 定义「领域外行人」(outsider) 和「零基础小白」(layman)
+  两个画像，各自独立跑一遍诊断，两个都过才算过门禁（v1.5 单读者容易
+  "自以为通俗其实不通俗"）
+- reader_diagnosis.json 升级为 research-os-reader-v2.0 schema：
+  readers.{outsider,layman} + overall_pass + blocking_issues
+- reader_feedback.md 分两节（外行人反馈 / 小白反馈），各含复述测试原文、
+  卡点清单、修改建议
+- 新增纯机械函数：build_dual_reader_prompts / validate_reader_diagnosis /
+  compute_overall_pass / compute_blocking_issues / assemble_diagnosis /
+  write_dual_diagnosis / write_dual_feedback_markdown / dual_readability_gate
+- v1 单读者函数（readability_gate / simulate_reader /
+  write_reader_feedback_markdown / apply_diagnosis_to_rewrite 等）保留向后兼容
+  （ros.py build 门禁、archive 工具仍在调用），内部标注 DEPRECATED
+
+Dumb Tools 诚实标注：
+- 本工具不跑模拟、不做语义判断。模拟读者、评价文本由使用系统的 AI Agent 完成。
+- 工具只做机械的事：拼 prompt 骨架、校验 Agent 提交的诊断结构、
+  按固定规则算门禁与共同卡点、写产物文件。
+- v1 的 llm_simulate_paragraph 是历史遗留占位接口，llm_client 不可用时返回占位结果。
+
+v1 设计原则（保留）：
 1. 不直接调 LLM API，定义接口 + 默认实现（默认由 agent 模拟）
 2. 输出结构化 JSON 诊断，不只是 pass/fail
 3. 读者画像含具体 knowledge_blindspots
@@ -147,7 +169,11 @@ schema 名词在正文扣 0.2；术语当标签没建语境扣 0.2；缺承接�
 
 
 def llm_simulate_paragraph(paragraph, section_title, reader_persona):
-    """通过 llm_client 调用真实 LLM，不可用时降级占位。"""
+    """通过 llm_client 调用真实 LLM，不可用时降级占位。
+
+    DEPRECATED (v2.0)：单读者逐段模拟是 v1 路径。v2 由 Agent 直接以
+    build_dual_reader_prompts 生成的整篇 prompt 跑模拟，不再走这个占位接口。
+    """
     try:
         import llm_client
         prompt = READER_SIMULATION_PROMPT.format(
@@ -223,7 +249,11 @@ def _default_reader_persona():
 
 
 def simulate_reader(report_md, reader_persona, simulate_fn=llm_simulate_paragraph):
-    """主流程：跑一遍 reader_simulation，返回完整诊断。"""
+    """主流程：跑一遍 reader_simulation，返回完整诊断。
+
+    DEPRECATED (v2.0)：单读者版本，保留给旧调用方。新流程见第 7 节
+    dual_readability_gate（双读者门禁）。
+    """
     threshold = reader_persona.get("comprehension_target", 0.75)
     cleaned = strip_metadata(report_md)
     sections = split_into_sections(cleaned)
@@ -273,7 +303,11 @@ def simulate_reader(report_md, reader_persona, simulate_fn=llm_simulate_paragrap
 # =====================================================================
 
 def readability_gate(project, report_md=None, simulate_fn=llm_simulate_paragraph):
-    """读者门禁：通过返回 (True, diagnosis)；不通过返回 (False, diagnosis)。"""
+    """读者门禁：通过返回 (True, diagnosis)；不通过返回 (False, diagnosis)。
+
+    DEPRECATED (v2.0)：单读者门禁，ros.py build 仍在调用故保留签名。
+    新流程用 dual_readability_gate（第 7 节）。
+    """
     if report_md is None:
         report_path = project / "07-output" / "final-report.md"
         if not report_path.exists():
@@ -316,7 +350,11 @@ def readability_gate(project, report_md=None, simulate_fn=llm_simulate_paragraph
 
 
 def write_reader_feedback_markdown(diag, project: Path) -> Path:
-    """把诊断转成给 agent 用的可读 markdown，触发重写。"""
+    """把诊断转成给 agent 用的可读 markdown，触发重写。
+
+    DEPRECATED (v2.0)：单读者反馈模板，ros.py build 仍在调用故保留签名。
+    新流程用 write_dual_feedback_markdown（第 7 节）。
+    """
     out = project / "06-review" / "reader_feedback.md"
     lines = [
         "# Reader Simulation Feedback",
@@ -349,7 +387,10 @@ def write_reader_feedback_markdown(diag, project: Path) -> Path:
 
 
 def apply_diagnosis_to_rewrite(project, rewritten_report_md, round_num, simulate_fn=llm_simulate_paragraph):
-    """agent 重写完后调这个函数再跑一遍门禁。超过 2 轮强制 fail。"""
+    """agent 重写完后调这个函数再跑一遍门禁。超过 2 轮强制 fail。
+
+    DEPRECATED (v2.0)：单读者重写循环，保留向后兼容。
+    """
     if round_num > 2:
         return False, ReaderDiagnosis(
             reader_persona_summary="[rewrite limit exceeded]",
@@ -362,3 +403,286 @@ def apply_diagnosis_to_rewrite(project, rewritten_report_md, round_num, simulate
     return passed, diag
 
 
+# =====================================================================
+# 7. v2.0 双读者模拟（Dumb Tool：prompt 骨架 + 结构校验 + 机械门禁）
+# =====================================================================
+
+SCHEMA_VERSION_V2 = "research-os-reader-v2.0"
+
+READER_PERSONAS: dict[str, dict[str, Any]] = {
+    "outsider": {
+        "name": "领域外行人",
+        "description": (
+            "受过高等教育但非本领域的读者。例如调研 AI 产品时，他是做外贸的本科生。"
+            "能跟上逻辑链条，但所有专业术语必须解释，否则就卡住。"
+        ),
+        "focus_checks": ["术语解释", "类比质量", "逻辑跳跃"],
+        "pass_threshold": 75,
+    },
+    "layman": {
+        "name": "零基础小白",
+        "description": (
+            "物理系大三学生水平的通识读者（系统主人的画像基准），对调研领域零前置知识。"
+            "阈值更低不是放水——读不懂是解释方（作者）的责任，不是读者的责任。"
+        ),
+        "focus_checks": [
+            "能不能用自己的话复述核心结论",
+            "有没有被术语劝退",
+            "第一章能不能看懂",
+        ],
+        "pass_threshold": 65,
+    },
+}
+
+READER_PROMPT_TEMPLATE_V2 = """你现在是【{name}】。
+
+## 你的画像
+{description}
+
+## 你重点检查
+{focus_checks}
+
+## 任务
+以这个读者身份，从头到尾通读这份调研报告（项目内路径：07-output/final-report.md）。
+完整读，不要跳读。读的时候诚实一点：你不是专家，看不懂就是看不懂，
+不要脑补、不要替作者找补。
+
+读完后只输出一份 JSON（不要输出任何其他文字），结构如下：
+
+{{
+  "comprehension_score": 0-100 的整数，你整体读懂了多少,
+  "terms_not_understood": [
+    {{"term": "卡住的术语", "section": "在第几节", "reason": "为什么卡住"}}
+  ],
+  "analogy_gaps": [
+    {{"concept": "缺类比的概念", "section": "在第几节", "why_needed": "为什么没有类比就想不明白"}}
+  ],
+  "retell_test": "合上书，用你自己的话复述这篇报告的核心结论（3-5 句，你怎么跟朋友讲就怎么写）",
+  "abandonment_points": [
+    {{"section": "在第几节", "quote": "读到哪里会想放弃", "reason": "为什么想放弃"}}
+  ],
+  "verdict": "pass 或 fail，后接一句话理由"
+}}
+
+## 判定规则
+- comprehension_score >= {pass_threshold} 且没有让你彻底读不下去的卡点 → verdict 为 "pass"
+- 否则 verdict 为 "fail"
+- retell_test 必须真的写出来；写不出来本身就是 fail 的信号
+"""
+
+
+def build_reader_prompt(persona_key: str) -> str:
+    """生成指定读者画像的诊断 prompt 骨架（只拼模板，不跑模拟）。"""
+    if persona_key not in READER_PERSONAS:
+        raise KeyError(f"unknown reader persona: {persona_key} (可选: {list(READER_PERSONAS)})")
+    p = READER_PERSONAS[persona_key]
+    return READER_PROMPT_TEMPLATE_V2.format(
+        name=p["name"],
+        description=p["description"],
+        focus_checks="\n".join(f"- {c}" for c in p["focus_checks"]),
+        pass_threshold=p["pass_threshold"],
+    )
+
+
+def build_dual_reader_prompts() -> dict[str, str]:
+    """为两个读者各生成一份独立 prompt。Agent 用同一报告分别跑两遍模拟。"""
+    return {key: build_reader_prompt(key) for key in READER_PERSONAS}
+
+
+READER_DIAGNOSIS_REQUIRED_FIELDS: dict[str, Any] = {
+    "comprehension_score": (int, float),
+    "terms_not_understood": list,
+    "analogy_gaps": list,
+    "retell_test": str,
+    "abandonment_points": list,
+    "verdict": str,
+}
+
+
+def validate_reader_diagnosis(data: Any, persona_key: str) -> list[str]:
+    """机械校验 Agent 提交的单读者诊断结构。返回问题列表（空列表 = 合格）。"""
+    problems: list[str] = []
+    if not isinstance(data, dict):
+        return [f"{persona_key}: 诊断结果不是 JSON object"]
+    for fname, ftype in READER_DIAGNOSIS_REQUIRED_FIELDS.items():
+        if fname not in data:
+            problems.append(f"{persona_key}: 缺字段 {fname}")
+        elif not isinstance(data[fname], ftype):
+            problems.append(f"{persona_key}: 字段 {fname} 类型应为 {ftype}")
+    score = data.get("comprehension_score")
+    if isinstance(score, (int, float)) and not isinstance(score, bool) and not (0 <= score <= 100):
+        problems.append(f"{persona_key}: comprehension_score 应在 0-100，实际 {score}")
+    return problems
+
+
+def _verdict_is_pass(verdict: Any) -> bool:
+    """verdict 允许 "pass" 或 "pass：一句话理由" 形式，机械取前缀判断。"""
+    return str(verdict).strip().lower().startswith("pass")
+
+
+def compute_overall_pass(diagnosis: dict) -> bool:
+    """机械门禁：两个读者的 verdict 都是 pass 且 comprehension_score 都达各自阈值。"""
+    readers = diagnosis.get("readers", {}) if isinstance(diagnosis, dict) else {}
+    for key, persona in READER_PERSONAS.items():
+        r = readers.get(key)
+        if not isinstance(r, dict):
+            return False
+        if not _verdict_is_pass(r.get("verdict", "")):
+            return False
+        score = r.get("comprehension_score")
+        if not isinstance(score, (int, float)) or isinstance(score, bool):
+            return False
+        if score < persona["pass_threshold"]:
+            return False
+    return True
+
+
+def compute_blocking_issues(diagnosis: dict) -> list[str]:
+    """机械找跨读者共同卡点：两个读者都没看懂的术语 / 都想放弃的章节取交集。"""
+    readers = diagnosis.get("readers", {}) if isinstance(diagnosis, dict) else {}
+    issues: list[str] = []
+
+    def _terms(key: str) -> set:
+        r = readers.get(key) or {}
+        return {
+            str(t.get("term", "")).strip().lower()
+            for t in (r.get("terms_not_understood") or [])
+            if isinstance(t, dict) and t.get("term")
+        }
+
+    def _quit_sections(key: str) -> set:
+        r = readers.get(key) or {}
+        return {
+            str(a.get("section", "")).strip()
+            for a in (r.get("abandonment_points") or [])
+            if isinstance(a, dict) and a.get("section")
+        }
+
+    for term in sorted(_terms("outsider") & _terms("layman")):
+        issues.append(f"术语「{term}」两个读者都没看懂")
+    for sec in sorted(_quit_sections("outsider") & _quit_sections("layman")):
+        issues.append(f"「{sec}」两个读者都读到想放弃")
+    return issues
+
+
+def assemble_diagnosis(readers_results: dict) -> dict:
+    """把 Agent 提交的两份单读者诊断组装成 v2.0 结构（机械算 overall_pass / blocking_issues）。"""
+    diagnosis = {
+        "schema_version": SCHEMA_VERSION_V2,
+        "readers": {key: readers_results.get(key, {}) for key in READER_PERSONAS},
+    }
+    diagnosis["overall_pass"] = compute_overall_pass(diagnosis)
+    diagnosis["blocking_issues"] = compute_blocking_issues(diagnosis)
+    return diagnosis
+
+
+def write_dual_diagnosis(project, readers_results: dict) -> Path:
+    """结构校验 + 组装 + 写 06-review/reader_diagnosis.json（v2.0 schema）。"""
+    project = Path(project)
+    problems: list[str] = []
+    for key in READER_PERSONAS:
+        problems.extend(validate_reader_diagnosis(readers_results.get(key, {}), key))
+    if problems:
+        raise ValueError("reader diagnosis 结构不合格：\n" + "\n".join(f"- {p}" for p in problems))
+    diagnosis = assemble_diagnosis(readers_results)
+    out = project / "06-review" / "reader_diagnosis.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(diagnosis, ensure_ascii=False, indent=2), encoding="utf-8")
+    return out
+
+
+def _suggest_fixes(reader: dict) -> list[str]:
+    """从结构化卡点机械生成修改建议（逐条映射，不做语义判断）。"""
+    suggestions: list[str] = []
+    for t in reader.get("terms_not_understood") or []:
+        if isinstance(t, dict):
+            suggestions.append(
+                f"在「{t.get('section', '?')}」为术语「{t.get('term', '?')}」"
+                f"补一句白话解释（{t.get('reason', '')}）"
+            )
+    for g in reader.get("analogy_gaps") or []:
+        if isinstance(g, dict):
+            suggestions.append(
+                f"为「{g.get('concept', '?')}」（{g.get('section', '?')}）补一个生活化类比"
+            )
+    for a in reader.get("abandonment_points") or []:
+        if isinstance(a, dict):
+            suggestions.append(
+                f"重写或精简「{a.get('section', '?')}」："
+                f"读者在「{a.get('quote', '')}」处想放弃（{a.get('reason', '')}）"
+            )
+    return suggestions
+
+
+def write_dual_feedback_markdown(diagnosis: dict, project) -> Path:
+    """把 v2.0 诊断转成给 Agent 用的 markdown，分两节（外行人反馈 / 小白反馈）。"""
+    project = Path(project)
+    readers = diagnosis.get("readers", {})
+    lines = [
+        "# 双读者模拟反馈（v2.0）",
+        "",
+        f"- 总体门禁：{'PASSED' if diagnosis.get('overall_pass') else 'FAILED'}",
+    ]
+    blocking = diagnosis.get("blocking_issues") or []
+    if blocking:
+        lines.append("- 跨读者共同卡点：")
+        lines.extend(f"  - {b}" for b in blocking)
+    lines.append("")
+
+    for key, persona in READER_PERSONAS.items():
+        r = readers.get(key) or {}
+        lines.append(f"## {persona['name']}反馈（{key}）")
+        lines.append("")
+        lines.append(f"- 读懂度：{r.get('comprehension_score', '?')}/100（阈值 {persona['pass_threshold']}）")
+        lines.append(f"- 判定：{r.get('verdict', '?')}")
+        lines.append("")
+        lines.append("### 复述测试（读者原话）")
+        lines.append("")
+        lines.append(f"> {r.get('retell_test', '') or '（未提交）'}")
+        lines.append("")
+        lines.append("### 卡点清单")
+        lines.append("")
+        terms = [t for t in (r.get("terms_not_understood") or []) if isinstance(t, dict)]
+        gaps = [g for g in (r.get("analogy_gaps") or []) if isinstance(g, dict)]
+        quits = [a for a in (r.get("abandonment_points") or []) if isinstance(a, dict)]
+        if terms:
+            lines.append("- 没看懂的术语：")
+            for t in terms:
+                lines.append(f"  - 「{t.get('term', '?')}」（{t.get('section', '?')}）→ {t.get('reason', '')}")
+        if gaps:
+            lines.append("- 缺类比的概念：")
+            for g in gaps:
+                lines.append(f"  - 「{g.get('concept', '?')}」（{g.get('section', '?')}）→ {g.get('why_needed', '')}")
+        if quits:
+            lines.append("- 想放弃的位置：")
+            for a in quits:
+                lines.append(f"  - 「{a.get('section', '?')}」{a.get('quote', '')} → {a.get('reason', '')}")
+        if not (terms or gaps or quits):
+            lines.append("- 无")
+        lines.append("")
+        lines.append("### 修改建议")
+        lines.append("")
+        suggestions = _suggest_fixes(r)
+        if suggestions:
+            lines.extend(f"- {s}" for s in suggestions)
+        else:
+            lines.append("- 无")
+        lines.append("")
+
+    out = project / "06-review" / "reader_feedback.md"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text("\n".join(lines), encoding="utf-8")
+    return out
+
+
+def dual_readability_gate(project, readers_results: dict) -> tuple:
+    """v2.0 双读者门禁：写入 reader_diagnosis.json + reader_feedback.md，
+    返回 (overall_pass, diagnosis)。
+
+    readers_results 是 Agent 跑完两遍模拟后提交的结构：
+    {"outsider": {...诊断...}, "layman": {...诊断...}}
+    """
+    diag_path = write_dual_diagnosis(project, readers_results)
+    diagnosis = json.loads(diag_path.read_text(encoding="utf-8"))
+    write_dual_feedback_markdown(diagnosis, project)
+    return diagnosis["overall_pass"], diagnosis

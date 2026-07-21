@@ -1,5 +1,5 @@
 ﻿#!/usr/bin/env python3
-"""Research OS v1.4 - Dumb Validator
+"""Research OS v2.0 - Dumb Validator
 
 v0.7 变更（从 v0.6.1）：
   - 新增 JSON 字段值非空检查（解决空 JSON 通过问题）
@@ -34,6 +34,21 @@ v1.5 变更（从 v1.4）：
   - 补全 step_10.5/11/12/13 依赖链（11 依赖 10.5，12 依赖 11，13 依赖 10.5+12）
   - JSON_FIELD_REQUIREMENTS 新增 rewrite_instructions/iteration_state 字段非空检查
   - 版本头统一 v1.5（治理修复）
+
+v2.0 变更（从 v1.5）：
+  - 新增 7 个 v2.0 检查函数（对应状态机 gate_10/11/12 + 报告硬约束 H1-H12 + 跨产物一致性）：
+    * check_intent_tree_v2: 意图树 v2.0 schema 完整性（gate_10）
+    * check_insight_ledger: 洞察账本 R4 硬规则（gate_11）
+    * check_narrative_archetype: 行文思路原型字段（gate_7 v2.0）
+    * check_reader_diagnosis_v2: 双读者诊断 v2.0 schema（gate_3 v2.0）
+    * check_term_explanations_coverage: 术语解释覆盖率（H1）
+    * check_report_hard_constraints: 报告 H4/H5/H8/H10/H11/H12 机械检查
+    * check_cross_artifact_consistency: 跨产物引用一致性（gate_12）
+  - JSON_FIELD_REQUIREMENTS 新增 05-analysis/insight_ledger.json
+  - STEP_ARTIFACTS 新增 r2_r3_required 字段（深度档位感知）
+  - check_state_artifact_consistency 支持 r2_r3_required（R0/R1 跳过）
+  - check_narrative_plan 升级为 v2.0 感知（检测 archetype 时跳过 v1.5 旧关键词）
+  - 版本头统一 v2.0
 """
 
 from __future__ import annotations
@@ -112,6 +127,9 @@ JSON_FIELD_REQUIREMENTS = {
     "06-review/iteration_state.json": {
         "history": list,
     },
+    "05-analysis/insight_ledger.json": {
+        "insights": list,
+    },
 }
 
 TASK_CARD_REQUIRED_SECTIONS = {
@@ -130,7 +148,8 @@ STEP_ARTIFACTS = {
     "step_5_evidence_matrix": {"required": ["03-evidence/evidence_matrix.md"]},
     "step_6_hypothesis": {"required": ["03-evidence/hypothesis_ledger.json"]},
     "step_6_5_core_objects_fetch": {"required": ["04-captures/core_objects_fetch_log.md"]},
-    "step_7_analysis": {"required": ["05-analysis/"], "any_md": True},
+    "step_7_analysis": {"required": ["05-analysis/"], "any_md": True,
+                            "r2_r3_required": ["05-analysis/insight_ledger.json"]},
     "step_7_5_narrative_plan": {"required": ["05-analysis/narrative-plan.md"]},
     "step_8_red_team": {"required": ["06-review/red_team.md"]},
     "step_9_final_report_draft": {"required": ["07-output/final-report.md"]},
@@ -814,6 +833,22 @@ def check_state_artifact_consistency(project, checks):
         add(checks, "PASS", "state-artifact consistency",
             "all done-marked steps have required artifacts")
 
+    # v2.0: depth-aware artifact check (r2_r3_required)
+    depth = "R1"
+    if state:
+        depth = state.get("depth") or state.get("research_depth") or "R1"
+    if depth in ("R2", "R3"):
+        for step_name, artifact_spec in STEP_ARTIFACTS.items():
+            step_status = steps.get(step_name, "pending")
+            if step_status != "done":
+                continue
+            for rel in artifact_spec.get("r2_r3_required", []):
+                p = project / rel
+                if not p.exists():
+                    add(checks, "FAIL",
+                        f"state-artifact mismatch (R2/R3): {step_name}",
+                        f"{step_name} marked done but {rel} missing (R2/R3 required)")
+
 
 
 
@@ -1175,6 +1210,572 @@ def check_latex_rendering(project, checks):
 # 主验证函数
 # ============================================================
 
+
+
+# ============================================================
+# v2.0 新增检查函数
+# ============================================================
+
+def check_intent_tree_v2(project, checks):
+    """v2.0 gate_10: 检查 intent_doc.json v2.0 schema 完整性（对齐 24-意图拆解协议 finalize 硬校验）。"""
+    intent_path = project / "00-task" / "intent_doc.json"
+    if not intent_path.exists():
+        return
+    intent = read_json(intent_path)
+    if not intent:
+        add(checks, "FAIL", "intent_tree_v2: json", "intent_doc.json exists but not valid JSON")
+        return
+
+    sv = intent.get("schema_version", "")
+    if sv != "research-os-intent-v2.0":
+        add(checks, "WARN", "intent_tree_v2: schema_version",
+            f"expected research-os-intent-v2.0, got {sv!r} (旧项目兼容，跳过 v2.0 结构检查)")
+        return
+
+    status = intent.get("status", "")
+    if status in ("skeleton_pending_agent", "exploration_in_progress"):
+        add(checks, "WARN", "intent_tree_v2: status", f"status={status} (探索未完成，跳过结构校验)")
+        return
+
+    if status != "exploration_complete":
+        add(checks, "FAIL", "intent_tree_v2: status",
+            f"status={status!r}, expected 'exploration_complete'")
+    else:
+        add(checks, "PASS", "intent_tree_v2: status", "exploration_complete")
+
+    history = intent.get("exploration_history", [])
+    if not isinstance(history, list):
+        add(checks, "FAIL", "intent_tree_v2: exploration_history", "not a list")
+    elif len(history) < 5:
+        add(checks, "FAIL", "intent_tree_v2: exploration_history",
+            f"only {len(history)} rounds (need >=5)")
+    else:
+        add(checks, "PASS", "intent_tree_v2: exploration_history", f"{len(history)} rounds")
+
+    v07 = intent.get("v07", {})
+    tree = v07.get("intent_tree", [])
+    if not isinstance(tree, list) or len(tree) == 0:
+        add(checks, "FAIL", "intent_tree_v2: intent_tree", "empty or not a list")
+    else:
+        l1_count = sum(1 for n in tree if isinstance(n, dict) and n.get("layer") == "L1_meta")
+        l2_count = sum(1 for n in tree if isinstance(n, dict) and n.get("layer") == "L2_mechanism")
+        if l1_count < 1:
+            add(checks, "FAIL", "intent_tree_v2: L1_meta", f"need >=1 L1_meta node, got {l1_count}")
+        else:
+            add(checks, "PASS", "intent_tree_v2: L1_meta", f"{l1_count} L1_meta nodes")
+        if l2_count < 3:
+            add(checks, "FAIL", "intent_tree_v2: L2_mechanism", f"need >=3 L2_mechanism nodes, got {l2_count}")
+        else:
+            add(checks, "PASS", "intent_tree_v2: L2_mechanism", f"{l2_count} L2_mechanism nodes")
+
+        ids = [n.get("id") for n in tree if isinstance(n, dict)]
+        seen = set()
+        dups = []
+        for i in ids:
+            if i in seen and i not in dups:
+                dups.append(i)
+            seen.add(i)
+        if dups:
+            add(checks, "FAIL", "intent_tree_v2: duplicate_ids", f"duplicate ids: {dups}")
+
+        id_set = set(ids)
+        broken_parents = []
+        q0_bad = False
+        for n in tree:
+            if not isinstance(n, dict):
+                continue
+            nid = n.get("id")
+            pid = n.get("parent_id")
+            if nid == "Q0":
+                if pid is not None:
+                    q0_bad = True
+                    add(checks, "FAIL", "intent_tree_v2: Q0_parent", f"Q0 parent_id must be null, got {pid!r}")
+            elif pid not in id_set:
+                broken_parents.append(f"{nid!r}->{pid!r}")
+        if not dups and not broken_parents and not q0_bad:
+            add(checks, "PASS", "intent_tree_v2: parent_refs", "all parent_id references valid")
+        elif broken_parents:
+            add(checks, "FAIL", "intent_tree_v2: parent_refs", f"broken parent refs: {broken_parents}")
+
+    paths = v07.get("candidate_paths", [])
+    if not isinstance(paths, list) or len(paths) < 2:
+        add(checks, "FAIL", "intent_tree_v2: candidate_paths",
+            f"need >=2 paths, got {len(paths) if isinstance(paths, list) else 'non-list'}")
+    else:
+        selected = [p for p in paths if isinstance(p, dict) and p.get("selected") is True]
+        if len(selected) != 1:
+            add(checks, "FAIL", "intent_tree_v2: selected_count",
+                f"need exactly 1 selected=true, got {len(selected)}")
+        else:
+            add(checks, "PASS", "intent_tree_v2: selected_count", "exactly 1 selected=true")
+        missing_prune = []
+        for p in paths:
+            if not isinstance(p, dict):
+                continue
+            if not p.get("selected"):
+                if not str(p.get("pruned_reason", "") or "").strip():
+                    missing_prune.append(p.get("path_id", "?"))
+        if missing_prune:
+            add(checks, "FAIL", "intent_tree_v2: pruned_reason",
+                f"unselected paths missing pruned_reason: {missing_prune}")
+        else:
+            add(checks, "PASS", "intent_tree_v2: pruned_reason",
+                "all unselected paths have pruned_reason")
+
+    sc = v07.get("success_criteria", "")
+    if not str(sc or "").strip():
+        add(checks, "FAIL", "intent_tree_v2: success_criteria", "empty")
+    else:
+        add(checks, "PASS", "intent_tree_v2: success_criteria", f"non-empty ({len(str(sc))} chars)")
+
+    cq = v07.get("clarifying_questions", [])
+    if isinstance(cq, list):
+        blocking = sum(1 for q in cq if isinstance(q, dict) and q.get("blocks_plan_if_unanswered") is True)
+        if blocking > 3:
+            add(checks, "FAIL", "intent_tree_v2: blocking_questions",
+                f"{blocking} blocking questions (max 3)")
+        else:
+            add(checks, "PASS", "intent_tree_v2: blocking_questions",
+                f"{blocking} blocking questions (<=3)")
+
+
+def check_insight_ledger(project, checks):
+    """v2.0 gate_11: 检查 05-analysis/insight_ledger.json（对齐 25-洞察账本协议 R4）。"""
+    ledger_path = project / "05-analysis" / "insight_ledger.json"
+    if not ledger_path.exists():
+        add(checks, "WARN", "insight_ledger: exists",
+            "05-analysis/insight_ledger.json missing (step_9 前未生成)")
+        return
+    data = read_json(ledger_path)
+    if not data:
+        add(checks, "FAIL", "insight_ledger: json", "file exists but not valid JSON")
+        return
+    insights = data.get("insights", [])
+    if not isinstance(insights, list) or len(insights) == 0:
+        add(checks, "FAIL", "insight_ledger: insights", "empty or not a list")
+        return
+    add(checks, "PASS", "insight_ledger: insights", f"{len(insights)} entries")
+
+    state = read_json(project / "research_state.json")
+    depth = "R1"
+    if state:
+        depth = state.get("depth") or state.get("research_depth") or "R1"
+
+    verified = [i for i in insights if isinstance(i, dict) and i.get("status") == "verified"]
+    if depth == "R2":
+        if len(verified) < 3:
+            add(checks, "FAIL", "insight_ledger: verified_count_R2",
+                f"R2 needs >=3 verified, got {len(verified)}")
+        else:
+            add(checks, "PASS", "insight_ledger: verified_count_R2", f"{len(verified)} verified (>=3)")
+    elif depth == "R3":
+        if len(verified) < 5:
+            add(checks, "FAIL", "insight_ledger: verified_count_R3",
+                f"R3 needs >=5 verified, got {len(verified)}")
+        else:
+            add(checks, "PASS", "insight_ledger: verified_count_R3", f"{len(verified)} verified (>=5)")
+    else:
+        add(checks, "WARN", "insight_ledger: verified_count",
+            f"depth={depth}, no minimum enforced")
+
+    contrarian = [i for i in verified if i.get("type") == "contrarian"]
+    if not contrarian:
+        add(checks, "FAIL", "insight_ledger: contrarian",
+            "no verified insight with type=contrarian")
+    else:
+        add(checks, "PASS", "insight_ledger: contrarian",
+            f"{len(contrarian)} contrarian verified")
+
+    bad_evidence = []
+    bad_anchor = []
+    bad_falsifier = []
+    bad_novelty = []
+    bad_decision = []
+    for i in verified:
+        eid = i.get("evidence_ids", [])
+        if not isinstance(eid, list) or len(eid) < 2:
+            bad_evidence.append(i.get("id", "?"))
+        if not str(i.get("report_anchor", "") or "").strip():
+            bad_anchor.append(i.get("id", "?"))
+        if not str(i.get("falsifier", "") or "").strip():
+            bad_falsifier.append(i.get("id", "?"))
+        if not str(i.get("novelty_check", "") or "").strip():
+            bad_novelty.append(i.get("id", "?"))
+        if not str(i.get("decision_impact", "") or "").strip():
+            bad_decision.append(i.get("id", "?"))
+
+    if bad_evidence:
+        add(checks, "FAIL", "insight_ledger: evidence_ids",
+            f"verified insights with <2 evidence_ids: {bad_evidence}")
+    else:
+        add(checks, "PASS", "insight_ledger: evidence_ids",
+            "all verified have >=2 evidence_ids")
+    if bad_anchor:
+        add(checks, "FAIL", "insight_ledger: report_anchor",
+            f"verified insights with empty report_anchor: {bad_anchor}")
+    else:
+        add(checks, "PASS", "insight_ledger: report_anchor",
+            "all verified have non-empty report_anchor")
+    if bad_falsifier:
+        add(checks, "FAIL", "insight_ledger: falsifier",
+            f"verified insights with empty falsifier: {bad_falsifier}")
+    else:
+        add(checks, "PASS", "insight_ledger: falsifier",
+            "all verified have non-empty falsifier")
+    if bad_novelty:
+        add(checks, "FAIL", "insight_ledger: novelty_check",
+            f"verified insights with empty novelty_check: {bad_novelty}")
+    else:
+        add(checks, "PASS", "insight_ledger: novelty_check",
+            "all verified have non-empty novelty_check")
+    if bad_decision:
+        add(checks, "FAIL", "insight_ledger: decision_impact",
+            f"verified insights with empty decision_impact: {bad_decision}")
+    else:
+        add(checks, "PASS", "insight_ledger: decision_impact",
+            "all verified have non-empty decision_impact")
+
+    bad_r46 = []
+    for i in insights:
+        if not isinstance(i, dict):
+            continue
+        st = i.get("status")
+        if st in ("rejected", "downgraded"):
+            if str(i.get("report_anchor", "") or "").strip():
+                bad_r46.append(i.get("id", "?"))
+    if bad_r46:
+        add(checks, "FAIL", "insight_ledger: R4.6_anchor_empty",
+            f"rejected/downgraded with non-empty report_anchor: {bad_r46}")
+    else:
+        add(checks, "PASS", "insight_ledger: R4.6_anchor_empty",
+            "rejected/downgraded have empty report_anchor")
+
+
+def check_narrative_archetype(project, checks):
+    """v2.0 gate_7: 检查 narrative-plan.md 的 archetype + why_not 字段（对齐 23-行文思路规划协议 第 7 节）。"""
+    np_path = project / "05-analysis" / "narrative-plan.md"
+    if not np_path.exists():
+        return
+    content = read_text(np_path)
+    if not content:
+        return
+
+    VALID_ARCHETYPES = {"learning_curve", "decision_forum", "product_teardown",
+                        "opportunity_map", "user_voice", "mixed_journey"}
+
+    m = re.search(r"^archetype:\s*(\w+)", content, re.MULTILINE)
+    if not m:
+        add(checks, "FAIL", "narrative_archetype: archetype_field",
+            "missing 'archetype:' field")
+    else:
+        val = m.group(1)
+        if val not in VALID_ARCHETYPES:
+            add(checks, "FAIL", "narrative_archetype: archetype_value",
+                f"value {val!r} not in enum {sorted(VALID_ARCHETYPES)}")
+        else:
+            add(checks, "PASS", "narrative_archetype: archetype_value",
+                f"archetype={val}")
+
+    m2 = re.search(r"^why_not:\s*(.+)$", content, re.MULTILINE)
+    if not m2:
+        add(checks, "FAIL", "narrative_archetype: why_not_field",
+            "missing 'why_not:' field")
+    else:
+        val = m2.group(1).strip()
+        if len(val) < 10:
+            add(checks, "FAIL", "narrative_archetype: why_not_value",
+                f"why_not too short ({len(val)} chars, need >=10)")
+        else:
+            add(checks, "PASS", "narrative_archetype: why_not_value",
+                f"non-empty ({len(val)} chars)")
+
+    m3 = re.search(r"^secondary_archetype:\s*(\w+)", content, re.MULTILINE)
+    if m3:
+        sec_val = m3.group(1)
+        if sec_val not in VALID_ARCHETYPES:
+            add(checks, "FAIL", "narrative_archetype: secondary_value",
+                f"secondary_archetype {sec_val!r} not in enum")
+        else:
+            add(checks, "PASS", "narrative_archetype: secondary_value",
+                f"secondary_archetype={sec_val}")
+        sec_line = m3.group(0)
+        start = m3.end()
+        after = content[start:start+200]
+        if "serves_sections" not in sec_line and "serves_sections" not in after:
+            add(checks, "FAIL", "narrative_archetype: serves_sections",
+                "secondary_archetype declared but no serves_sections")
+        else:
+            add(checks, "PASS", "narrative_archetype: serves_sections", "found")
+
+
+def check_reader_diagnosis_v2(project, checks):
+    """v2.0 gate_3: 检查 06-review/reader_diagnosis.json v2.0 schema（对齐 reader_simulation.py）。"""
+    rd_path = project / "06-review" / "reader_diagnosis.json"
+    if not rd_path.exists():
+        return
+    data = read_json(rd_path)
+    if not data:
+        add(checks, "FAIL", "reader_diagnosis_v2: json",
+            "file exists but not valid JSON")
+        return
+
+    sv = data.get("schema_version", "")
+    if sv != "research-os-reader-v2.0":
+        add(checks, "WARN", "reader_diagnosis_v2: schema_version",
+            f"expected research-os-reader-v2.0, got {sv!r}")
+        return
+
+    op = data.get("overall_pass")
+    if op is not True:
+        add(checks, "FAIL", "reader_diagnosis_v2: overall_pass",
+            f"overall_pass={op!r}, expected true")
+    else:
+        add(checks, "PASS", "reader_diagnosis_v2: overall_pass", "true")
+
+    readers = data.get("readers", {})
+    for key, threshold in (("outsider", 75), ("layman", 65)):
+        reader = readers.get(key, {})
+        if not isinstance(reader, dict):
+            add(checks, "FAIL", f"reader_diagnosis_v2: {key}", f"missing readers.{key}")
+            continue
+        verdict = str(reader.get("verdict", "")).strip().lower()
+        if not verdict.startswith("pass"):
+            add(checks, "FAIL", f"reader_diagnosis_v2: {key}_verdict",
+                f"verdict={verdict!r}, expected pass")
+        else:
+            add(checks, "PASS", f"reader_diagnosis_v2: {key}_verdict", "pass")
+        score = reader.get("comprehension_score")
+        if not isinstance(score, (int, float)) or isinstance(score, bool):
+            add(checks, "FAIL", f"reader_diagnosis_v2: {key}_score",
+                f"not numeric: {score!r}")
+        elif score < threshold:
+            add(checks, "FAIL", f"reader_diagnosis_v2: {key}_score",
+                f"{score} < {threshold}")
+        else:
+            add(checks, "PASS", f"reader_diagnosis_v2: {key}_score",
+                f"{score} (>= {threshold})")
+
+    if "blocking_issues" not in data:
+        add(checks, "FAIL", "reader_diagnosis_v2: blocking_issues", "field missing")
+    else:
+        bi = data.get("blocking_issues")
+        if not isinstance(bi, list):
+            add(checks, "FAIL", "reader_diagnosis_v2: blocking_issues", "not a list")
+        else:
+            add(checks, "PASS", "reader_diagnosis_v2: blocking_issues",
+                f"{len(bi)} issues")
+
+
+def check_term_explanations_coverage(project, checks):
+    """v2.0 H1: 检查报告术语解释覆盖率（调用 concept_ladder_helper.check_term_explanations）。"""
+    intent = read_json(project / "00-task" / "intent_doc.json")
+    if not intent:
+        return
+    v07 = intent.get("v07", {})
+    seed = v07.get("concept_ladder_seed", [])
+    if not seed:
+        return
+    report = read_text(project / "07-output" / "final-report.md")
+    if not report:
+        return
+
+    try:
+        from concept_ladder_helper import check_term_explanations
+        result = check_term_explanations(report, seed)
+    except Exception as e:
+        add(checks, "WARN", "term_explanations_coverage: import",
+            f"concept_ladder_helper unavailable: {e}")
+        return
+
+    coverage = result.get("coverage", 0.0)
+    missing = result.get("missing", [])
+    covered = result.get("covered", [])
+    total = len(covered) + len(missing)
+
+    if coverage >= 0.8:
+        add(checks, "PASS", "term_explanations_coverage",
+            f"coverage={coverage:.2f} ({len(covered)}/{total}), missing={missing}")
+    else:
+        add(checks, "FAIL", "term_explanations_coverage",
+            f"coverage={coverage:.2f} < 0.8, missing={missing}")
+
+
+def check_report_hard_constraints(project, checks):
+    """v2.0 H4/H5/H8/H10/H11/H12: 报告硬约束机械检查（对齐 08-最终报告.md）。"""
+    report = read_text(project / "07-output" / "final-report.md")
+    if not report:
+        return
+
+    explanation_words = ["告诉", "说明", "意味着", "可以看出", "显示", "表明", "反映", "揭示"]
+    table_positions = [m.start() for m in re.finditer(r"<table>", report)]
+
+    # H4: 图表义务——表格后 200 字符内有解释性词
+    h4_failures = []
+    for pos in table_positions:
+        after = report[pos:pos+200]
+        if not any(w in after for w in explanation_words):
+            h4_failures.append(pos)
+    if h4_failures:
+        add(checks, "FAIL", "H4: table_explanation",
+            f"{len(h4_failures)} tables without explanation words within 200 chars")
+    else:
+        add(checks, "PASS", "H4: table_explanation",
+            "all tables have explanation nearby")
+
+    # H5: 表格禁区——表格前后 500 字符含时序/因果词则 FAIL
+    forbidden_table_words = ["流程", "步骤", "阶段", "因果", "因为", "导致"]
+    h5_failures = []
+    for pos in table_positions:
+        before = report[max(0, pos-500):pos]
+        after = report[pos:pos+500]
+        context = before + after
+        hits = [w for w in forbidden_table_words if w in context]
+        if hits:
+            h5_failures.append((pos, hits))
+    if h5_failures:
+        add(checks, "FAIL", "H5: table_forbidden_context",
+            f"{len(h5_failures)} tables in forbidden context (time/causal)")
+    else:
+        add(checks, "PASS", "H5: table_forbidden_context",
+            "no tables in forbidden context")
+
+    # H8: 一句话结论——开头 2000 字符内有 hero-verdict class 或"一句话"关键词
+    head = report[:2000]
+    if 'class="hero-verdict"' in head or "一句话" in head:
+        add(checks, "PASS", "H8: hero_verdict", "found in first 2000 chars")
+    else:
+        add(checks, "FAIL", "H8: hero_verdict",
+            "no hero-verdict class or '一句话' in first 2000 chars")
+
+    # H10: 局限章节——含"局限"或"没解决"或"证据边界"
+    h10_keywords = ["局限", "没解决", "证据边界"]
+    if any(kw in report for kw in h10_keywords):
+        add(checks, "PASS", "H10: limitations_section",
+            "found limitations keyword")
+    else:
+        add(checks, "FAIL", "H10: limitations_section",
+            "no limitations keyword (局限/没解决/证据边界)")
+
+    # H11: inline code 禁令——<code> 标签计数 <= 5
+    code_count = len(re.findall(r"<code>", report))
+    if code_count <= 5:
+        add(checks, "PASS", "H11: inline_code",
+            f"{code_count} <code> tags (<=5)")
+    else:
+        add(checks, "FAIL", "H11: inline_code",
+            f"{code_count} <code> tags (>5)")
+
+    # H12: 来源后置——正文（排除附录/参考资料区）不得有 E\d{3} 模式
+    appendix_markers = ["## 附录", "## 参考资料", "## 信息来源",
+                        "## Sources", "## References"]
+    cutoff = len(report)
+    for marker in appendix_markers:
+        idx = report.find(marker)
+        if idx != -1:
+            cutoff = min(cutoff, idx)
+            break
+    main_body = report[:cutoff]
+    e_pattern_count = len(re.findall(r"E\d{3}", main_body))
+    if e_pattern_count == 0:
+        add(checks, "PASS", "H12: source_posterior",
+            "no E\\d{3} in main body")
+    else:
+        add(checks, "FAIL", "H12: source_posterior",
+            f"{e_pattern_count} E\\d{{3}} patterns in main body")
+
+
+def check_cross_artifact_consistency(project, checks):
+    """v2.0 gate_12: 跨产物引用一致性检查。"""
+    intent = read_json(project / "00-task" / "intent_doc.json")
+    report = read_text(project / "07-output" / "final-report.md")
+
+    # 1. intent_tree must/answered 节点 answer_pointer 在报告中出现
+    if intent and report:
+        v07 = intent.get("v07", {})
+        tree = v07.get("intent_tree", [])
+        if isinstance(tree, list):
+            must_answered = [n for n in tree if isinstance(n, dict)
+                             and n.get("status") == "answered"
+                             and n.get("priority") == "must"]
+            missing_pointer = []
+            broken_pointer = []
+            for n in must_answered:
+                ap = str(n.get("answer_pointer", "") or "").strip()
+                if not ap:
+                    missing_pointer.append(n.get("id", "?"))
+                else:
+                    anchor = ap.split("#")[-1].strip() if "#" in ap else ap
+                    stripped = re.sub(r"^[§#]?\s*\d*\s*", "", anchor).strip()
+                    if len(stripped) >= 4 and stripped not in report:
+                        broken_pointer.append((n.get("id", "?"), ap))
+            if missing_pointer:
+                add(checks, "FAIL", "cross: must_answered_pointer_empty",
+                    f"must/answered nodes with empty answer_pointer: {missing_pointer}")
+            else:
+                add(checks, "PASS", "cross: must_answered_pointer_empty",
+                    "all must/answered have answer_pointer")
+            if broken_pointer:
+                add(checks, "WARN", "cross: answer_pointer_not_found",
+                    f"answer_pointer anchors not found in report: {broken_pointer}")
+            else:
+                add(checks, "PASS", "cross: answer_pointer_not_found",
+                    "all answer_pointer anchors found in report")
+
+    # 2. verified 洞察的 report_anchor 在 final-report.md 中出现
+    ledger = read_json(project / "05-analysis" / "insight_ledger.json")
+    if ledger and report:
+        insights = ledger.get("insights", [])
+        verified = [i for i in insights if isinstance(i, dict) and i.get("status") == "verified"]
+        broken_anchors = []
+        for i in verified:
+            anchor = str(i.get("report_anchor", "") or "").strip()
+            if not anchor:
+                continue
+            stripped = re.sub(r"^[§#]?\s*\d*\s*", "", anchor).strip()
+            if stripped and stripped not in report:
+                broken_anchors.append((i.get("id", "?"), anchor))
+        if broken_anchors:
+            add(checks, "WARN", "cross: insight_anchor_not_found",
+                f"verified insight report_anchor not found in report: {broken_anchors}")
+        else:
+            add(checks, "PASS", "cross: insight_anchor_not_found",
+                "all verified insight anchors in report")
+
+    # 3. hypothesis_ledger.json 中 hypothesis 的 node_id 必须在 intent_tree 节点 id 集合中
+    hyp_path = project / "03-evidence" / "hypothesis_ledger.json"
+    if intent and hyp_path.exists():
+        hyp_data = read_json(hyp_path)
+        if hyp_data:
+            v07 = intent.get("v07", {})
+            tree = v07.get("intent_tree", [])
+            tree_ids = {n.get("id") for n in tree if isinstance(n, dict)} if isinstance(tree, list) else set()
+            hypotheses = hyp_data.get("hypotheses", [])
+            broken_node_refs = []
+            for h in hypotheses:
+                if not isinstance(h, dict):
+                    continue
+                if "node_id" in h:
+                    nid = h.get("node_id")
+                    if nid and tree_ids and nid not in tree_ids:
+                        broken_node_refs.append((h.get("id", "?"), nid))
+            if broken_node_refs:
+                add(checks, "FAIL", "cross: hypothesis_node_id",
+                    f"hypothesis node_id not in intent_tree: {broken_node_refs}")
+            else:
+                add(checks, "PASS", "cross: hypothesis_node_id",
+                    "all hypothesis node_id valid")
+
+    # 4. narrative-plan.md 的 archetype 一致性（WARN 级别）
+    np_path = project / "05-analysis" / "narrative-plan.md"
+    if np_path.exists() and intent:
+        np_content = read_text(np_path)
+        m = re.search(r"^archetype:\s*(\w+)", np_content, re.MULTILINE)
+        if m:
+            archetype = m.group(1)
+            add(checks, "PASS", "cross: archetype_consistency",
+                f"archetype={archetype} (WARN-level check, no strict mapping)")
+
+
 def validate_project(project):
     checks = []
     # v0.6 保留
@@ -1224,11 +1825,20 @@ def validate_project(project):
     check_narrative_plan(project, checks)
     check_first_principles_position(project, checks)
 
+    # v2.0 新增检查
+    check_intent_tree_v2(project, checks)
+    check_insight_ledger(project, checks)
+    check_narrative_archetype(project, checks)
+    check_reader_diagnosis_v2(project, checks)
+    check_term_explanations_coverage(project, checks)
+    check_report_hard_constraints(project, checks)
+    check_cross_artifact_consistency(project, checks)
+
     return checks
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Research OS v1.2 Dumb Validator")
+    parser = argparse.ArgumentParser(description="Research OS v2.0 Dumb Validator")
     parser.add_argument("project", help="项目路径")
     parser.add_argument("--json", action="store_true", help="JSON 输出")
     args = parser.parse_args()
@@ -1248,7 +1858,7 @@ def main():
         warn_count = sum(1 for c in checks if c.level == "WARN")
         fail_count = sum(1 for c in checks if c.level == "FAIL")
         print(f"\n{'=' * 60}")
-        print(f"Research OS v1.2 Dumb Validator")
+        print(f"Research OS v2.0 Dumb Validator")
         print(f"Project: {project.name}")
         print(f"{'=' * 60}\n")
         for c in checks:
@@ -1265,7 +1875,8 @@ def main():
 # ============================================================
 
 def check_narrative_plan(project_root: Path, results: list):
-    """v1.4: 检查 narrative-plan.md 存在性 + 关键词 + 元原则检查 section"""
+    """v1.4/v2.0: 检查 narrative-plan.md 存在性 + 关键词 + 元原则检查 section.
+    v2.0: 检测到 archetype 字段时跳过 v1.5 旧关键词检查（由 check_narrative_archetype 接管）."""
     np_path = project_root / "05-analysis" / "narrative-plan.md"
 
     # 检查 1: 文件存在性
@@ -1281,20 +1892,35 @@ def check_narrative_plan(project_root: Path, results: list):
     else:
         add(results, "PASS", "narrative_plan_min_chars", f"narrative-plan.md 字符数 {len(content)} 大于等于 500")
 
-    # 检查 3: 关键词检查
-    required_keywords = ["认知类型", "三级节点", "章节顺序", "第一性原理位置"]
-    missing_keywords = [kw for kw in required_keywords if kw not in content]
+    # v2.0: 检测是否为 v2.0 格式（含 archetype 字段）
+    is_v2 = bool(re.search(r"^archetype:\s*\w+", content, re.MULTILINE))
 
-    if missing_keywords:
-        add(results, "FAIL", "narrative_plan_keywords", f"narrative-plan.md 缺少关键词: {missing_keywords}")
+    if is_v2:
+        # v2.0: 跳过旧关键词检查，由 check_narrative_archetype 接管
+        add(results, "PASS", "narrative_plan_keywords",
+            "v2.0 format detected (archetype field present, v1.5 keywords skipped)")
+        # v2.0 用"底层约束检查"替代"元原则检查"
+        if "底层约束检查" not in content and "元原则检查" not in content:
+            add(results, "FAIL", "narrative_plan_principles_section",
+                "narrative-plan.md 缺少底层约束检查/元原则检查 section")
+        else:
+            add(results, "PASS", "narrative_plan_principles_section",
+                "narrative-plan.md 包含底层约束检查/元原则检查 section")
     else:
-        add(results, "PASS", "narrative_plan_keywords", "narrative-plan.md 关键词检查通过")
+        # v1.5: 原有关键词检查
+        required_keywords = ["认知类型", "三级节点", "章节顺序", "第一性原理位置"]
+        missing_keywords = [kw for kw in required_keywords if kw not in content]
 
-    # 检查 4: 元原则检查 section
-    if "元原则检查" not in content:
-        add(results, "FAIL", "narrative_plan_principles_section", "narrative-plan.md 缺少元原则检查section")
-    else:
-        add(results, "PASS", "narrative_plan_principles_section", "narrative-plan.md 包含元原则检查section")
+        if missing_keywords:
+            add(results, "FAIL", "narrative_plan_keywords", f"narrative-plan.md 缺少关键词: {missing_keywords}")
+        else:
+            add(results, "PASS", "narrative_plan_keywords", "narrative-plan.md 关键词检查通过")
+
+        # 检查 4: 元原则检查 section
+        if "元原则检查" not in content:
+            add(results, "FAIL", "narrative_plan_principles_section", "narrative-plan.md 缺少元原则检查section")
+        else:
+            add(results, "PASS", "narrative_plan_principles_section", "narrative-plan.md 包含元原则检查section")
 
 
 def check_first_principles_position(project_root: Path, results: list):

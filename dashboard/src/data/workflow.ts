@@ -47,6 +47,14 @@ export const workflow: WorkflowDef = {
       "gateAfter": null
     },
     {
+      "id": "step_1_2_intent_discovery",
+      "num": "1.2",
+      "label": "意图探索",
+      "phase": "define",
+      "artifact": "00-task/intent_doc.json",
+      "gateAfter": "gate_10"
+    },
+    {
       "id": "step_1_5_direction_selection",
       "num": "1.5",
       "label": "方向选择",
@@ -124,7 +132,7 @@ export const workflow: WorkflowDef = {
       "label": "反方审计",
       "phase": "analyze",
       "artifact": "06-review/red_team.md",
-      "gateAfter": null
+      "gateAfter": "gate_11"
     },
     {
       "id": "step_9_final_report_draft",
@@ -172,7 +180,7 @@ export const workflow: WorkflowDef = {
       "label": "溯源清单",
       "phase": "deliver",
       "artifact": "07-output/trace-manifest.json",
-      "gateAfter": null
+      "gateAfter": "gate_12"
     },
     {
       "id": "step_12_view_model",
@@ -270,6 +278,27 @@ export const workflow: WorkflowDef = {
       "name": "美学合规验证",
       "afterStep": "step_13_html_build",
       "requirement": "禁止模式 + 必须结构 + 视觉量化"
+    },
+    {
+      "id": "gate_10",
+      "number": 10,
+      "name": "意图树验证",
+      "afterStep": "step_1_2_intent_discovery",
+      "requirement": "5轮探索 + intent_tree分层结构 + candidate_paths + success_criteria"
+    },
+    {
+      "id": "gate_11",
+      "number": 11,
+      "name": "洞察账本验证",
+      "afterStep": "step_8_red_team",
+      "requirement": "verified洞察数R2>=3/R3>=5 + >=1 contrarian + evidence_ids>=2 + report_anchor约束"
+    },
+    {
+      "id": "gate_12",
+      "number": 12,
+      "name": "跨产物一致性",
+      "afterStep": "step_11_trace_manifest",
+      "requirement": "intent_tree answer_pointer + insight report_anchor + trace链路id全部存在"
     }
   ]
 };

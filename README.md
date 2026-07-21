@@ -1,10 +1,10 @@
-<!-- ros-version: v1.5 | last-updated: 2026-07-20 | status: current -->
+<!-- ros-version: v2.0 | last-updated: 2026-07-21 | status: current -->
 
 # Research OS
 
 **深度调研工作流系统**。给定一个研究主题，引导走完"任务定义 → 方向选择 → 候选源采集 → 证据矩阵 → 假设账本 → 核心对象直采 → 多 Agent 分析 → 行文思路规划 → 反方审计 → 独立审计 → 对抗式审核 → 读者模拟 → 写-读-改闭环 → 最终报告 → HTML 可视化"的完整链路，产出有信任度保证的深度报告。
 
-**当前版本**：v1.5（2026-07-20）
+**当前版本**：v2.0（2026-07-21）
 
 **设计哲学**：**Smart Agent. Dumb Tools.**——工具只做机械检查（存在性、字数、格式、字段值非空），语义判断（好不好、要不要重写、质量高低）交给 Agent。
 
@@ -20,7 +20,7 @@
 python ros.py new --name "项目名" --type product --depth R2 --html
 ```
 
-### 3. 完整流程（16 步 + 9 个强制门禁）
+### 3. 完整流程（23 步 + 12 个强制门禁）
 
 详见 [`templates/14-研究执行状态机.md`](templates/14-研究执行状态机.md)。
 
@@ -37,18 +37,31 @@ python validate_research_project.py "项目路径"
 | 文档 | 作用 |
 |---|---|
 | [`templates/00-使用说明.md`](templates/00-使用说明.md) | **唯一入口**，强制先读 |
-| [`templates/14-研究执行状态机.md`](templates/14-研究执行状态机.md) | 16 步流程 + 9 个门禁 |
+| [`templates/14-研究执行状态机.md`](templates/14-研究执行状态机.md) | 23 步流程 + 12 个门禁 |
 | [`templates/09-HTML美学规范.md`](templates/09-HTML美学规范.md) | HTML 视觉规格的**单一真相源** |
 | [`templates/16-独立审计Agent.md`](templates/16-独立审计Agent.md) | 独立审计 Agent 协议 |
 | [`templates/17-核心对象直采协议.md`](templates/17-核心对象直采协议.md) | 核心对象直采协议 |
 | [`templates/20-方向选择协议.md`](templates/20-方向选择协议.md) | 方向选择（边界追问）协议 |
 | [`templates/21-对抗式审核协议.md`](templates/21-对抗式审核协议.md) | 对抗式审核协议（subagent 攻击报告） |
 | [`templates/22-第一性原理拆解协议.md`](templates/22-第一性原理拆解协议.md) | 第一性原理三层结构 |
-| [`templates/23-行文思路规划协议.md`](templates/23-行文思路规划协议.md) | 行文思路规划（narrative-plan） |
+| [`templates/23-行文思路规划协议.md`](templates/23-行文思路规划协议.md) | 叙事原型系统（6 种 archetype） |
+| [`templates/24-意图拆解协议.md`](templates/24-意图拆解协议.md) | 5 轮探索 + 意图树 L0-L4 |
+| [`templates/25-洞察账本协议.md`](templates/25-洞察账本协议.md) | 洞察账本状态流转 |
 | [`CHANGELOG.md`](CHANGELOG.md) | 版本变更记录 |
 | [`archive/README.md`](archive/README.md) | 历史版本归档说明 |
 
-## v1.5 核心升级
+## v2.0 核心升级
+
+1. **意图拆解协议**（24 号模板）：5 轮探索（R1 字面 → R2 差距 → R3 意图树 → R4 路径 → R5 问题说明书），意图树 L0-L4 分层，候选路径剪枝
+2. **洞察账本协议**（25 号模板）：insight_ledger.json，洞察判定三条件（反共识/可证伪/决策力），状态流转 draft→verified/downgraded/rejected
+3. **叙事原型系统**（23 号重构）：6 种 archetype（learning_curve/decision_forum/product_teardown/opportunity_map/user_voice/mixed_journey）替代单一行文思路
+4. **双读者模拟**（reader_simulation v2.0）：outsider + layman 双视角，独立阈值
+5. **3 个新门禁**：gate_10 意图树完整性、gate_11 洞察账本、gate_12 跨产物一致性
+6. **验证器 7 个新检查函数**：intent_tree / insight_ledger / archetype / reader_v2 / term_coverage / hard_constraints / cross_artifact
+7. **08-最终报告瘦身**：H1-H12 硬约束清单替代混合内容
+8. **23 步 12 门禁**：workflow_def.py 22→23 步，9→12 门禁
+
+## v1.5 核心升级（历史）
 
 1. **治理统一**：版本号/门禁数回归单一真相——全部模板头 v1.5，门禁统一 9 个（补门禁9 美学合规验证）
 2. **术语统一**：规范去外部品牌词（「Kimi式」→「边界追问」）；反方审计与对抗式审核职责边界写清
@@ -58,8 +71,8 @@ python validate_research_project.py "项目路径"
 
 ## 版本治理
 
-- **当前版本**：v1.5
-- **版本标记**：每个文件头 `<!-- ros-version: v1.5 | last-updated: YYYY-MM-DD | status: current -->`
+- **当前版本**：v2.0
+- **版本标记**：每个文件头 `<!-- ros-version: v2.0 | last-updated: YYYY-MM-DD | status: current -->`
 - **归档规则**：旧版本移到 `archive/`，不作为当前规范
 - **变更记录**：见 [`CHANGELOG.md`](CHANGELOG.md)
 - **发布完整性**：每次发布必须同步更新 README / 00-使用说明 / CHANGELOG / 14-状态机 / 所有模板版本头
@@ -75,7 +88,7 @@ research-os/
 ├── validate_research_project.py # Dumb Validator
 ├── build_html_v07.py            # 唯一 HTML 构建器
 ├── *.py                         # Python 引擎
-├── templates/                   # 模板库（24 个）
+├── templates/                   # 模板库（26 个）
 ├── dashboard/                   # 系统看板（React）
 ├── scripts/sync_dashboard.py    # 看板数据同步
 ├── archive/                     # 历史版本归档
