@@ -2,13 +2,13 @@
 import type { SystemStats } from './types';
 
 export const stats: SystemStats = {
-  "totalProjects": 59,
+  "totalProjects": 60,
   "published": 21,
-  "inPipeline": 23,
+  "inPipeline": 24,
   "blocked": 0,
   "untracked": 15,
-  "totalEvidence": 512,
-  "totalReportChars": 661944,
+  "totalEvidence": 617,
+  "totalReportChars": 663323,
   "currentVersion": "v2.0",
-  "syncedAt": "2026-07-21 12:42"
+  "syncedAt": "2026-07-21 14:31"
 };

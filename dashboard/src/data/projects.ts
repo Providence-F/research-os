@@ -96,6 +96,99 @@ export const projects: ProjectPipeline[] = [
     "summary": "AI 形态/通道/时机/角色/三角色架构 5 项决策"
   },
   {
+    "id": "用户访谈行业弊端深度调研",
+    "name": "用户访谈行业弊端深度调研",
+    "category": "行业赛道",
+    "depth": "R2",
+    "status": "in_progress",
+    "tracked": true,
+    "currentStepIndex": 2,
+    "progress": 0.304,
+    "doneSteps": 7,
+    "steps": {
+      "step_0_scaffold": "done",
+      "step_1_route": "done",
+      "step_1_2_intent_discovery": "pending",
+      "step_1_5_direction_selection": "done",
+      "step_2_task_card": "done",
+      "step_3_research_plan": "done",
+      "step_4_candidates": "done",
+      "step_5_evidence_matrix": "done",
+      "step_6_hypothesis": "pending",
+      "step_6_5_core_objects_fetch": "pending",
+      "step_7_analysis": "pending",
+      "step_7_5_narrative_plan": "pending",
+      "step_8_red_team": "pending",
+      "step_9_final_report_draft": "pending",
+      "step_9_5_independent_audit": "pending",
+      "step_9_6_adversarial_review": "pending",
+      "step_10_reader_simulation": "pending",
+      "step_10_5_write_read_rewrite": "pending",
+      "step_11_trace_manifest": "pending",
+      "step_12_view_model": "pending",
+      "step_13_html_build": "pending",
+      "step_14_validate": "pending",
+      "step_15_publish": "pending"
+    },
+    "gates": [
+      {
+        "id": "gate_1",
+        "passed": false
+      },
+      {
+        "id": "gate_2",
+        "passed": false
+      },
+      {
+        "id": "gate_3",
+        "passed": false
+      },
+      {
+        "id": "gate_4",
+        "passed": true
+      },
+      {
+        "id": "gate_5",
+        "passed": false
+      },
+      {
+        "id": "gate_6",
+        "passed": true
+      },
+      {
+        "id": "gate_7",
+        "passed": false
+      },
+      {
+        "id": "gate_8",
+        "passed": false
+      },
+      {
+        "id": "gate_9",
+        "passed": false
+      },
+      {
+        "id": "gate_10",
+        "passed": true
+      },
+      {
+        "id": "gate_11",
+        "passed": false
+      },
+      {
+        "id": "gate_12",
+        "passed": true
+      }
+    ],
+    "gatesPassed": 4,
+    "blockedGate": null,
+    "hasHtml": false,
+    "reportChars": 1379,
+    "evidenceCount": 105,
+    "lastActivity": "2026-07-21",
+    "summary": "重构 Mizzen insight 人类访谈辅助功能方案的底层认知依据（第一性原理拆解 + AI 不可替代性论证 + 机会点清单）"
+  },
+  {
     "id": "语言的统一本质-语言学编程语言与大模型的三层同构",
     "name": "语言的统一本质-语言学编程语言与大模型的三层同构",
     "category": "主题研究",
